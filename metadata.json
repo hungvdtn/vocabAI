@@ -1,0 +1,7 @@
+{
+  "name": "Vocab AIBTeM",
+  "description": "Ứng dụng luyện học từ mới Tiếng Anh và Tiếng Đức tích hợp AI Gemini và Google Cloud TTS.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}

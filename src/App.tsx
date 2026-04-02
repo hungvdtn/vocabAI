@@ -633,7 +633,7 @@ function LibraryView({ lessons, onEdit, onPlay, onDelete }: { lessons: Lesson[],
 function InputView({ language, user, onSaved, initialLesson }: { language: Language, user: User, onSaved: () => void, initialLesson?: Lesson }) {
   const [rows, setRows] = useState<{ word: string, meaning: string, loading: boolean, suggestions?: string[] }[]>(
     initialLesson ? initialLesson.vocabularies.map(v => ({ ...v, loading: false })) : 
-    Array(5).fill(null).map(() => ({ word: '', meaning: '', loading: false }))
+    [{ word: '', meaning: '', loading: false }]
   );
   const [lessonTitle, setLessonTitle] = useState(initialLesson?.title || '');
   const [showSaveModal, setShowSaveModal] = useState(false);
@@ -643,19 +643,18 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
   // Translation Cache
   const translationCache = useRef<Record<string, any>>({});
 
-  const cleanInputData = (text: string, isForeignWord: boolean = false) => {
+  const cleanInputData = (text: string, isForeignWord: boolean = false, isFinal: boolean = false) => {
     if (!text) return '';
     
-    // Chỉ loại bỏ các ký tự đặc biệt dạng bullet ở đầu chuỗi
-    // Giữ lại dấu cách, chữ cái, chữ số bên trong cụm từ
-    let cleaned = text
-      .replace(/^[\s\u2022\u2023\u25E6\u2043\u2219\u2000-\u206F\u2E00-\u2E7F\u25A0-\u25FF\uF000-\uF0FF\-\+\*•]+/g, '')
-      .replace(/\s+/g, ' ') // Chuẩn hóa khoảng trắng giữa các từ
-      .trim();
+    // Chỉ loại bỏ các ký tự đặc biệt dạng bullet ở đầu chuỗi (không xóa khoảng trắng khi đang gõ)
+    let cleaned = text.replace(/^[\u2022\u2023\u25E6\u2043\u2219\u2000-\u206F\u2E00-\u2E7F\u25A0-\u25FF\uF000-\uF0FF\-\+\*•]+/g, '');
     
-    if (isForeignWord) {
-      cleaned = cleaned.toLowerCase();
+    // Chỉ trim() và chuẩn hóa khoảng trắng ở bước chốt (isFinal = true)
+    if (isFinal) {
+      cleaned = cleaned.replace(/\s+/g, ' ').trim();
     }
+    
+    // Đã gỡ bỏ .toLowerCase() để bảo toàn định dạng chữ Hoa/thường theo yêu cầu
     return cleaned;
   };
 
@@ -670,10 +669,8 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
   };
 
   const removeRow = (index: number) => {
-    if (rows.length <= 5 && !initialLesson) {
-      const newRows = [...rows];
-      newRows[index] = { word: '', meaning: '', loading: false };
-      setRows(newRows);
+    if (rows.length <= 1 && !initialLesson) {
+      setRows([{ word: '', meaning: '', loading: false }]);
       return;
     }
     setRows(rows.filter((_, i) => i !== index));
@@ -681,30 +678,32 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
 
   const updateRow = (index: number, field: 'word' | 'meaning', value: string) => {
     const newRows = [...rows];
-    const cleanedValue = field === 'word' ? cleanInputData(value, true) : value;
+    // Khi đang gõ (onChange), tuyệt đối không dùng trim() hay xóa khoảng trắng
+    const cleanedValue = field === 'word' ? cleanInputData(value, true, false) : value;
     (newRows[index] as any)[field] = cleanedValue;
     setRows(newRows);
   };
 
   const handleAutoTranslate = async (index: number) => {
-    const word = rows[index].word;
-    if (!word || rows[index].loading) return;
-
-    // Check Cache
-    if (translationCache.current[word]) {
-      const data = translationCache.current[word];
-      const updatedRows = [...rows];
-      updatedRows[index].suggestions = data.translations;
-      if (!updatedRows[index].meaning) {
-        updatedRows[index].meaning = data.translations[0];
+    // Chốt dữ liệu: làm sạch triệt để (trim, lowercase, normalize spaces) trước khi gọi AI
+    const rawWord = rows[index].word;
+    const word = cleanInputData(rawWord, true, true);
+    
+    if (!word || rows[index].loading) {
+      // Cập nhật lại ô input với giá trị đã trim nếu cần
+      if (rawWord !== word) {
+        const updatedRows = [...rows];
+        updatedRows[index].word = word;
+        setRows(updatedRows);
       }
-      setRows(updatedRows);
       return;
     }
 
-    const newRows = [...rows];
-    newRows[index].loading = true;
-    setRows(newRows);
+    // Cập nhật lại ô input với giá trị đã trim để đồng bộ UI
+    const rowsWithCleanedWord = [...rows];
+    rowsWithCleanedWord[index].word = word;
+    rowsWithCleanedWord[index].loading = true;
+    setRows(rowsWithCleanedWord);
 
     try {
       const data = await translateWord(word, 'en');
@@ -731,10 +730,13 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
   };
 
   const cancelInput = () => {
-    if (window.confirm("Bạn có chắc chắn muốn hủy? Mọi dữ liệu đã nhập sẽ bị mất.")) {
-      setRows(Array(5).fill(null).map(() => ({ word: '', meaning: '', loading: false })));
+    console.log("Cancel button clicked");
+    if (window.confirm('Bạn có chắc chắn muốn hủy bỏ toàn bộ dữ liệu đang nhập không?')) {
+      setRows([{ word: '', meaning: '', loading: false }]);
       setLessonTitle('');
-      if (initialLesson) onSaved(); // Go back if editing
+      if (initialLesson) {
+        onSaved(); // Quay lại màn hình Thư viện nếu đang chỉnh sửa
+      }
     }
   };
 
@@ -752,6 +754,15 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
 
     setLoading(true);
     try {
+      // Làm sạch triệt để toàn bộ dữ liệu trước khi lưu
+      const finalRows = rows.map(r => ({
+        ...r,
+        word: cleanInputData(r.word, true, true),
+        meaning: cleanInputData(r.meaning, false, true)
+      }));
+
+      const validRows = finalRows.filter(r => r.word && r.meaning);
+      
       const lessonData: Omit<Lesson, 'id'> = {
         title: lessonTitle.trim(),
         wordCount: validRows.length,
@@ -760,8 +771,8 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
         language,
         createdAt: Date.now(),
         vocabularies: validRows.map(r => ({
-          word: r.word.trim(),
-          meaning: r.meaning.trim(),
+          word: r.word,
+          meaning: r.meaning,
           language,
           userId: user.uid,
           createdAt: Date.now()
@@ -800,14 +811,14 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
       if (match) {
         const separator = match[0];
         const parts = cleanLine.split(separator);
-        const word = cleanInputData(parts[0], true);
-        const meaning = cleanInputData(parts.slice(1).join(separator));
+        const word = cleanInputData(parts[0], true, true);
+        const meaning = cleanInputData(parts.slice(1).join(separator), false, true);
         if (word && meaning) {
           newRows.push({ word, meaning, loading: false });
         }
       } else if (cleanLine.length > 0) {
         // Fallback: if no separator, maybe it's just the word
-        newRows.push({ word: cleanInputData(cleanLine, true), meaning: '', loading: false });
+        newRows.push({ word: cleanInputData(cleanLine, true, true), meaning: '', loading: false });
       }
     });
     return newRows;
@@ -830,10 +841,8 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
 
       const parsedRows = parseText(text);
       if (parsedRows.length > 0) {
-        setRows(prev => {
-          const filteredPrev = prev.filter(r => r.word || r.meaning);
-          return [...filteredPrev, ...parsedRows];
-        });
+        // Ghi đè hoàn toàn danh sách bằng dữ liệu từ file
+        setRows(parsedRows);
       } else {
         alert("Không tìm thấy từ vựng trong file. Vui lòng kiểm tra định dạng (Từ, Nghĩa).");
       }
@@ -896,6 +905,11 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
                       value={row.meaning}
                       onChange={(e) => updateRow(index, 'meaning', e.target.value)}
                       onFocus={() => handleAutoTranslate(index)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Tab' && !e.shiftKey && index === rows.length - 1) {
+                          addRow();
+                        }
+                      }}
                       className="w-full bg-slate-50 border-2 border-transparent rounded-2xl px-5 py-4 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all text-lg font-medium placeholder:text-slate-300"
                       placeholder="Nhập nghĩa..."
                     />
@@ -981,6 +995,7 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
           </div>
           <div className="flex items-center gap-3">
             <button 
+              type="button"
               onClick={cancelInput}
               className="px-6 py-3 rounded-2xl font-bold text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all"
             >

@@ -642,6 +642,8 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
   
   // Translation Cache
   const translationCache = useRef<Record<string, any>>({});
+  const debounceTimers = useRef<Record<number, NodeJS.Timeout>>({});
+  const abortControllers = useRef<Record<number, AbortController>>({});
 
   const cleanInputData = (text: string, isForeignWord: boolean = false, isFinal: boolean = false) => {
     if (!text) return '';
@@ -681,7 +683,26 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
     // Khi đang gõ (onChange), tuyệt đối không dùng trim() hay xóa khoảng trắng
     const cleanedValue = field === 'word' ? cleanInputData(value, true, false) : value;
     (newRows[index] as any)[field] = cleanedValue;
+
+    // Linked Deletion: Xóa từ Tiếng Anh thì xóa luôn Tiếng Việt và tắt loading
+    if (field === 'word' && cleanedValue === '') {
+      newRows[index].meaning = '';
+      newRows[index].loading = false;
+      newRows[index].suggestions = [];
+      // Hủy bỏ các request cũ của dòng này
+      if (debounceTimers.current[index]) clearTimeout(debounceTimers.current[index]);
+      if (abortControllers.current[index]) abortControllers.current[index].abort();
+    }
+
     setRows(newRows);
+
+    // Debounce: Chỉ gọi AI sau khi người dùng ngừng gõ 500ms
+    if (field === 'word' && cleanedValue.trim() !== '') {
+      if (debounceTimers.current[index]) clearTimeout(debounceTimers.current[index]);
+      debounceTimers.current[index] = setTimeout(() => {
+        handleAutoTranslate(index);
+      }, 500);
+    }
   };
 
   const handleAutoTranslate = async (index: number) => {
@@ -690,42 +711,59 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
     const word = cleanInputData(rawWord, true, true);
     
     if (!word || rows[index].loading) {
-      // Cập nhật lại ô input với giá trị đã trim nếu cần
-      if (rawWord !== word) {
-        const updatedRows = [...rows];
-        updatedRows[index].word = word;
-        setRows(updatedRows);
-      }
       return;
     }
 
-    // Cập nhật lại ô input với giá trị đã trim để đồng bộ UI
-    const rowsWithCleanedWord = [...rows];
-    rowsWithCleanedWord[index].word = word;
-    rowsWithCleanedWord[index].loading = true;
-    setRows(rowsWithCleanedWord);
-
-    try {
-      const data = await translateWord(word, 'en');
-      translationCache.current[word] = data; // Save to Cache
-      
+    // Caching: Kiểm tra bộ nhớ tạm trước khi gọi API
+    if (translationCache.current[word]) {
+      const data = translationCache.current[word];
       const updatedRows = [...rows];
-      updatedRows[index].loading = false;
-      if (data.translations && data.translations.length > 0) {
+      // Race Condition: Chỉ cập nhật nếu người dùng chưa tự gõ nghĩa
+      if (!updatedRows[index].meaning) {
+        updatedRows[index].meaning = data.translations[0] || '';
         updatedRows[index].suggestions = data.translations;
-        if (!updatedRows[index].meaning) {
-          updatedRows[index].meaning = data.translations[0];
-        }
       }
       setRows(updatedRows);
+      return;
+    }
+
+    // AbortController: Hủy request cũ của dòng này nếu có
+    if (abortControllers.current[index]) {
+      abortControllers.current[index].abort();
+    }
+    abortControllers.current[index] = new AbortController();
+
+    // Cập nhật trạng thái loading
+    const rowsWithLoading = [...rows];
+    rowsWithLoading[index].loading = true;
+    setRows(rowsWithLoading);
+
+    try {
+      const data = await translateWord(word, 'en', abortControllers.current[index].signal);
+      translationCache.current[word] = data; // Save to Cache
+      
+      setRows(prevRows => {
+        const updatedRows = [...prevRows];
+        updatedRows[index].loading = false;
+        
+        // Race Condition: TUYỆT ĐỐI KHÔNG ghi đè nếu ô Tiếng Việt đã có dữ liệu
+        if (data.translations && data.translations.length > 0) {
+          updatedRows[index].suggestions = data.translations;
+          if (!updatedRows[index].meaning) {
+            updatedRows[index].meaning = data.translations[0];
+          }
+        }
+        return updatedRows;
+      });
     } catch (e: any) {
+      if (e.message === 'Aborted') return;
       console.error("Auto Translate Error (Silent Fallback):", e);
-      const updatedRows = [...rows];
-      updatedRows[index].loading = false;
-      // Trả về mảng rỗng để ô Tiếng Việt được làm sạch, cho phép người dùng tự gõ tay
-      updatedRows[index].suggestions = [];
-      setRows(updatedRows);
-      // Xóa thông báo lỗi Alert, xử lý im lặng để không gián đoạn trải nghiệm
+      setRows(prevRows => {
+        const updatedRows = [...prevRows];
+        updatedRows[index].loading = false;
+        updatedRows[index].suggestions = [];
+        return updatedRows;
+      });
     }
   };
 
@@ -891,7 +929,6 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
                     type="text" 
                     value={row.word}
                     onChange={(e) => updateRow(index, 'word', e.target.value)}
-                    onBlur={() => handleAutoTranslate(index)}
                     className="w-full bg-slate-50 border-2 border-transparent rounded-2xl px-5 py-4 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all text-lg font-medium placeholder:text-slate-300"
                     placeholder="Nhập từ..."
                   />
@@ -904,7 +941,6 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
                       type="text" 
                       value={row.meaning}
                       onChange={(e) => updateRow(index, 'meaning', e.target.value)}
-                      onFocus={() => handleAutoTranslate(index)}
                       onKeyDown={(e) => {
                         if (e.key === 'Tab' && !e.shiftKey && index === rows.length - 1) {
                           addRow();

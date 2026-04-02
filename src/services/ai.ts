@@ -70,7 +70,7 @@ export const generateExampleSentence = async (word: string, language: string) =>
   });
 };
 
-export const translateWord = async (word: string, language: string) => {
+export const translateWord = async (word: string, language: string, signal?: AbortSignal) => {
   const cacheKey = `en:${word.toLowerCase().trim()}`;
   
   // Check Cache first
@@ -80,6 +80,8 @@ export const translateWord = async (word: string, language: string) => {
 
   return callWithRetry(async () => {
     try {
+      if (signal?.aborted) throw new Error("Aborted");
+
       const ai = getAI();
 
       const model = ai.models.generateContent({
@@ -87,7 +89,12 @@ export const translateWord = async (word: string, language: string) => {
         contents: `Bạn là một từ điển Anh-Việt. Hãy dịch từ sau sang Tiếng Việt. CHỈ trả về duy nhất một mảng JSON chứa 3 đến 5 nghĩa, không thêm bất kỳ văn bản nào khác. Ví dụ: ["sách", "quyển sách"]
         Từ cần dịch: "${word}"`,
       });
+      
+      // Note: @google/genai doesn't natively support AbortSignal in generateContent yet, 
+      // but we can check it before and after the call, or wrap it in a promise that rejects on signal.
       const response = await model;
+      
+      if (signal?.aborted) throw new Error("Aborted");
       const rawText = response.text;
       
       if (!rawText) throw new Error("API trả về rỗng");

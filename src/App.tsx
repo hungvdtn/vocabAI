@@ -646,16 +646,13 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
   const cleanInputData = (text: string, isForeignWord: boolean = false) => {
     if (!text) return '';
     
-    // Nâng cấp Regex để bóc tách triệt để ký tự lạ ở đầu dòng (bullets từ Word/Unicode)
-    // Bao gồm: khoảng trắng, dấu câu, ký tự Wingdings/Webdings (\uF000-\uF0FF), 
-    // các dạng bullet Unicode (\u2000-\u206F, \u25A0-\u25FF, v.v.)
+    // Lọc ký tự lạ (bullets, Wingdings...) và chuyển tất cả sang chữ thường cho Tiếng Anh
     let cleaned = text.trim()
       .replace(/^[\s\u2000-\u206F\u2E00-\u2E7F\u25A0-\u25FF\uF000-\uF0FF\W_0-9]+/g, '')
-      .replace(/\s+/g, ' ') // Loại bỏ khoảng trắng dư thừa ở giữa
+      .replace(/\s+/g, ' ')
       .trim();
     
     if (isForeignWord) {
-      // Chuyển đổi toàn bộ từ ngoại ngữ sang chữ viết thường theo yêu cầu
       cleaned = cleaned.toLowerCase();
     }
     return cleaned;
@@ -709,7 +706,7 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
     setRows(newRows);
 
     try {
-      const data = await translateWord(word, language);
+      const data = await translateWord(word, 'en');
       translationCache.current[word] = data; // Save to Cache
       
       const updatedRows = [...rows];
@@ -725,8 +722,11 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
       console.error("Auto Translate Error:", e);
       const updatedRows = [...rows];
       updatedRows[index].loading = false;
+      // Trả về mảng rỗng để ô Tiếng Việt được làm sạch, cho phép người dùng tự gõ tay
+      updatedRows[index].suggestions = [];
       setRows(updatedRows);
-      alert(e.message || "Lỗi khi dịch từ. Vui lòng kiểm tra kết nối mạng hoặc API Key.");
+      // Hiển thị thông báo lỗi thân thiện
+      alert("Hệ thống AI đang tạm thời quá tải hoặc gặp lỗi. Bạn có thể tự nhập nghĩa của từ này.");
     }
   };
 

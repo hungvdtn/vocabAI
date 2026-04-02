@@ -34,7 +34,7 @@ export const translateWord = async (word: string, language: string) => {
     model: "gemini-3-flash-preview",
     contents: `Analyze the ${language} word "${word}". 
     Provide:
-    1. A list of 3 common Vietnamese meanings.
+    1. A list of 3-5 common Vietnamese meanings.
     2. The word type (noun, verb, adj, etc.).
     3. The IPA pronunciation.
     4. A simple English definition (A2-B1 level).

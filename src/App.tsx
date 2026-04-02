@@ -18,7 +18,13 @@ import {
   Trash2,
   FileText,
   Loader2,
-  Mail
+  Mail,
+  Search,
+  Calendar,
+  Clock,
+  User as UserIcon,
+  Play,
+  Edit2
 } from 'lucide-react';
 import Lottie from 'lottie-react';
 import * as mammoth from 'mammoth';
@@ -57,7 +63,7 @@ import {
 
 // Types
 type Language = 'en' | 'de';
-type View = 'home' | 'input' | 'games' | 'report';
+type View = 'home' | 'input' | 'games' | 'report' | 'library';
 type GameType = 'flashcards' | 'quiz' | 'matching' | 'writing' | 'fill';
 
 interface Vocabulary {
@@ -71,6 +77,17 @@ interface Vocabulary {
   language: Language;
   userId: string;
   createdAt: any;
+}
+
+interface Lesson {
+  id?: string;
+  title: string;
+  wordCount: number;
+  userId: string;
+  userName: string;
+  language: Language;
+  createdAt: number;
+  vocabularies: Vocabulary[];
 }
 
 interface GameResult {
@@ -118,7 +135,9 @@ export default function App() {
   const [view, setView] = useState<View>('home');
   const [activeGame, setActiveGame] = useState<GameType | null>(null);
   const [vocabList, setVocabList] = useState<Vocabulary[]>([]);
+  const [lessons, setLessons] = useState<Lesson[]>([]);
   const [gameResults, setGameResults] = useState<GameResult[]>([]);
+  const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
   const [loading, setLoading] = useState(false);
 
   // Auth
@@ -128,6 +147,19 @@ export default function App() {
     });
     return () => unsubscribe();
   }, []);
+
+  // Fetch Lessons
+  useEffect(() => {
+    if (!user) return;
+    const q = query(collection(db, 'lessons'), where('userId', '==', user.uid));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Lesson));
+      // Sort by createdAt descending (newest first)
+      items.sort((a, b) => b.createdAt - a.createdAt);
+      setLessons(items);
+    });
+    return () => unsubscribe();
+  }, [user]);
 
   const login = async () => {
     try {
@@ -240,6 +272,7 @@ export default function App() {
           
           <div className="hidden md:flex items-center gap-6">
             <NavButton active={view === 'input'} onClick={() => setView('input')} icon={<PlusCircle size={18} />} label="Nhập liệu" />
+            <NavButton active={view === 'library'} onClick={() => setView('library')} icon={<FileText size={18} />} label="Thư viện" />
             <NavButton active={view === 'games'} onClick={() => setView('games')} icon={<Gamepad2 size={18} />} label="Trò chơi" />
             <NavButton active={view === 'report'} onClick={() => setView('report')} icon={<BarChart3 size={18} />} label="Báo cáo" />
           </div>
@@ -303,7 +336,15 @@ export default function App() {
           )}
           {view === 'input' && (
             <motion.div key="input" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}>
-              <InputView language={language} user={user} onSaved={() => setView('games')} />
+              <InputView 
+                language={language} 
+                user={user} 
+                initialLesson={editingLesson || undefined}
+                onSaved={() => {
+                  setEditingLesson(null);
+                  setView('library');
+                }} 
+              />
             </motion.div>
           )}
           {view === 'games' && (
@@ -318,6 +359,21 @@ export default function App() {
               />
             </motion.div>
           )}
+          {view === 'library' && (
+            <motion.div key="library" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <LibraryView 
+                lessons={lessons} 
+                onEdit={(lesson) => {
+                  setEditingLesson(lesson);
+                  setView('input');
+                }}
+                onPlay={(lesson) => {
+                  setVocabList(lesson.vocabularies);
+                  setView('games');
+                }}
+              />
+            </motion.div>
+          )}
           {view === 'report' && (
             <motion.div key="report" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <ReportView results={gameResults} language={language} vocabList={vocabList} />
@@ -329,6 +385,7 @@ export default function App() {
       {/* Mobile Nav */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around p-2 z-50">
         <MobileNavButton active={view === 'input'} onClick={() => setView('input')} icon={<PlusCircle />} />
+        <MobileNavButton active={view === 'library'} onClick={() => setView('library')} icon={<FileText />} />
         <MobileNavButton active={view === 'games'} onClick={() => setView('games')} icon={<Gamepad2 />} />
         <MobileNavButton active={view === 'home'} onClick={() => { setView('home'); setActiveGame(null); }} icon={<Home />} />
         <MobileNavButton active={view === 'report'} onClick={() => setView('report')} icon={<BarChart3 />} />
@@ -420,8 +477,105 @@ function StatCard({ title, value, color }: { title: string, value: string, color
   );
 }
 
-function InputView({ language, user, onSaved }: { language: Language, user: User, onSaved: () => void }) {
-  const [rows, setRows] = useState([{ word: '', meaning: '', loading: false }]);
+function LibraryView({ lessons, onEdit, onPlay }: { lessons: Lesson[], onEdit: (l: Lesson) => void, onPlay: (l: Lesson) => void }) {
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredLessons = lessons.filter(l => 
+    l.title.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  return (
+    <div className="space-y-8">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-3xl font-bold">Thư viện của bạn</h2>
+          <p className="text-slate-500">Quản lý và ôn tập các bài học đã lưu.</p>
+        </div>
+        <div className="relative max-w-md w-full">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+          <input 
+            type="text" 
+            placeholder="Tìm kiếm bài học..." 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 transition-all shadow-sm"
+          />
+        </div>
+      </div>
+
+      <div className="grid gap-4">
+        {filteredLessons.length > 0 ? (
+          filteredLessons.map((lesson) => (
+            <motion.div 
+              key={lesson.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-all flex flex-col md:flex-row md:items-center justify-between gap-6 group"
+            >
+              <div className="flex items-center gap-6">
+                <div className="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600">
+                  <FileText size={32} />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-xl font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{lesson.title}</h3>
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-500">
+                    <div className="flex items-center gap-1">
+                      <Languages size={14} />
+                      <span>{lesson.language.toUpperCase()}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Gamepad2 size={14} />
+                      <span>{lesson.wordCount} thuật ngữ</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <UserIcon size={14} />
+                      <span>{lesson.userName}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Calendar size={14} />
+                      <span>{new Date(lesson.createdAt).toLocaleDateString('vi-VN')}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <button 
+                  onClick={() => onPlay(lesson)}
+                  className="flex-1 md:flex-none bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-indigo-700 transition-all flex items-center justify-center gap-2"
+                >
+                  <Play size={18} fill="currentColor" /> Chơi
+                </button>
+                <button 
+                  onClick={() => onEdit(lesson)}
+                  className="flex-1 md:flex-none bg-slate-100 text-slate-700 px-6 py-3 rounded-xl font-bold hover:bg-slate-200 transition-all flex items-center justify-center gap-2"
+                >
+                  <Edit2 size={18} /> Sửa
+                </button>
+              </div>
+            </motion.div>
+          ))
+        ) : (
+          <div className="text-center py-20 bg-white rounded-[2.5rem] border border-dashed border-slate-200">
+            <div className="bg-slate-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300">
+              <Search size={40} />
+            </div>
+            <h3 className="text-xl font-bold text-slate-400">Không tìm thấy bài học nào</h3>
+            <p className="text-slate-500">Hãy thử tìm kiếm với từ khóa khác hoặc tạo bài học mới.</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function InputView({ language, user, onSaved, initialLesson }: { language: Language, user: User, onSaved: () => void, initialLesson?: Lesson }) {
+  const [rows, setRows] = useState<{ word: string, meaning: string, loading: boolean, suggestions?: string[] }[]>(
+    initialLesson ? initialLesson.vocabularies.map(v => ({ ...v, loading: false })) : 
+    Array(5).fill(null).map(() => ({ word: '', meaning: '', loading: false }))
+  );
+  const [lessonTitle, setLessonTitle] = useState(initialLesson?.title || '');
+  const [showSaveModal, setShowSaveModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
 
@@ -429,9 +583,17 @@ function InputView({ language, user, onSaved }: { language: Language, user: User
     setRows([...rows, { word: '', meaning: '', loading: false }]);
   };
 
+  const addRowAtIndex = (index: number) => {
+    const newRows = [...rows];
+    newRows.splice(index + 1, 0, { word: '', meaning: '', loading: false });
+    setRows(newRows);
+  };
+
   const removeRow = (index: number) => {
-    if (rows.length === 1) {
-      setRows([{ word: '', meaning: '', loading: false }]);
+    if (rows.length <= 5 && !initialLesson) {
+      const newRows = [...rows];
+      newRows[index] = { word: '', meaning: '', loading: false };
+      setRows(newRows);
       return;
     }
     setRows(rows.filter((_, i) => i !== index));
@@ -439,23 +601,28 @@ function InputView({ language, user, onSaved }: { language: Language, user: User
 
   const updateRow = (index: number, field: 'word' | 'meaning', value: string) => {
     const newRows = [...rows];
-    newRows[index][field] = value;
+    (newRows[index] as any)[field] = value;
     setRows(newRows);
   };
 
   const handleAutoTranslate = async (index: number) => {
     const word = rows[index].word;
-    if (!word || rows[index].meaning) return;
+    if (!word) return;
 
     const newRows = [...rows];
     newRows[index].loading = true;
     setRows(newRows);
 
     try {
-      const translation = await translateWord(word, language);
+      const data = await translateWord(word, language);
       const updatedRows = [...rows];
-      updatedRows[index].meaning = translation;
       updatedRows[index].loading = false;
+      if (data.translations && data.translations.length > 0) {
+        updatedRows[index].suggestions = data.translations;
+        if (!updatedRows[index].meaning) {
+          updatedRows[index].meaning = data.translations[0];
+        }
+      }
       setRows(updatedRows);
     } catch (e) {
       console.error(e);
@@ -465,32 +632,43 @@ function InputView({ language, user, onSaved }: { language: Language, user: User
     }
   };
 
-  const saveVocab = async () => {
+  const saveLesson = async () => {
     const validRows = rows.filter(r => r.word.trim() && r.meaning.trim());
     if (validRows.length < 5) {
-      alert("Bạn cần ít nhất 5 từ để lưu vào thư viện!");
+      alert("Bạn cần ít nhất 5 từ để lưu bài học!");
+      return;
+    }
+
+    if (!lessonTitle.trim()) {
+      alert("Vui lòng nhập tên bài học!");
       return;
     }
 
     setLoading(true);
     try {
-      const batch = writeBatch(db);
-      validRows.forEach(r => {
-        const docRef = doc(collection(db, 'vocabularies'));
-        batch.set(docRef, {
+      const lessonData: Omit<Lesson, 'id'> = {
+        title: lessonTitle.trim(),
+        wordCount: validRows.length,
+        userId: user.uid,
+        userName: user.displayName || 'Người dùng',
+        language,
+        createdAt: Date.now(),
+        vocabularies: validRows.map(r => ({
           word: r.word.trim(),
           meaning: r.meaning.trim(),
-          type: 'noun',
           language,
           userId: user.uid,
           createdAt: Date.now()
-        });
-      });
-      await batch.commit();
+        }))
+      };
+
+      await addDoc(collection(db, 'lessons'), lessonData);
+      
+      setShowSaveModal(false);
       onSaved();
     } catch (e) {
       console.error(e);
-      alert("Có lỗi xảy ra khi lưu từ vựng.");
+      alert("Có lỗi xảy ra khi lưu bài học.");
     } finally {
       setLoading(false);
     }
@@ -565,112 +743,190 @@ function InputView({ language, user, onSaved }: { language: Language, user: User
   const totalValidWords = rows.filter(r => r.word.trim() && r.meaning.trim()).length;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 pb-20">
-      <div className="text-center">
-        <h2 className="text-3xl font-bold mb-2">Thêm từ vựng mới</h2>
-        <p className="text-slate-500">Nhập trực tiếp hoặc tải file để làm giàu vốn từ {language === 'en' ? 'Tiếng Anh' : 'Tiếng Đức'}.</p>
+    <div className="max-w-5xl mx-auto space-y-8 pb-32">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div>
+          <h2 className="text-3xl font-bold mb-2">Tạo bài học mới</h2>
+          <p className="text-slate-500">Nhập từ vựng và nghĩa để bắt đầu luyện tập.</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <label className={cn(
+            "flex items-center gap-2 bg-white border border-slate-200 px-4 py-2.5 rounded-xl cursor-pointer hover:bg-slate-50 transition-all shadow-sm",
+            uploading && "opacity-50 cursor-not-allowed"
+          )}>
+            {uploading ? <Loader2 className="animate-spin text-indigo-600 w-5 h-5" /> : <Upload className="text-indigo-600 w-5 h-5" />}
+            <span className="text-sm font-bold text-slate-700">Tải file (.txt, .docx, .pdf)</span>
+            <input type="file" accept=".txt,.pdf,.docx" className="hidden" onChange={handleFileUpload} disabled={uploading} />
+          </label>
+        </div>
       </div>
 
-      <div className="bg-white p-6 md:p-8 rounded-[2rem] shadow-xl border border-slate-100 space-y-6">
-        <div className="space-y-4">
-          <div className="hidden md:grid grid-cols-[1fr,1fr,40px] gap-4 px-4 text-sm font-bold text-slate-400 uppercase tracking-wider">
-            <span>Từ vựng ({language.toUpperCase()})</span>
-            <span>Nghĩa Tiếng Việt</span>
-            <span></span>
-          </div>
+      <div className="space-y-4">
+        {rows.map((row, index) => (
+          <div key={index} className="group relative">
+            <div className="grid grid-cols-1 md:grid-cols-[40px,1fr,1fr,40px] gap-4 items-start p-6 bg-white rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-md transition-all">
+              <div className="hidden md:flex items-center justify-center h-12 font-bold text-slate-300 text-xl">
+                {index + 1}
+              </div>
+              
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Thuật ngữ ({language.toUpperCase()})</label>
+                <input 
+                  type="text" 
+                  value={row.word}
+                  onChange={(e) => updateRow(index, 'word', e.target.value)}
+                  onBlur={() => handleAutoTranslate(index)}
+                  className="w-full bg-slate-50 border-transparent rounded-2xl px-5 py-4 focus:bg-white focus:ring-2 focus:ring-indigo-500 transition-all text-lg font-medium"
+                  placeholder="Nhập từ..."
+                />
+              </div>
 
-          <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar">
-            {rows.map((row, index) => (
-              <div key={index} className="grid grid-cols-1 md:grid-cols-[1fr,1fr,40px] gap-3 md:gap-4 p-4 bg-slate-50 rounded-2xl border border-transparent hover:border-indigo-200 transition-all group">
-                <div className="relative">
-                  <input 
-                    type="text" 
-                    value={row.word}
-                    onChange={(e) => updateRow(index, 'word', e.target.value)}
-                    onBlur={() => handleAutoTranslate(index)}
-                    className="w-full bg-white border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 transition-all text-lg font-medium"
-                    placeholder="Ví dụ: Serendipity"
-                  />
-                </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Định nghĩa (Tiếng Việt)</label>
                 <div className="relative">
                   <input 
                     type="text" 
                     value={row.meaning}
                     onChange={(e) => updateRow(index, 'meaning', e.target.value)}
-                    className="w-full bg-white border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 transition-all text-lg font-medium"
-                    placeholder="Nghĩa tiếng Việt"
+                    className="w-full bg-slate-50 border-transparent rounded-2xl px-5 py-4 focus:bg-white focus:ring-2 focus:ring-indigo-500 transition-all text-lg font-medium"
+                    placeholder="Nhập nghĩa..."
                   />
                   {row.loading && (
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2">
                       <Loader2 className="animate-spin text-indigo-500 w-5 h-5" />
                     </div>
                   )}
                 </div>
+                
+                {row.suggestions && row.suggestions.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {row.suggestions.map((s, i) => (
+                      <button 
+                        key={i}
+                        onClick={() => updateRow(index, 'meaning', s)}
+                        className={cn(
+                          "text-xs px-3 py-1.5 rounded-lg border transition-all",
+                          row.meaning === s ? "bg-indigo-600 border-indigo-600 text-white" : "bg-white border-slate-200 text-slate-600 hover:border-indigo-400"
+                        )}
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex md:flex-col items-center justify-center gap-2 h-full">
                 <button 
                   onClick={() => removeRow(index)}
-                  className="hidden md:flex items-center justify-center text-slate-300 hover:text-red-500 transition-colors"
+                  className="p-2 text-slate-300 hover:text-red-500 transition-colors"
+                  title="Xóa hàng"
                 >
                   <Trash2 size={20} />
                 </button>
-                <button 
-                  onClick={() => removeRow(index)}
-                  className="md:hidden flex items-center justify-center gap-2 text-red-500 font-bold text-sm py-2"
-                >
-                  <Trash2 size={16} /> Xóa hàng
-                </button>
               </div>
-            ))}
-          </div>
+            </div>
 
+            {/* Insert Button */}
+            <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 z-10 opacity-0 group-hover:opacity-100 transition-all">
+              <button 
+                onClick={() => addRowAtIndex(index)}
+                className="bg-white border border-slate-200 text-indigo-600 p-1.5 rounded-full shadow-lg hover:scale-110 transition-all"
+                title="Thêm hàng ở đây"
+              >
+                <PlusCircle size={20} />
+              </button>
+            </div>
+          </div>
+        ))}
+
+        <button 
+          onClick={addRow}
+          className="w-full py-6 border-2 border-dashed border-slate-200 rounded-[2rem] text-slate-400 font-bold hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all flex items-center justify-center gap-2"
+        >
+          <PlusCircle size={24} /> Thêm hàng mới
+        </button>
+      </div>
+
+      {/* Floating Action Bar */}
+      <div className="fixed bottom-24 left-1/2 -translate-x-1/2 w-full max-w-md px-4 z-40">
+        <div className="bg-white/80 backdrop-blur-xl border border-white/20 p-4 rounded-[2.5rem] shadow-2xl flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 ml-2">
+            <div className={cn(
+              "w-10 h-10 rounded-full flex items-center justify-center font-bold",
+              totalValidWords >= 5 ? "bg-emerald-100 text-emerald-600" : "bg-slate-100 text-slate-400"
+            )}>
+              {totalValidWords}
+            </div>
+            <span className="text-sm font-bold text-slate-600">từ đã nhập</span>
+          </div>
           <button 
-            onClick={addRow}
-            className="w-full py-4 border-2 border-dashed border-slate-200 rounded-2xl text-slate-400 font-bold hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all flex items-center justify-center gap-2"
+            onClick={() => setShowSaveModal(true)}
+            disabled={totalValidWords < 5}
+            className={cn(
+              "px-8 py-3 rounded-2xl font-bold transition-all shadow-lg flex items-center gap-2",
+              totalValidWords >= 5 ? "bg-indigo-600 text-white hover:bg-indigo-700" : "bg-slate-200 text-slate-400 cursor-not-allowed"
+            )}
           >
-            <PlusCircle size={20} /> Thêm hàng mới
+            Lưu bài học <ChevronRight size={20} />
           </button>
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <label className="block text-sm font-bold text-slate-700 ml-2">Tải file lên (.txt, .pdf, .docx)</label>
-            <label className={cn(
-              "flex items-center justify-center gap-3 border-2 border-dashed border-slate-200 rounded-2xl p-4 cursor-pointer transition-all hover:bg-slate-50",
-              uploading && "opacity-50 cursor-not-allowed"
-            )}>
-              {uploading ? <Loader2 className="animate-spin text-indigo-600" /> : <FileText className="text-indigo-600" />}
-              <span className="text-sm font-bold text-slate-600">
-                {uploading ? "Đang xử lý..." : "Chọn file từ máy tính"}
-              </span>
-              <input 
-                type="file" 
-                accept=".txt,.pdf,.docx" 
-                className="hidden" 
-                onChange={handleFileUpload} 
-                disabled={uploading}
-              />
-            </label>
-          </div>
-
-          <div className="flex flex-col justify-end">
-            <button 
-              onClick={saveVocab}
-              disabled={loading || totalValidWords < 5}
-              className={cn(
-                "w-full py-4 rounded-2xl font-bold text-lg transition-all shadow-lg flex items-center justify-center gap-2",
-                totalValidWords >= 5 
-                  ? "bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-200" 
-                  : "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none"
-              )}
-            >
-              {loading ? <RefreshCw className="animate-spin" /> : <CheckCircle2 size={22} />}
-              Lưu thư viện {totalValidWords > 0 && `(${totalValidWords} từ)`}
-            </button>
-            {totalValidWords < 5 && (
-              <p className="text-center text-xs text-red-400 mt-2 font-medium">Cần ít nhất 5 từ để lưu và bắt đầu trò chơi</p>
-            )}
-          </div>
-        </div>
       </div>
+
+      {/* Save Modal */}
+      <AnimatePresence>
+        {showSaveModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowSaveModal(false)}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative bg-white w-full max-w-lg rounded-[2.5rem] p-8 shadow-2xl overflow-hidden"
+            >
+              <div className="absolute top-0 left-0 w-full h-2 bg-indigo-600" />
+              <h3 className="text-2xl font-bold mb-2">Lưu bài học vào thư viện</h3>
+              <p className="text-slate-500 mb-6">Đặt tên cho bài học của bạn để dễ dàng tìm kiếm sau này.</p>
+              
+              <div className="space-y-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Tên bài học</label>
+                  <input 
+                    type="text" 
+                    autoFocus
+                    value={lessonTitle}
+                    onChange={(e) => setLessonTitle(e.target.value)}
+                    placeholder="Ví dụ: Từ vựng Unit 1, Business English..."
+                    className="w-full bg-slate-50 border-slate-200 rounded-2xl px-5 py-4 focus:bg-white focus:ring-2 focus:ring-indigo-500 transition-all text-lg font-medium"
+                  />
+                </div>
+                
+                <div className="flex gap-3 pt-4">
+                  <button 
+                    onClick={() => setShowSaveModal(false)}
+                    className="flex-1 py-4 rounded-2xl font-bold text-slate-500 hover:bg-slate-100 transition-all"
+                  >
+                    Hủy
+                  </button>
+                  <button 
+                    onClick={saveLesson}
+                    disabled={loading || !lessonTitle.trim()}
+                    className="flex-1 bg-indigo-600 text-white py-4 rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg flex items-center justify-center gap-2"
+                  >
+                    {loading ? <Loader2 className="animate-spin" /> : "Xác nhận lưu"}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

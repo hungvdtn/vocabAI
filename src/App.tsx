@@ -38,7 +38,9 @@ import {
   Timestamp,
   getDocs,
   writeBatch,
-  doc
+  doc,
+  deleteDoc,
+  setDoc
 } from 'firebase/firestore';
 import { signInWithPopup, onAuthStateChanged, User } from 'firebase/auth';
 import { db, auth, googleProvider } from './firebase';
@@ -225,6 +227,15 @@ export default function App() {
     audio.play().catch(() => {}); // Ignore errors if file doesn't exist
   };
 
+  const deleteLesson = async (lessonId: string) => {
+    try {
+      await deleteDoc(doc(db, 'lessons', lessonId));
+    } catch (error) {
+      console.error("Delete Error:", error);
+      alert("Không thể xóa bài học.");
+    }
+  };
+
   if (!user) {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
@@ -371,6 +382,7 @@ export default function App() {
                   setVocabList(lesson.vocabularies);
                   setView('games');
                 }}
+                onDelete={deleteLesson}
               />
             </motion.div>
           )}
@@ -477,8 +489,9 @@ function StatCard({ title, value, color }: { title: string, value: string, color
   );
 }
 
-function LibraryView({ lessons, onEdit, onPlay }: { lessons: Lesson[], onEdit: (l: Lesson) => void, onPlay: (l: Lesson) => void }) {
+function LibraryView({ lessons, onEdit, onPlay, onDelete }: { lessons: Lesson[], onEdit: (l: Lesson) => void, onPlay: (l: Lesson) => void, onDelete: (id: string) => void }) {
   const [searchTerm, setSearchTerm] = useState('');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const filteredLessons = lessons.filter(l => 
     l.title.toLowerCase().includes(searchTerm.toLowerCase())
@@ -552,6 +565,12 @@ function LibraryView({ lessons, onEdit, onPlay }: { lessons: Lesson[], onEdit: (
                 >
                   <Edit2 size={18} /> Sửa
                 </button>
+                <button 
+                  onClick={() => setDeletingId(lesson.id || null)}
+                  className="flex-1 md:flex-none bg-red-50 text-red-600 px-6 py-3 rounded-xl font-bold hover:bg-red-100 transition-all flex items-center justify-center gap-2"
+                >
+                  <Trash2 size={18} /> Xóa
+                </button>
               </div>
             </motion.div>
           ))
@@ -565,6 +584,51 @@ function LibraryView({ lessons, onEdit, onPlay }: { lessons: Lesson[], onEdit: (
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {deletingId && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setDeletingId(null)}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative bg-white w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl overflow-hidden text-center"
+            >
+              <div className="w-20 h-20 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Trash2 size={40} />
+              </div>
+              <h3 className="text-2xl font-bold mb-2">Xóa bài học?</h3>
+              <p className="text-slate-500 mb-8">Bạn có chắc chắn muốn xóa toàn bộ bài học? Hành động này không thể hoàn tác.</p>
+              
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => setDeletingId(null)}
+                  className="flex-1 py-4 rounded-2xl font-bold text-slate-500 hover:bg-slate-100 transition-all"
+                >
+                  Hủy
+                </button>
+                <button 
+                  onClick={() => {
+                    if (deletingId) onDelete(deletingId);
+                    setDeletingId(null);
+                  }}
+                  className="flex-1 bg-red-600 text-white py-4 rounded-2xl font-bold hover:bg-red-700 transition-all shadow-lg"
+                >
+                  Xác nhận xóa
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -607,7 +671,7 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
 
   const handleAutoTranslate = async (index: number) => {
     const word = rows[index].word;
-    if (!word) return;
+    if (!word || rows[index].loading || rows[index].meaning) return;
 
     const newRows = [...rows];
     newRows[index].loading = true;
@@ -629,6 +693,14 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
       const updatedRows = [...rows];
       updatedRows[index].loading = false;
       setRows(updatedRows);
+    }
+  };
+
+  const cancelInput = () => {
+    if (window.confirm("Bạn có chắc chắn muốn hủy? Mọi dữ liệu đã nhập sẽ bị mất.")) {
+      setRows(Array(5).fill(null).map(() => ({ word: '', meaning: '', loading: false })));
+      setLessonTitle('');
+      if (initialLesson) onSaved(); // Go back if editing
     }
   };
 
@@ -662,7 +734,13 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
         }))
       };
 
-      await addDoc(collection(db, 'lessons'), lessonData);
+      if (initialLesson?.id) {
+        // Update existing
+        await setDoc(doc(db, 'lessons', initialLesson.id), lessonData);
+      } else {
+        // Create new
+        await addDoc(collection(db, 'lessons'), lessonData);
+      }
       
       setShowSaveModal(false);
       onSaved();
@@ -678,18 +756,28 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
     const lines = text.split('\n');
     const newRows: { word: string, meaning: string, loading: boolean }[] = [];
     lines.forEach(line => {
-      // Try comma, dash, or colon as separators
-      const separators = [',', '-', ':'];
+      // Clean line: remove leading bullets, numbering, dashes
+      let cleanLine = line.trim().replace(/^[\d\.\-\*\•\)\s]+/, '').trim();
+      if (!cleanLine) return;
+
+      const separators = [':', '-', '=', ',', ';', '\t'];
       let parts: string[] = [];
       for (const sep of separators) {
-        if (line.includes(sep)) {
-          parts = line.split(sep);
+        if (cleanLine.includes(sep)) {
+          parts = cleanLine.split(sep);
           break;
         }
       }
       
       if (parts.length >= 2) {
-        newRows.push({ word: parts[0].trim(), meaning: parts[1].trim(), loading: false });
+        const word = parts[0].trim().toLowerCase();
+        const meaning = parts.slice(1).join(':').trim();
+        if (word && meaning) {
+          newRows.push({ word, meaning, loading: false });
+        }
+      } else if (cleanLine.length > 0) {
+        // Fallback: if no separator, maybe it's just the word
+        newRows.push({ word: cleanLine.toLowerCase(), meaning: '', loading: false });
       }
     });
     return newRows;
@@ -710,7 +798,13 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
         text = result.value;
       } else if (file.name.endsWith('.pdf')) {
         const arrayBuffer = await file.arrayBuffer();
-        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        // Use a more robust PDF loading approach
+        const loadingTask = pdfjsLib.getDocument({
+          data: arrayBuffer,
+          useWorkerFetch: false,
+          isEvalSupported: false,
+        });
+        const pdf = await loadingTask.promise;
         let fullText = '';
         for (let i = 1; i <= pdf.numPages; i++) {
           const page = await pdf.getPage(i);
@@ -731,11 +825,10 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
         alert("Không tìm thấy từ vựng trong file. Vui lòng kiểm tra định dạng (Từ, Nghĩa).");
       }
     } catch (e) {
-      console.error(e);
-      alert("Lỗi khi đọc file.");
+      console.error("File Upload Error:", e);
+      alert("Lỗi khi đọc file. Vui lòng thử lại với định dạng khác hoặc kiểm tra nội dung file.");
     } finally {
       setUploading(false);
-      // Reset input
       e.target.value = '';
     }
   };
@@ -746,7 +839,7 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
     <div className="max-w-5xl mx-auto space-y-8 pb-32">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h2 className="text-3xl font-bold mb-2">Tạo bài học mới</h2>
+          <h2 className="text-3xl font-bold mb-2">{initialLesson ? "Sửa bài học" : "Tạo bài học mới"}</h2>
           <p className="text-slate-500">Nhập từ vựng và nghĩa để bắt đầu luyện tập.</p>
         </div>
         <div className="flex items-center gap-3">
@@ -764,59 +857,62 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
       <div className="space-y-4">
         {rows.map((row, index) => (
           <div key={index} className="group relative">
-            <div className="grid grid-cols-1 md:grid-cols-[40px,1fr,1fr,40px] gap-4 items-start p-6 bg-white rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-md transition-all">
-              <div className="hidden md:flex items-center justify-center h-12 font-bold text-slate-300 text-xl">
+            <div className="flex flex-col md:flex-row gap-4 p-6 bg-white rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-md transition-all relative">
+              <div className="hidden md:flex items-center justify-center w-10 font-bold text-slate-300 text-xl">
                 {index + 1}
               </div>
               
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Thuật ngữ ({language.toUpperCase()})</label>
-                <input 
-                  type="text" 
-                  value={row.word}
-                  onChange={(e) => updateRow(index, 'word', e.target.value)}
-                  onBlur={() => handleAutoTranslate(index)}
-                  className="w-full bg-slate-50 border-transparent rounded-2xl px-5 py-4 focus:bg-white focus:ring-2 focus:ring-indigo-500 transition-all text-lg font-medium"
-                  placeholder="Nhập từ..."
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Định nghĩa (Tiếng Việt)</label>
-                <div className="relative">
+              <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Thuật ngữ ({language.toUpperCase()})</label>
                   <input 
                     type="text" 
-                    value={row.meaning}
-                    onChange={(e) => updateRow(index, 'meaning', e.target.value)}
+                    value={row.word}
+                    onChange={(e) => updateRow(index, 'word', e.target.value)}
+                    onBlur={() => handleAutoTranslate(index)}
                     className="w-full bg-slate-50 border-transparent rounded-2xl px-5 py-4 focus:bg-white focus:ring-2 focus:ring-indigo-500 transition-all text-lg font-medium"
-                    placeholder="Nhập nghĩa..."
+                    placeholder="Nhập từ..."
                   />
-                  {row.loading && (
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                      <Loader2 className="animate-spin text-indigo-500 w-5 h-5" />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Định nghĩa (Tiếng Việt)</label>
+                  <div className="relative">
+                    <input 
+                      type="text" 
+                      value={row.meaning}
+                      onChange={(e) => updateRow(index, 'meaning', e.target.value)}
+                      onFocus={() => handleAutoTranslate(index)}
+                      className="w-full bg-slate-50 border-transparent rounded-2xl px-5 py-4 focus:bg-white focus:ring-2 focus:ring-indigo-500 transition-all text-lg font-medium"
+                      placeholder="Nhập nghĩa..."
+                    />
+                    {row.loading && (
+                      <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                        <Loader2 className="animate-spin text-indigo-500 w-5 h-5" />
+                      </div>
+                    )}
+                  </div>
+                  
+                  {row.suggestions && row.suggestions.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {row.suggestions.map((s, i) => (
+                        <button 
+                          key={i}
+                          onClick={() => updateRow(index, 'meaning', s)}
+                          className={cn(
+                            "text-xs px-3 py-1.5 rounded-lg border transition-all",
+                            row.meaning === s ? "bg-indigo-600 border-indigo-600 text-white" : "bg-white border-slate-200 text-slate-600 hover:border-indigo-400"
+                          )}
+                        >
+                          {s}
+                        </button>
+                      ))}
                     </div>
                   )}
                 </div>
-                
-                {row.suggestions && row.suggestions.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {row.suggestions.map((s, i) => (
-                      <button 
-                        key={i}
-                        onClick={() => updateRow(index, 'meaning', s)}
-                        className={cn(
-                          "text-xs px-3 py-1.5 rounded-lg border transition-all",
-                          row.meaning === s ? "bg-indigo-600 border-indigo-600 text-white" : "bg-white border-slate-200 text-slate-600 hover:border-indigo-400"
-                        )}
-                      >
-                        {s}
-                      </button>
-                    ))}
-                  </div>
-                )}
               </div>
 
-              <div className="flex md:flex-col items-center justify-center gap-2 h-full">
+              <div className="flex md:flex-col items-center justify-center gap-2">
                 <button 
                   onClick={() => removeRow(index)}
                   className="p-2 text-slate-300 hover:text-red-500 transition-colors"
@@ -849,7 +945,7 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
       </div>
 
       {/* Floating Action Bar */}
-      <div className="fixed bottom-24 left-1/2 -translate-x-1/2 w-full max-w-md px-4 z-40">
+      <div className="fixed bottom-24 left-1/2 -translate-x-1/2 w-full max-w-2xl px-4 z-40">
         <div className="bg-white/80 backdrop-blur-xl border border-white/20 p-4 rounded-[2.5rem] shadow-2xl flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 ml-2">
             <div className={cn(
@@ -858,18 +954,26 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
             )}>
               {totalValidWords}
             </div>
-            <span className="text-sm font-bold text-slate-600">từ đã nhập</span>
+            <span className="hidden sm:inline text-sm font-bold text-slate-600">từ đã nhập</span>
           </div>
-          <button 
-            onClick={() => setShowSaveModal(true)}
-            disabled={totalValidWords < 5}
-            className={cn(
-              "px-8 py-3 rounded-2xl font-bold transition-all shadow-lg flex items-center gap-2",
-              totalValidWords >= 5 ? "bg-indigo-600 text-white hover:bg-indigo-700" : "bg-slate-200 text-slate-400 cursor-not-allowed"
-            )}
-          >
-            Lưu bài học <ChevronRight size={20} />
-          </button>
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={cancelInput}
+              className="px-6 py-3 rounded-2xl font-bold text-slate-500 hover:bg-slate-100 transition-all"
+            >
+              Hủy
+            </button>
+            <button 
+              onClick={() => setShowSaveModal(true)}
+              disabled={totalValidWords < 5}
+              className={cn(
+                "px-8 py-3 rounded-2xl font-bold transition-all shadow-lg flex items-center gap-2",
+                totalValidWords >= 5 ? "bg-indigo-600 text-white hover:bg-indigo-700" : "bg-slate-200 text-slate-400 cursor-not-allowed"
+              )}
+            >
+              Lưu bài học <ChevronRight size={20} />
+            </button>
+          </div>
         </div>
       </div>
 

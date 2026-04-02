@@ -646,10 +646,11 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
   const cleanInputData = (text: string, isForeignWord: boolean = false) => {
     if (!text) return '';
     
-    // Lọc ký tự lạ (bullets, Wingdings...) và chuyển tất cả sang chữ thường cho Tiếng Anh
-    let cleaned = text.trim()
-      .replace(/^[\s\u2000-\u206F\u2E00-\u2E7F\u25A0-\u25FF\uF000-\uF0FF\W_0-9]+/g, '')
-      .replace(/\s+/g, ' ')
+    // Chỉ loại bỏ các ký tự đặc biệt dạng bullet ở đầu chuỗi
+    // Giữ lại dấu cách, chữ cái, chữ số bên trong cụm từ
+    let cleaned = text
+      .replace(/^[\s\u2022\u2023\u25E6\u2043\u2219\u2000-\u206F\u2E00-\u2E7F\u25A0-\u25FF\uF000-\uF0FF\-\+\*•]+/g, '')
+      .replace(/\s+/g, ' ') // Chuẩn hóa khoảng trắng giữa các từ
       .trim();
     
     if (isForeignWord) {
@@ -719,14 +720,13 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
       }
       setRows(updatedRows);
     } catch (e: any) {
-      console.error("Auto Translate Error:", e);
+      console.error("Auto Translate Error (Silent Fallback):", e);
       const updatedRows = [...rows];
       updatedRows[index].loading = false;
       // Trả về mảng rỗng để ô Tiếng Việt được làm sạch, cho phép người dùng tự gõ tay
       updatedRows[index].suggestions = [];
       setRows(updatedRows);
-      // Hiển thị thông báo lỗi thân thiện
-      alert("Hệ thống AI đang tạm thời quá tải hoặc gặp lỗi. Bạn có thể tự nhập nghĩa của từ này.");
+      // Xóa thông báo lỗi Alert, xử lý im lặng để không gián đoạn trải nghiệm
     }
   };
 
@@ -790,22 +790,18 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
     const lines = text.split('\n');
     const newRows: { word: string, meaning: string, loading: boolean }[] = [];
     lines.forEach(line => {
-      // Clean line using cleanInputData
       let cleanLine = line.trim();
       if (!cleanLine) return;
 
-      const separators = [':', '-', '=', ',', ';', '\t'];
-      let parts: string[] = [];
-      for (const sep of separators) {
-        if (cleanLine.includes(sep)) {
-          parts = cleanLine.split(sep);
-          break;
-        }
-      }
+      // Nâng cấp logic tách cột: nhận diện đa dạng dấu phân cách (-, –, —, :, =)
+      const separatorRegex = /[:\-–—=]/;
+      const match = cleanLine.match(separatorRegex);
       
-      if (parts.length >= 2) {
+      if (match) {
+        const separator = match[0];
+        const parts = cleanLine.split(separator);
         const word = cleanInputData(parts[0], true);
-        const meaning = cleanInputData(parts.slice(1).join(':'));
+        const meaning = cleanInputData(parts.slice(1).join(separator));
         if (word && meaning) {
           newRows.push({ word, meaning, loading: false });
         }

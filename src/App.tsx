@@ -643,18 +643,6 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
   // Translation Cache
   const translationCache = useRef<Record<string, any>>({});
   const abortControllers = useRef<Record<number, AbortController>>({});
-  const [trigger, setTrigger] = useState<{index: number, word: string} | null>(null);
-
-  // Debounce: Quản lý việc dịch tự động bằng useEffect chuẩn React
-  useEffect(() => {
-    if (!trigger || !trigger.word.trim()) return;
-
-    const timer = setTimeout(() => {
-      handleAutoTranslate(trigger.index, trigger.word);
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [trigger]);
 
   const cleanInputData = (text: string, isForeignWord: boolean = false, isFinal: boolean = false) => {
     if (!text) return '';
@@ -706,16 +694,26 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
       }
       return newRows;
     });
-
-    // Kích hoạt useEffect debounce khi người dùng gõ từ mới
-    if (field === 'word' && cleanedValue.trim() !== '') {
-      setTrigger({ index, word: cleanedValue });
-    }
   };
 
-  const handleAutoTranslate = async (index: number, wordToTranslate: string) => {
+  const handleAutoTranslate = async (index: number) => {
+    // 0. Guard Clauses: Kiểm tra điều kiện trước khi gọi AI
+    // Lấy dữ liệu mới nhất từ state (Functional Access không khả dụng ở đây nên dùng rows[index])
+    // Tuy nhiên handleAutoTranslate được gọi từ onBlur, lúc này state rows đã được cập nhật từ onChange trước đó.
+    const currentRow = rows[index];
+    if (!currentRow) return;
+
+    const term = currentRow.word.trim();
+    const definition = currentRow.meaning.trim();
+
+    // Điều kiện 1: Ô Tiếng Anh phải có dữ liệu
+    if (term === '') return;
+
+    // Điều kiện 2: Ô Tiếng Việt phải ĐANG TRỐNG
+    if (definition !== '') return;
+
     // Chốt dữ liệu: làm sạch triệt để trước khi gọi AI
-    const word = cleanInputData(wordToTranslate, true, true);
+    const word = cleanInputData(term, true, true);
     if (!word) return;
 
     // 1. Caching: Kiểm tra bộ nhớ tạm (0ms)
@@ -741,7 +739,7 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
     }
     abortControllers.current[index] = new AbortController();
 
-    // 3. Bật trạng thái Loading (Sử dụng Functional Update để tránh Stale Closure)
+    // 3. Bật trạng thái Loading
     setRows(prevRows => {
       const updatedRows = [...prevRows];
       if (updatedRows[index]) {
@@ -764,7 +762,7 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
         
         if (data.translations && data.translations.length > 0) {
           updatedRows[index].suggestions = data.translations;
-          if (!currentMeaning) {
+          if (!currentMeaning.trim()) {
             updatedRows[index].meaning = data.translations[0];
           }
         }
@@ -773,8 +771,12 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
     } catch (e: any) {
       if (e.message === 'Aborted') return;
       
-      // Mở lại Log báo lỗi để kiểm soát theo yêu cầu
-      console.error("LỖI DỊCH AI:", e);
+      // Bắt lỗi 429 thân thiện: Tắt loading và không hiển thị lỗi dài dòng
+      if (e.message?.includes('429') || e.status === 429) {
+        console.warn("AI Quota Exceeded (429). User should input manually.");
+      } else {
+        console.error("LỖI DỊCH AI:", e);
+      }
       
       setRows(prevRows => {
         const updatedRows = [...prevRows];
@@ -948,6 +950,7 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
                     type="text" 
                     value={row.word}
                     onChange={(e) => updateRow(index, 'word', e.target.value)}
+                    onBlur={() => handleAutoTranslate(index)}
                     className="w-full bg-slate-50 border-2 border-transparent rounded-2xl px-5 py-4 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all text-lg font-medium placeholder:text-slate-300"
                     placeholder="Nhập từ..."
                   />

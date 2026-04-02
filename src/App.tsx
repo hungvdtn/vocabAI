@@ -642,6 +642,25 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  
+  // Translation Cache
+  const translationCache = useRef<Record<string, any>>({});
+
+  const cleanInputData = (text: string, isForeignWord: boolean = false) => {
+    if (!text) return '';
+    // Remove bullets, numbering, dashes, pluses, asterisks
+    let cleaned = text.trim()
+      .replace(/^[\d\.\-\*\+\•\)\s]+/, '') // Leading bullets/numbers
+      .replace(/\s+/g, ' ') // Multiple spaces
+      .trim();
+    
+    if (isForeignWord) {
+      // Lowercase unless it looks like a proper noun (heuristic: starts with uppercase and not at start of sentence)
+      // For simplicity and per user request: "Chuyển đổi toàn bộ từ ngoại ngữ sang chữ viết thường"
+      cleaned = cleaned.toLowerCase();
+    }
+    return cleaned;
+  };
 
   const addRow = () => {
     setRows([...rows, { word: '', meaning: '', loading: false }]);
@@ -665,13 +684,26 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
 
   const updateRow = (index: number, field: 'word' | 'meaning', value: string) => {
     const newRows = [...rows];
-    (newRows[index] as any)[field] = value;
+    const cleanedValue = field === 'word' ? cleanInputData(value, true) : value;
+    (newRows[index] as any)[field] = cleanedValue;
     setRows(newRows);
   };
 
   const handleAutoTranslate = async (index: number) => {
     const word = rows[index].word;
-    if (!word || rows[index].loading || rows[index].meaning) return;
+    if (!word || rows[index].loading) return;
+
+    // Check Cache
+    if (translationCache.current[word]) {
+      const data = translationCache.current[word];
+      const updatedRows = [...rows];
+      updatedRows[index].suggestions = data.translations;
+      if (!updatedRows[index].meaning) {
+        updatedRows[index].meaning = data.translations[0];
+      }
+      setRows(updatedRows);
+      return;
+    }
 
     const newRows = [...rows];
     newRows[index].loading = true;
@@ -679,6 +711,8 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
 
     try {
       const data = await translateWord(word, language);
+      translationCache.current[word] = data; // Save to Cache
+      
       const updatedRows = [...rows];
       updatedRows[index].loading = false;
       if (data.translations && data.translations.length > 0) {
@@ -756,8 +790,8 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
     const lines = text.split('\n');
     const newRows: { word: string, meaning: string, loading: boolean }[] = [];
     lines.forEach(line => {
-      // Clean line: remove leading bullets, numbering, dashes
-      let cleanLine = line.trim().replace(/^[\d\.\-\*\•\)\s]+/, '').trim();
+      // Clean line using cleanInputData
+      let cleanLine = line.trim();
       if (!cleanLine) return;
 
       const separators = [':', '-', '=', ',', ';', '\t'];
@@ -770,14 +804,14 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
       }
       
       if (parts.length >= 2) {
-        const word = parts[0].trim().toLowerCase();
-        const meaning = parts.slice(1).join(':').trim();
+        const word = cleanInputData(parts[0], true);
+        const meaning = cleanInputData(parts.slice(1).join(':'));
         if (word && meaning) {
           newRows.push({ word, meaning, loading: false });
         }
       } else if (cleanLine.length > 0) {
         // Fallback: if no separator, maybe it's just the word
-        newRows.push({ word: cleanLine.toLowerCase(), meaning: '', loading: false });
+        newRows.push({ word: cleanInputData(cleanLine, true), meaning: '', loading: false });
       }
     });
     return newRows;
@@ -790,7 +824,7 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
     setUploading(true);
     try {
       let text = '';
-      if (file.name.endsWith('.txt')) {
+      if (file.name.endsWith('.txt') || file.name.endsWith('.csv')) {
         text = await file.text();
       } else if (file.name.endsWith('.docx')) {
         const arrayBuffer = await file.arrayBuffer();
@@ -844,12 +878,12 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
         </div>
         <div className="flex items-center gap-3">
           <label className={cn(
-            "flex items-center gap-2 bg-white border border-slate-200 px-4 py-2.5 rounded-xl cursor-pointer hover:bg-slate-50 transition-all shadow-sm",
+            "flex items-center gap-2 bg-white border border-slate-200 px-4 py-2.5 rounded-xl cursor-pointer hover:bg-slate-50 hover:border-indigo-300 transition-all shadow-sm group",
             uploading && "opacity-50 cursor-not-allowed"
           )}>
-            {uploading ? <Loader2 className="animate-spin text-indigo-600 w-5 h-5" /> : <Upload className="text-indigo-600 w-5 h-5" />}
-            <span className="text-sm font-bold text-slate-700">Tải file (.txt, .docx, .pdf)</span>
-            <input type="file" accept=".txt,.pdf,.docx" className="hidden" onChange={handleFileUpload} disabled={uploading} />
+            {uploading ? <Loader2 className="animate-spin text-indigo-600 w-5 h-5" /> : <Upload className="text-indigo-600 w-5 h-5 group-hover:scale-110 transition-transform" />}
+            <span className="text-sm font-bold text-slate-700">Tải file (.txt, .docx, .pdf, .csv)</span>
+            <input type="file" accept=".txt,.pdf,.docx,.csv" className="hidden" onChange={handleFileUpload} disabled={uploading} />
           </label>
         </div>
       </div>
@@ -857,8 +891,8 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
       <div className="space-y-4">
         {rows.map((row, index) => (
           <div key={index} className="group relative">
-            <div className="flex flex-col md:flex-row gap-4 p-6 bg-white rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-md transition-all relative">
-              <div className="hidden md:flex items-center justify-center w-10 font-bold text-slate-300 text-xl">
+            <div className="flex flex-col md:flex-row gap-4 p-6 bg-white rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-md hover:border-indigo-100 transition-all relative">
+              <div className="hidden md:flex items-center justify-center w-10 font-bold text-slate-300 text-xl group-hover:text-indigo-200 transition-colors">
                 {index + 1}
               </div>
               
@@ -870,7 +904,7 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
                     value={row.word}
                     onChange={(e) => updateRow(index, 'word', e.target.value)}
                     onBlur={() => handleAutoTranslate(index)}
-                    className="w-full bg-slate-50 border-transparent rounded-2xl px-5 py-4 focus:bg-white focus:ring-2 focus:ring-indigo-500 transition-all text-lg font-medium"
+                    className="w-full bg-slate-50 border-2 border-transparent rounded-2xl px-5 py-4 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all text-lg font-medium placeholder:text-slate-300"
                     placeholder="Nhập từ..."
                   />
                 </div>
@@ -883,31 +917,38 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
                       value={row.meaning}
                       onChange={(e) => updateRow(index, 'meaning', e.target.value)}
                       onFocus={() => handleAutoTranslate(index)}
-                      className="w-full bg-slate-50 border-transparent rounded-2xl px-5 py-4 focus:bg-white focus:ring-2 focus:ring-indigo-500 transition-all text-lg font-medium"
+                      className="w-full bg-slate-50 border-2 border-transparent rounded-2xl px-5 py-4 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all text-lg font-medium placeholder:text-slate-300"
                       placeholder="Nhập nghĩa..."
                     />
                     {row.loading && (
-                      <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                        <Loader2 className="animate-spin text-indigo-500 w-5 h-5" />
+                      <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2 bg-white/80 backdrop-blur-sm px-2 py-1 rounded-lg border border-slate-100">
+                        <Loader2 className="animate-spin text-indigo-500 w-4 h-4" />
+                        <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-tighter">AI đang dịch...</span>
                       </div>
                     )}
                   </div>
                   
                   {row.suggestions && row.suggestions.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-2">
+                    <motion.div 
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="mt-2 p-2 bg-slate-50 rounded-2xl border border-slate-100 flex flex-wrap gap-2"
+                    >
                       {row.suggestions.map((s, i) => (
                         <button 
                           key={i}
                           onClick={() => updateRow(index, 'meaning', s)}
                           className={cn(
-                            "text-xs px-3 py-1.5 rounded-lg border transition-all",
-                            row.meaning === s ? "bg-indigo-600 border-indigo-600 text-white" : "bg-white border-slate-200 text-slate-600 hover:border-indigo-400"
+                            "text-xs px-3 py-2 rounded-xl border-2 transition-all font-medium",
+                            row.meaning === s 
+                              ? "bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-200" 
+                              : "bg-white border-white text-slate-600 hover:border-indigo-200 hover:text-indigo-600"
                           )}
                         >
                           {s}
                         </button>
                       ))}
-                    </div>
+                    </motion.div>
                   )}
                 </div>
               </div>
@@ -915,7 +956,7 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
               <div className="flex md:flex-col items-center justify-center gap-2">
                 <button 
                   onClick={() => removeRow(index)}
-                  className="p-2 text-slate-300 hover:text-red-500 transition-colors"
+                  className="p-3 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
                   title="Xóa hàng"
                 >
                   <Trash2 size={20} />
@@ -927,7 +968,7 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
             <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 z-10 opacity-0 group-hover:opacity-100 transition-all">
               <button 
                 onClick={() => addRowAtIndex(index)}
-                className="bg-white border border-slate-200 text-indigo-600 p-1.5 rounded-full shadow-lg hover:scale-110 transition-all"
+                className="bg-white border-2 border-slate-200 text-indigo-600 p-2 rounded-full shadow-xl hover:scale-110 hover:border-indigo-500 transition-all"
                 title="Thêm hàng ở đây"
               >
                 <PlusCircle size={20} />
@@ -938,28 +979,31 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
 
         <button 
           onClick={addRow}
-          className="w-full py-6 border-2 border-dashed border-slate-200 rounded-[2rem] text-slate-400 font-bold hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all flex items-center justify-center gap-2"
+          className="w-full py-8 border-2 border-dashed border-slate-200 rounded-[2.5rem] text-slate-400 font-bold hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all flex items-center justify-center gap-3 group"
         >
-          <PlusCircle size={24} /> Thêm hàng mới
+          <PlusCircle size={24} className="group-hover:rotate-90 transition-transform duration-300" /> Thêm hàng mới
         </button>
       </div>
 
       {/* Floating Action Bar */}
       <div className="fixed bottom-24 left-1/2 -translate-x-1/2 w-full max-w-2xl px-4 z-40">
-        <div className="bg-white/80 backdrop-blur-xl border border-white/20 p-4 rounded-[2.5rem] shadow-2xl flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3 ml-2">
+        <div className="bg-white/90 backdrop-blur-2xl border border-white/20 p-4 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.1)] flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4 ml-2">
             <div className={cn(
-              "w-10 h-10 rounded-full flex items-center justify-center font-bold",
-              totalValidWords >= 5 ? "bg-emerald-100 text-emerald-600" : "bg-slate-100 text-slate-400"
+              "w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-lg transition-all",
+              totalValidWords >= 5 ? "bg-emerald-500 text-white shadow-lg shadow-emerald-200" : "bg-slate-100 text-slate-400"
             )}>
               {totalValidWords}
             </div>
-            <span className="hidden sm:inline text-sm font-bold text-slate-600">từ đã nhập</span>
+            <div>
+              <p className="text-sm font-bold text-slate-900 leading-none">Từ đã nhập</p>
+              <p className="text-xs text-slate-500 mt-1">{totalValidWords >= 5 ? "Sẵn sàng để lưu!" : `Cần thêm ${5 - totalValidWords} từ nữa`}</p>
+            </div>
           </div>
           <div className="flex items-center gap-3">
             <button 
               onClick={cancelInput}
-              className="px-6 py-3 rounded-2xl font-bold text-slate-500 hover:bg-slate-100 transition-all"
+              className="px-6 py-3 rounded-2xl font-bold text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all"
             >
               Hủy
             </button>
@@ -968,7 +1012,9 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
               disabled={totalValidWords < 5}
               className={cn(
                 "px-8 py-3 rounded-2xl font-bold transition-all shadow-lg flex items-center gap-2",
-                totalValidWords >= 5 ? "bg-indigo-600 text-white hover:bg-indigo-700" : "bg-slate-200 text-slate-400 cursor-not-allowed"
+                totalValidWords >= 5 
+                  ? "bg-indigo-600 text-white hover:bg-indigo-700 hover:scale-105 active:scale-95" 
+                  : "bg-slate-200 text-slate-400 cursor-not-allowed"
               )}
             >
               Lưu bài học <ChevronRight size={20} />
@@ -992,36 +1038,36 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="relative bg-white w-full max-w-lg rounded-[2.5rem] p-8 shadow-2xl overflow-hidden"
+              className="relative bg-white w-full max-w-lg rounded-[3rem] p-10 shadow-2xl overflow-hidden"
             >
-              <div className="absolute top-0 left-0 w-full h-2 bg-indigo-600" />
-              <h3 className="text-2xl font-bold mb-2">Lưu bài học vào thư viện</h3>
-              <p className="text-slate-500 mb-6">Đặt tên cho bài học của bạn để dễ dàng tìm kiếm sau này.</p>
+              <div className="absolute top-0 left-0 w-full h-3 bg-indigo-600" />
+              <h3 className="text-3xl font-bold mb-2">Lưu bài học</h3>
+              <p className="text-slate-500 mb-8">Đặt tên cho bài học của bạn để dễ dàng tìm kiếm sau này.</p>
               
-              <div className="space-y-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Tên bài học</label>
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Tên bài học</label>
                   <input 
                     type="text" 
                     autoFocus
                     value={lessonTitle}
                     onChange={(e) => setLessonTitle(e.target.value)}
                     placeholder="Ví dụ: Từ vựng Unit 1, Business English..."
-                    className="w-full bg-slate-50 border-slate-200 rounded-2xl px-5 py-4 focus:bg-white focus:ring-2 focus:ring-indigo-500 transition-all text-lg font-medium"
+                    className="w-full bg-slate-50 border-2 border-transparent rounded-2xl px-6 py-5 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all text-xl font-bold"
                   />
                 </div>
                 
-                <div className="flex gap-3 pt-4">
+                <div className="flex gap-4 pt-4">
                   <button 
                     onClick={() => setShowSaveModal(false)}
-                    className="flex-1 py-4 rounded-2xl font-bold text-slate-500 hover:bg-slate-100 transition-all"
+                    className="flex-1 py-5 rounded-2xl font-bold text-slate-500 hover:bg-slate-100 transition-all"
                   >
                     Hủy
                   </button>
                   <button 
                     onClick={saveLesson}
                     disabled={loading || !lessonTitle.trim()}
-                    className="flex-1 bg-indigo-600 text-white py-4 rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg flex items-center justify-center gap-2"
+                    className="flex-1 bg-indigo-600 text-white py-5 rounded-2xl font-bold hover:bg-indigo-700 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-indigo-200 flex items-center justify-center gap-2"
                   >
                     {loading ? <Loader2 className="animate-spin" /> : "Xác nhận lưu"}
                   </button>

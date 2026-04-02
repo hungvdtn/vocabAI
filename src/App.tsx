@@ -28,7 +28,6 @@ import {
 } from 'lucide-react';
 import Lottie from 'lottie-react';
 import * as mammoth from 'mammoth';
-import * as pdfjsLib from 'pdfjs-dist';
 import { 
   collection, 
   addDoc, 
@@ -48,8 +47,6 @@ import { speak } from './services/tts';
 import { generateDistractors, generateExampleSentence, analyzePerformance, translateWord } from './services/ai';
 import { cn } from './lib/utils';
 
-// Set PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 import { 
   BarChart, 
   Bar, 
@@ -722,11 +719,12 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
         }
       }
       setRows(updatedRows);
-    } catch (e) {
-      console.error(e);
+    } catch (e: any) {
+      console.error("Auto Translate Error:", e);
       const updatedRows = [...rows];
       updatedRows[index].loading = false;
       setRows(updatedRows);
+      alert(e.message || "Lỗi khi dịch từ. Vui lòng kiểm tra kết nối mạng hoặc API Key.");
     }
   };
 
@@ -830,23 +828,6 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
         const arrayBuffer = await file.arrayBuffer();
         const result = await mammoth.extractRawText({ arrayBuffer });
         text = result.value;
-      } else if (file.name.endsWith('.pdf')) {
-        const arrayBuffer = await file.arrayBuffer();
-        // Use a more robust PDF loading approach
-        const loadingTask = pdfjsLib.getDocument({
-          data: arrayBuffer,
-          useWorkerFetch: false,
-          isEvalSupported: false,
-        });
-        const pdf = await loadingTask.promise;
-        let fullText = '';
-        for (let i = 1; i <= pdf.numPages; i++) {
-          const page = await pdf.getPage(i);
-          const content = await page.getTextContent();
-          const strings = content.items.map((item: any) => item.str);
-          fullText += strings.join(' ') + '\n';
-        }
-        text = fullText;
       }
 
       const parsedRows = parseText(text);
@@ -882,8 +863,8 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
             uploading && "opacity-50 cursor-not-allowed"
           )}>
             {uploading ? <Loader2 className="animate-spin text-indigo-600 w-5 h-5" /> : <Upload className="text-indigo-600 w-5 h-5 group-hover:scale-110 transition-transform" />}
-            <span className="text-sm font-bold text-slate-700">Tải file (.txt, .docx, .pdf, .csv)</span>
-            <input type="file" accept=".txt,.pdf,.docx,.csv" className="hidden" onChange={handleFileUpload} disabled={uploading} />
+            <span className="text-sm font-bold text-slate-700">Tải file (.txt, .docx, .csv)</span>
+            <input type="file" accept=".txt,.docx,.csv" className="hidden" onChange={handleFileUpload} disabled={uploading} />
           </label>
         </div>
       </div>

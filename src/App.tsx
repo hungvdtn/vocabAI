@@ -645,15 +645,17 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
 
   const cleanInputData = (text: string, isForeignWord: boolean = false) => {
     if (!text) return '';
-    // Remove bullets, numbering, dashes, pluses, asterisks
+    
+    // Nâng cấp Regex để bóc tách triệt để ký tự lạ ở đầu dòng (bullets từ Word/Unicode)
+    // Bao gồm: khoảng trắng, dấu câu, ký tự Wingdings/Webdings (\uF000-\uF0FF), 
+    // các dạng bullet Unicode (\u2000-\u206F, \u25A0-\u25FF, v.v.)
     let cleaned = text.trim()
-      .replace(/^[\d\.\-\*\+\•\)\s]+/, '') // Leading bullets/numbers
-      .replace(/\s+/g, ' ') // Multiple spaces
+      .replace(/^[\s\u2000-\u206F\u2E00-\u2E7F\u25A0-\u25FF\uF000-\uF0FF\W_0-9]+/g, '')
+      .replace(/\s+/g, ' ') // Loại bỏ khoảng trắng dư thừa ở giữa
       .trim();
     
     if (isForeignWord) {
-      // Lowercase unless it looks like a proper noun (heuristic: starts with uppercase and not at start of sentence)
-      // For simplicity and per user request: "Chuyển đổi toàn bộ từ ngoại ngữ sang chữ viết thường"
+      // Chuyển đổi toàn bộ từ ngoại ngữ sang chữ viết thường theo yêu cầu
       cleaned = cleaned.toLowerCase();
     }
     return cleaned;

@@ -43,21 +43,24 @@ export const generateExampleSentence = async (word: string, language: string) =>
   }
 };
 
+// Local Cache for translations to achieve 0s response for repeated words
+const translationCache: Record<string, any> = {};
+
 export const translateWord = async (word: string, language: string) => {
+  const cacheKey = `${language}:${word.toLowerCase().trim()}`;
+  
+  // Check Cache first
+  if (translationCache[cacheKey]) {
+    return translationCache[cacheKey];
+  }
+
   try {
     const ai = getAI();
     const model = ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-3-flash-preview", // Optimized for low latency
       contents: `Analyze the ${language} word "${word}". 
-      Provide:
-      1. A list of 3-5 common Vietnamese meanings.
-      2. The word type (noun, verb, adj, etc.).
-      3. The IPA pronunciation.
-      4. A simple English definition (A2-B1 level).
-      5. A simple example sentence in ${language}.
-      6. The Vietnamese translation of that example sentence.
-      
-      Return ONLY a JSON object with keys: translations (array of strings), type (string), pronunciation (string), definition (string), example (string), exampleTranslation (string).`,
+      Return ONLY a JSON object. No explanations.
+      Keys: translations (array of 3-5 strings), type (string), pronunciation (string), definition (string), example (string), exampleTranslation (string).`,
       config: {
         responseMimeType: "application/json",
       },
@@ -65,10 +68,15 @@ export const translateWord = async (word: string, language: string) => {
     const response = await model;
     const text = response.text;
     if (!text) throw new Error("API không trả về nội dung.");
-    return JSON.parse(text);
+    
+    const result = JSON.parse(text);
+    
+    // Save to Cache
+    translationCache[cacheKey] = result;
+    
+    return result;
   } catch (e: any) {
     console.error("Gemini API Error (translateWord):", e);
-    // Re-throw to be caught by the UI for notification
     throw new Error(e.message || "Lỗi mạng hoặc lỗi hệ thống khi dịch từ.");
   }
 };

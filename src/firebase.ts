@@ -3,7 +3,7 @@ import { getFirestore } from "firebase/firestore";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyA4724zOoWwoLamjGfcoXVr215tSQPyvuw",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: "vocabulary-learning-5efe2.firebaseapp.com",
   projectId: "vocabulary-learning-5efe2",
   storageBucket: "vocabulary-learning-5efe2.firebasestorage.app",

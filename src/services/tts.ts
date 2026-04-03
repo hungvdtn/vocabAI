@@ -1,4 +1,4 @@
-const TTS_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+const TTS_API_KEY = "AIzaSyC7M7yIo9uAYRhPE2f10oy5vbPCCI7WMRU";
 
 export const speak = async (text: string, language: 'en' | 'de') => {
   const languageCode = language === 'en' ? 'en-US' : 'de-DE';

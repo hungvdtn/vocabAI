@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import Lottie from 'lottie-react';
 import * as mammoth from 'mammoth';
+import * as pdfjsLib from 'pdfjs-dist';
 import { 
   collection, 
   addDoc, 
@@ -47,6 +48,8 @@ import { speak } from './services/tts';
 import { generateDistractors, generateExampleSentence, analyzePerformance, translateWord } from './services/ai';
 import { cn } from './lib/utils';
 
+// Set PDF.js worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 import { 
   BarChart, 
   Bar, 
@@ -633,7 +636,7 @@ function LibraryView({ lessons, onEdit, onPlay, onDelete }: { lessons: Lesson[],
 function InputView({ language, user, onSaved, initialLesson }: { language: Language, user: User, onSaved: () => void, initialLesson?: Lesson }) {
   const [rows, setRows] = useState<{ word: string, meaning: string, loading: boolean, suggestions?: string[] }[]>(
     initialLesson ? initialLesson.vocabularies.map(v => ({ ...v, loading: false })) : 
-    [{ word: '', meaning: '', loading: false }]
+    Array(5).fill(null).map(() => ({ word: '', meaning: '', loading: false }))
   );
   const [lessonTitle, setLessonTitle] = useState(initialLesson?.title || '');
   const [showSaveModal, setShowSaveModal] = useState(false);
@@ -642,20 +645,26 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
   
   // Translation Cache
   const translationCache = useRef<Record<string, any>>({});
+<<<<<<< HEAD
+
+  const cleanInputData = (text: string, isForeignWord: boolean = false) => {
+=======
   const abortControllers = useRef<Record<number, AbortController>>({});
 
   const cleanInputData = (text: string, isForeignWord: boolean = false, isFinal: boolean = false) => {
+>>>>>>> 55be24875ce4119f1e06e828eb7b3661fb434e7d
     if (!text) return '';
+    // Remove bullets, numbering, dashes, pluses, asterisks
+    let cleaned = text.trim()
+      .replace(/^[\d\.\-\*\+\•\)\s]+/, '') // Leading bullets/numbers
+      .replace(/\s+/g, ' ') // Multiple spaces
+      .trim();
     
-    // Chỉ loại bỏ các ký tự đặc biệt dạng bullet ở đầu chuỗi (không xóa khoảng trắng khi đang gõ)
-    let cleaned = text.replace(/^[\u2022\u2023\u25E6\u2043\u2219\u2000-\u206F\u2E00-\u2E7F\u25A0-\u25FF\uF000-\uF0FF\-\+\*•]+/g, '');
-    
-    // Chỉ trim() và chuẩn hóa khoảng trắng ở bước chốt (isFinal = true)
-    if (isFinal) {
-      cleaned = cleaned.replace(/\s+/g, ' ').trim();
+    if (isForeignWord) {
+      // Lowercase unless it looks like a proper noun (heuristic: starts with uppercase and not at start of sentence)
+      // For simplicity and per user request: "Chuyển đổi toàn bộ từ ngoại ngữ sang chữ viết thường"
+      cleaned = cleaned.toLowerCase();
     }
-    
-    // Đã gỡ bỏ .toLowerCase() để bảo toàn định dạng chữ Hoa/thường theo yêu cầu
     return cleaned;
   };
 
@@ -670,14 +679,27 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
   };
 
   const removeRow = (index: number) => {
-    if (rows.length <= 1 && !initialLesson) {
-      setRows([{ word: '', meaning: '', loading: false }]);
+    if (rows.length <= 5 && !initialLesson) {
+      const newRows = [...rows];
+      newRows[index] = { word: '', meaning: '', loading: false };
+      setRows(newRows);
       return;
     }
     setRows(rows.filter((_, i) => i !== index));
   };
 
   const updateRow = (index: number, field: 'word' | 'meaning', value: string) => {
+<<<<<<< HEAD
+    const newRows = [...rows];
+    const cleanedValue = field === 'word' ? cleanInputData(value, true) : value;
+    (newRows[index] as any)[field] = cleanedValue;
+    setRows(newRows);
+  };
+
+  const handleAutoTranslate = async (index: number) => {
+    const word = rows[index].word;
+    if (!word || rows[index].loading) return;
+=======
     const cleanedValue = field === 'word' ? cleanInputData(value, true, false) : value;
 
     setRows(prevRows => {
@@ -715,24 +737,25 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
     // Chốt dữ liệu: làm sạch triệt để trước khi gọi AI
     const word = cleanInputData(term, true, true);
     if (!word) return;
+>>>>>>> 55be24875ce4119f1e06e828eb7b3661fb434e7d
 
-    // 1. Caching: Kiểm tra bộ nhớ tạm (0ms)
+    // Check Cache
     if (translationCache.current[word]) {
       const data = translationCache.current[word];
-      setRows(prevRows => {
-        const updatedRows = [...prevRows];
-        if (updatedRows[index] && !updatedRows[index].meaning) {
-          updatedRows[index] = {
-            ...updatedRows[index],
-            meaning: data.translations[0] || '',
-            suggestions: data.translations
-          };
-        }
-        return updatedRows;
-      });
+      const updatedRows = [...rows];
+      updatedRows[index].suggestions = data.translations;
+      if (!updatedRows[index].meaning) {
+        updatedRows[index].meaning = data.translations[0];
+      }
+      setRows(updatedRows);
       return;
     }
 
+<<<<<<< HEAD
+    const newRows = [...rows];
+    newRows[index].loading = true;
+    setRows(newRows);
+=======
     // 2. AbortController: Hủy request cũ của dòng này
     if (abortControllers.current[index]) {
       abortControllers.current[index].abort();
@@ -747,11 +770,28 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
       }
       return updatedRows;
     });
+>>>>>>> 55be24875ce4119f1e06e828eb7b3661fb434e7d
 
     try {
-      const data = await translateWord(word, 'en', abortControllers.current[index].signal);
-      translationCache.current[word] = data;
+      const data = await translateWord(word, language);
+      translationCache.current[word] = data; // Save to Cache
       
+<<<<<<< HEAD
+      const updatedRows = [...rows];
+      updatedRows[index].loading = false;
+      if (data.translations && data.translations.length > 0) {
+        updatedRows[index].suggestions = data.translations;
+        if (!updatedRows[index].meaning) {
+          updatedRows[index].meaning = data.translations[0];
+        }
+      }
+      setRows(updatedRows);
+    } catch (e) {
+      console.error(e);
+      const updatedRows = [...rows];
+      updatedRows[index].loading = false;
+      setRows(updatedRows);
+=======
       setRows(prevRows => {
         const updatedRows = [...prevRows];
         if (!updatedRows[index]) return prevRows;
@@ -785,17 +825,15 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
         }
         return updatedRows;
       });
+>>>>>>> 55be24875ce4119f1e06e828eb7b3661fb434e7d
     }
   };
 
   const cancelInput = () => {
-    console.log("Cancel button clicked");
-    if (window.confirm('Bạn có chắc chắn muốn hủy bỏ toàn bộ dữ liệu đang nhập không?')) {
-      setRows([{ word: '', meaning: '', loading: false }]);
+    if (window.confirm("Bạn có chắc chắn muốn hủy? Mọi dữ liệu đã nhập sẽ bị mất.")) {
+      setRows(Array(5).fill(null).map(() => ({ word: '', meaning: '', loading: false })));
       setLessonTitle('');
-      if (initialLesson) {
-        onSaved(); // Quay lại màn hình Thư viện nếu đang chỉnh sửa
-      }
+      if (initialLesson) onSaved(); // Go back if editing
     }
   };
 
@@ -813,15 +851,6 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
 
     setLoading(true);
     try {
-      // Làm sạch triệt để toàn bộ dữ liệu trước khi lưu
-      const finalRows = rows.map(r => ({
-        ...r,
-        word: cleanInputData(r.word, true, true),
-        meaning: cleanInputData(r.meaning, false, true)
-      }));
-
-      const validRows = finalRows.filter(r => r.word && r.meaning);
-      
       const lessonData: Omit<Lesson, 'id'> = {
         title: lessonTitle.trim(),
         wordCount: validRows.length,
@@ -830,8 +859,8 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
         language,
         createdAt: Date.now(),
         vocabularies: validRows.map(r => ({
-          word: r.word,
-          meaning: r.meaning,
+          word: r.word.trim(),
+          meaning: r.meaning.trim(),
           language,
           userId: user.uid,
           createdAt: Date.now()
@@ -860,24 +889,28 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
     const lines = text.split('\n');
     const newRows: { word: string, meaning: string, loading: boolean }[] = [];
     lines.forEach(line => {
+      // Clean line using cleanInputData
       let cleanLine = line.trim();
       if (!cleanLine) return;
 
-      // Nâng cấp logic tách cột: nhận diện đa dạng dấu phân cách (-, –, —, :, =)
-      const separatorRegex = /[:\-–—=]/;
-      const match = cleanLine.match(separatorRegex);
+      const separators = [':', '-', '=', ',', ';', '\t'];
+      let parts: string[] = [];
+      for (const sep of separators) {
+        if (cleanLine.includes(sep)) {
+          parts = cleanLine.split(sep);
+          break;
+        }
+      }
       
-      if (match) {
-        const separator = match[0];
-        const parts = cleanLine.split(separator);
-        const word = cleanInputData(parts[0], true, true);
-        const meaning = cleanInputData(parts.slice(1).join(separator), false, true);
+      if (parts.length >= 2) {
+        const word = cleanInputData(parts[0], true);
+        const meaning = cleanInputData(parts.slice(1).join(':'));
         if (word && meaning) {
           newRows.push({ word, meaning, loading: false });
         }
       } else if (cleanLine.length > 0) {
         // Fallback: if no separator, maybe it's just the word
-        newRows.push({ word: cleanInputData(cleanLine, true, true), meaning: '', loading: false });
+        newRows.push({ word: cleanInputData(cleanLine, true), meaning: '', loading: false });
       }
     });
     return newRows;
@@ -896,12 +929,31 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
         const arrayBuffer = await file.arrayBuffer();
         const result = await mammoth.extractRawText({ arrayBuffer });
         text = result.value;
+      } else if (file.name.endsWith('.pdf')) {
+        const arrayBuffer = await file.arrayBuffer();
+        // Use a more robust PDF loading approach
+        const loadingTask = pdfjsLib.getDocument({
+          data: arrayBuffer,
+          useWorkerFetch: false,
+          isEvalSupported: false,
+        });
+        const pdf = await loadingTask.promise;
+        let fullText = '';
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const content = await page.getTextContent();
+          const strings = content.items.map((item: any) => item.str);
+          fullText += strings.join(' ') + '\n';
+        }
+        text = fullText;
       }
 
       const parsedRows = parseText(text);
       if (parsedRows.length > 0) {
-        // Ghi đè hoàn toàn danh sách bằng dữ liệu từ file
-        setRows(parsedRows);
+        setRows(prev => {
+          const filteredPrev = prev.filter(r => r.word || r.meaning);
+          return [...filteredPrev, ...parsedRows];
+        });
       } else {
         alert("Không tìm thấy từ vựng trong file. Vui lòng kiểm tra định dạng (Từ, Nghĩa).");
       }
@@ -929,8 +981,8 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
             uploading && "opacity-50 cursor-not-allowed"
           )}>
             {uploading ? <Loader2 className="animate-spin text-indigo-600 w-5 h-5" /> : <Upload className="text-indigo-600 w-5 h-5 group-hover:scale-110 transition-transform" />}
-            <span className="text-sm font-bold text-slate-700">Tải file (.txt, .docx, .csv)</span>
-            <input type="file" accept=".txt,.docx,.csv" className="hidden" onChange={handleFileUpload} disabled={uploading} />
+            <span className="text-sm font-bold text-slate-700">Tải file (.txt, .docx, .pdf, .csv)</span>
+            <input type="file" accept=".txt,.pdf,.docx,.csv" className="hidden" onChange={handleFileUpload} disabled={uploading} />
           </label>
         </div>
       </div>
@@ -963,11 +1015,7 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
                       type="text" 
                       value={row.meaning}
                       onChange={(e) => updateRow(index, 'meaning', e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Tab' && !e.shiftKey && index === rows.length - 1) {
-                          addRow();
-                        }
-                      }}
+                      onFocus={() => handleAutoTranslate(index)}
                       className="w-full bg-slate-50 border-2 border-transparent rounded-2xl px-5 py-4 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all text-lg font-medium placeholder:text-slate-300"
                       placeholder="Nhập nghĩa..."
                     />
@@ -1053,7 +1101,6 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
           </div>
           <div className="flex items-center gap-3">
             <button 
-              type="button"
               onClick={cancelInput}
               className="px-6 py-3 rounded-2xl font-bold text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all"
             >

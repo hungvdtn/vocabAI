@@ -961,29 +961,60 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
   };
 
   const parseText = (text: string) => {
-    const lines = text.split('\n');
+    const rawLines = text.split('\n').map(l => l.trim()).filter(l => l !== '');
     const newRows: { word: string, meaning: string, loading: boolean }[] = [];
-    lines.forEach(line => {
-      let cleanLine = line.trim();
-      if (!cleanLine) return;
+    
+    // Danh sách các dấu phân cách cột tiềm năng (ưu tiên Tab và Phẩy)
+    const separatorRegex = /[\t,:\-–—=]/;
+    
+    // Kiểm tra xem có bất kỳ dòng nào chứa dấu phân cách không
+    const hasAnySeparator = rawLines.some(line => separatorRegex.test(line));
 
-      // Nâng cấp logic tách cột: nhận diện đa dạng dấu phân cách (-, –, —, :, =)
-      const separatorRegex = /[:\-–—=]/;
-      const match = cleanLine.match(separatorRegex);
-      
-      if (match) {
-        const separator = match[0];
-        const parts = cleanLine.split(separator);
-        const word = cleanInputData(parts[0], true, true);
-        const meaning = cleanInputData(parts.slice(1).join(separator), false, true);
-        if (word && meaning) {
+    if (hasAnySeparator) {
+      // Chiến lược 1: Phân tích từng dòng dựa trên dấu phân cách ưu tiên
+      rawLines.forEach(line => {
+        let parts: string[] = [];
+        
+        // Ưu tiên 1: Dấu Tab (thường xuất hiện khi copy từ Excel/Word Table)
+        if (line.includes('\t')) {
+          parts = line.split('\t');
+        } 
+        // Ưu tiên 2: Dấu phẩy (định dạng CSV)
+        else if (line.includes(',')) {
+          parts = line.split(',');
+        }
+        // Ưu tiên 3: Các dấu phân cách truyền thống
+        else {
+          const match = line.match(/[:\-–—=]/);
+          if (match) {
+            const sep = match[0];
+            parts = [line.substring(0, line.indexOf(sep)), line.substring(line.indexOf(sep) + 1)];
+          }
+        }
+
+        if (parts.length >= 2) {
+          const word = cleanInputData(parts[0], true, true);
+          const meaning = cleanInputData(parts.slice(1).join(' '), false, true);
+          if (word) {
+            newRows.push({ word, meaning, loading: false });
+          }
+        } else {
+          // Nếu không tách được, coi cả dòng là từ vựng
+          newRows.push({ word: cleanInputData(line, true, true), meaning: '', loading: false });
+        }
+      });
+    } else {
+      // Chiến lược 2: Thuật toán ghép đôi (Pairing Fallback) cho bảng bị làm phẳng
+      // Dòng 1: EN, Dòng 2: VN, Dòng 3: EN, Dòng 4: VN...
+      for (let i = 0; i < rawLines.length; i += 2) {
+        const word = cleanInputData(rawLines[i], true, true);
+        const meaning = (i + 1 < rawLines.length) ? cleanInputData(rawLines[i + 1], false, true) : '';
+        if (word) {
           newRows.push({ word, meaning, loading: false });
         }
-      } else if (cleanLine.length > 0) {
-        // Fallback: if no separator, maybe it's just the word
-        newRows.push({ word: cleanInputData(cleanLine, true, true), meaning: '', loading: false });
       }
-    });
+    }
+    
     return newRows;
   };
 

@@ -25,7 +25,9 @@ import {
   User as UserIcon,
   Play,
   Edit2,
-  Download
+  Download,
+  LogOut,
+  ChevronDown
 } from 'lucide-react';
 import Lottie from 'lottie-react';
 import * as mammoth from 'mammoth';
@@ -42,7 +44,7 @@ import {
   deleteDoc,
   setDoc
 } from 'firebase/firestore';
-import { signInWithPopup, onAuthStateChanged, User } from 'firebase/auth';
+import { signInWithPopup, onAuthStateChanged, User, signOut } from 'firebase/auth';
 import { db, auth, googleProvider } from './firebase';
 import { speak } from './services/tts';
 import { generateDistractors, generateExampleSentence, analyzePerformance, translateWord } from './services/ai';
@@ -95,6 +97,7 @@ interface GameResult {
   score: number;
   total: number;
   timestamp: number;
+  language: Language;
 }
 
 // Components
@@ -139,6 +142,8 @@ export default function App() {
   const [gameResults, setGameResults] = useState<GameResult[]>([]);
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   // Auth
   useEffect(() => {
@@ -147,6 +152,17 @@ export default function App() {
     });
     return () => unsubscribe();
   }, []);
+
+  // Click outside menu to close
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [menuRef]);
 
   // Fetch Lessons
   useEffect(() => {
@@ -171,6 +187,17 @@ export default function App() {
       } else {
         alert("Lỗi đăng nhập: " + error.message);
       }
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await signOut(auth);
+      setIsMenuOpen(false);
+      setView('home');
+      setIsTestMode(false);
+    } catch (error) {
+      console.error("Logout Error:", error);
     }
   };
 
@@ -289,19 +316,66 @@ export default function App() {
           <div className="flex items-center gap-4">
             <div className="flex bg-slate-100 p-1 rounded-xl">
               <button 
-                onClick={() => setLanguage('en')}
+                onClick={() => {
+                  setLanguage('en');
+                  setEditingLesson(null);
+                }}
                 className={cn("px-3 py-1 rounded-lg text-sm font-medium transition-all", language === 'en' ? "bg-white shadow-sm text-indigo-600" : "text-slate-500")}
               >
                 EN
               </button>
               <button 
-                onClick={() => setLanguage('de')}
+                onClick={() => {
+                  setLanguage('de');
+                  setEditingLesson(null);
+                }}
                 className={cn("px-3 py-1 rounded-lg text-sm font-medium transition-all", language === 'de' ? "bg-white shadow-sm text-indigo-600" : "text-slate-500")}
               >
                 DE
               </button>
             </div>
-            <img src={user.photoURL || ''} className="w-8 h-8 rounded-full border border-slate-200" alt="User" />
+            
+            <div className="relative" ref={menuRef}>
+              <button 
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                className="flex items-center gap-2 p-1 pr-3 rounded-full hover:bg-slate-100 transition-all border border-slate-200"
+              >
+                <img src={user.photoURL || ''} className="w-8 h-8 rounded-full border border-slate-200" alt="User" />
+                <ChevronDown size={14} className={cn("text-slate-400 transition-transform", isMenuOpen && "rotate-180")} />
+              </button>
+
+              <AnimatePresence>
+                {isMenuOpen && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 z-50"
+                  >
+                    <div className="px-4 py-2 border-b border-slate-50 mb-2">
+                      <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Tài khoản</p>
+                      <p className="text-sm font-bold text-slate-900 truncate">{user.displayName}</p>
+                    </div>
+                    
+                    {isTestMode ? (
+                      <button 
+                        onClick={() => { login(); setIsMenuOpen(false); }}
+                        className="w-full flex items-center gap-3 px-4 py-2 text-sm text-indigo-600 hover:bg-indigo-50 transition-colors font-medium"
+                      >
+                        <UserIcon size={16} /> Đăng nhập Google
+                      </button>
+                    ) : (
+                      <button 
+                        onClick={logout}
+                        className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors font-medium"
+                      >
+                        <LogOut size={16} /> Đăng xuất
+                      </button>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         </div>
       </nav>
@@ -344,7 +418,7 @@ export default function App() {
             </motion.div>
           )}
           {view === 'input' && (
-            <motion.div key="input" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}>
+            <motion.div key={`input-${language}`} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}>
               <InputView 
                 language={language} 
                 user={user} 
@@ -361,7 +435,7 @@ export default function App() {
               <GamesView 
                 vocabList={vocabList} 
                 language={language} 
-                onComplete={(res) => setGameResults(prev => [...prev, res])} 
+                onComplete={(res) => setGameResults(prev => [...prev, { ...res, language }])} 
                 playSound={playSound}
                 activeGame={activeGame}
                 setActiveGame={setActiveGame}
@@ -372,6 +446,7 @@ export default function App() {
             <motion.div key="library" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <LibraryView 
                 lessons={lessons} 
+                language={language}
                 onEdit={(lesson) => {
                   setEditingLesson(lesson);
                   setView('input');
@@ -487,7 +562,7 @@ function StatCard({ title, value, color }: { title: string, value: string, color
   );
 }
 
-function LibraryView({ lessons, onEdit, onPlay, onDelete }: { lessons: Lesson[], onEdit: (l: Lesson) => void, onPlay: (l: Lesson) => void, onDelete: (id: string) => void }) {
+function LibraryView({ lessons, language, onEdit, onPlay, onDelete }: { lessons: Lesson[], language: Language, onEdit: (l: Lesson) => void, onPlay: (l: Lesson) => void, onDelete: (id: string) => void }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -508,6 +583,7 @@ function LibraryView({ lessons, onEdit, onPlay, onDelete }: { lessons: Lesson[],
   };
 
   const filteredLessons = lessons.filter(l => 
+    l.language === language &&
     l.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -776,7 +852,7 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
     });
 
     try {
-      const data = await translateWord(word, 'en', abortControllers.current[index].signal);
+      const data = await translateWord(word, language, abortControllers.current[index].signal);
       translationCache.current[word] = data;
       lastTranslatedWords.current[index] = term; // Đánh dấu đã dịch thành công
       
@@ -799,10 +875,9 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
     } catch (e: any) {
       if (e.message === 'Aborted') return;
       
-      // Bắt lỗi 429 thân thiện: Tắt loading và hiển thị thông báo 1 lần
+      // Silent Mode cho API: Tắt loading và chỉ console.error
       if (e.message === 'QUOTA_EXCEEDED') {
         console.warn("AI Quota Exceeded (429).");
-        alert("Đã hết hạn mức dịch miễn phí của Google. Vui lòng tự nhập nghĩa hoặc thử lại sau 1 phút.");
       } else {
         console.error("LỖI DỊCH AI:", e);
       }
@@ -1185,7 +1260,7 @@ function GamesView({ vocabList, language, onComplete, playSound, activeGame, set
         language={language} 
         onBack={() => setActiveGame(null)} 
         onFinish={(score) => {
-          onComplete({ gameType: activeGame, score, total: 5, timestamp: Date.now() });
+          onComplete({ gameType: activeGame, score, total: 5, timestamp: Date.now(), language });
           setActiveGame(null);
         }}
         playSound={playSound}
@@ -1599,25 +1674,27 @@ function ReportView({ results, language, vocabList }: { results: GameResult[], l
   const [analysis, setAnalysis] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const filteredResults = results.filter(r => r.language === language);
+
   useEffect(() => {
-    if (results.length === 0) return;
+    if (filteredResults.length === 0) return;
     const runAnalysis = async () => {
       setLoading(true);
-      const feedback = await analyzePerformance(results, language);
+      const feedback = await analyzePerformance(filteredResults, language);
       setAnalysis(feedback);
       setLoading(false);
     };
     runAnalysis();
-  }, [results]);
+  }, [filteredResults, language]);
 
-  const chartData = results.map((r, i) => ({
+  const chartData = filteredResults.map((r, i) => ({
     name: `Game ${i + 1}`,
     score: r.score,
     total: r.total
   }));
 
-  const totalScore = results.reduce((acc, r) => acc + r.score, 0);
-  const totalPossible = results.reduce((acc, r) => acc + r.total, 0);
+  const totalScore = filteredResults.reduce((acc, r) => acc + r.score, 0);
+  const totalPossible = filteredResults.reduce((acc, r) => acc + r.total, 0);
   const accuracy = totalPossible > 0 ? Math.round((totalScore / totalPossible) * 100) : 0;
 
   return (

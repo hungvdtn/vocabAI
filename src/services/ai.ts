@@ -1,4 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
+import enDict from '../data/en_3000.json';
+import deDict from '../data/de_3000.json';
 
 // Using the key from environment variables (Vite standard)
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
@@ -40,6 +42,33 @@ const callWithRetry = async (fn: () => Promise<any>, retries = 3, delay = 1000):
   }
 };
 
+// Local Dictionaries
+const dictionaries: Record<string, Record<string, string>> = {
+  en: enDict as Record<string, string>,
+  de: deDict as Record<string, string>
+};
+
+// Tra cứu siêu tốc (O(1) Lookup) từ từ điển cục bộ
+export const checkLocalDictionary = (word: string, language: string) => {
+  const dict = dictionaries[language];
+  if (!dict) return null;
+  
+  const cleanWord = word.toLowerCase().trim();
+  const meaning = dict[cleanWord];
+  
+  if (meaning) {
+    return {
+      translations: [meaning],
+      type: "Local Dictionary",
+      pronunciation: "",
+      definition: "",
+      example: "",
+      exampleTranslation: ""
+    };
+  }
+  return null;
+};
+
 export const generateDistractors = async (word: string, meaning: string, language: string) => {
   return callWithRetry(async () => {
     try {
@@ -78,11 +107,18 @@ export const generateExampleSentence = async (word: string, language: string) =>
 };
 
 export const translateWord = async (word: string, language: string, signal?: AbortSignal) => {
-  const cacheKey = `en:${word.toLowerCase().trim()}`;
+  const cacheKey = `${language}:${word.toLowerCase().trim()}`;
   
-  // Check Cache first
+  // 1. Check Cache first
   if (translationCache[cacheKey]) {
     return translationCache[cacheKey];
+  }
+
+  // 2. Check Local Dictionary (O(1))
+  const localResult = checkLocalDictionary(word, language);
+  if (localResult) {
+    translationCache[cacheKey] = localResult;
+    return localResult;
   }
 
   return callWithRetry(async () => {

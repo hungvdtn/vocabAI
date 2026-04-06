@@ -47,7 +47,7 @@ import {
 import { signInWithPopup, onAuthStateChanged, User, signOut } from 'firebase/auth';
 import { db, auth, googleProvider } from './firebase';
 import { speak } from './services/tts';
-import { generateDistractors, generateExampleSentence, analyzePerformance, translateWord } from './services/ai';
+import { generateDistractors, generateExampleSentence, analyzePerformance, translateWord, checkLocalDictionary } from './services/ai';
 import { cn } from './lib/utils';
 
 import { 
@@ -829,6 +829,24 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
             ...updatedRows[index],
             meaning: data.translations[0] || '',
             suggestions: data.translations
+          };
+        }
+        return updatedRows;
+      });
+      return;
+    }
+
+    // 1.1. Local Dictionary: Tra cứu siêu tốc (O(1))
+    const localResult = checkLocalDictionary(word, language);
+    if (localResult) {
+      lastTranslatedWords.current[index] = term; // Đánh dấu đã dịch thành công
+      setRows(prevRows => {
+        const updatedRows = [...prevRows];
+        if (updatedRows[index] && !updatedRows[index].meaning) {
+          updatedRows[index] = {
+            ...updatedRows[index],
+            meaning: localResult.translations[0] || '',
+            suggestions: localResult.translations
           };
         }
         return updatedRows;

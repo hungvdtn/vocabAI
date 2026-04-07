@@ -43,9 +43,9 @@ const callWithRetry = async (fn: () => Promise<any>, retries = 3, delay = 1000):
 };
 
 // Local Dictionaries
-const dictionaries: Record<string, Record<string, string>> = {
-  en: enDict as Record<string, string>,
-  de: deDict as Record<string, string>
+const dictionaries: Record<string, Record<string, string | string[]>> = {
+  en: enDict as Record<string, string | string[]>,
+  de: deDict as Record<string, string | string[]>
 };
 
 // Tra cứu siêu tốc (O(1) Lookup) từ từ điển cục bộ
@@ -54,11 +54,23 @@ export const checkLocalDictionary = (word: string, language: string) => {
   if (!dict) return null;
   
   const cleanWord = word.toLowerCase().trim();
-  const meaning = dict[cleanWord];
+  const rawMeaning = dict[cleanWord];
   
-  if (meaning) {
+  if (rawMeaning) {
+    let processedMeaning = "";
+    let translations: string[] = [];
+    
+    if (Array.isArray(rawMeaning)) {
+      processedMeaning = rawMeaning.join(', ');
+      translations = rawMeaning;
+    } else if (typeof rawMeaning === 'string') {
+      processedMeaning = rawMeaning.trim();
+      translations = processedMeaning.split(',').map(s => s.trim());
+    }
+    
     return {
-      translations: [meaning],
+      translations: translations,
+      displayMeaning: processedMeaning,
       type: "Local Dictionary",
       pronunciation: "",
       definition: "",

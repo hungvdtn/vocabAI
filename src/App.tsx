@@ -845,7 +845,7 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
         if (updatedRows[index] && !updatedRows[index].meaning) {
           updatedRows[index] = {
             ...updatedRows[index],
-            meaning: localResult.translations[0] || '',
+            meaning: localResult.displayMeaning || localResult.translations[0] || '',
             suggestions: localResult.translations
           };
         }

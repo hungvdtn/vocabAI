@@ -108,7 +108,9 @@ export const generateExampleSentence = async (word: string, language: string) =>
 };
 
 export const translateWord = async (word: string, language: string, signal?: AbortSignal) => {
-  console.log("🌍 translateWord called for:", word, "language:", language);
+  const activeDictionary = language === 'de' ? deDict : enDict;
+  console.log("🧠 HÀM LÕI ĐÃ NHẬN LỆNH | Từ khóa:", word, "| Từ điển có phải là Mảng?:", Array.isArray(activeDictionary), "| Số lượng từ trong kho:", activeDictionary?.length);
+  
   const cacheKey = `${language}:${word.toLowerCase().trim()}`;
   
   // 1. Check Cache first

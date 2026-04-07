@@ -797,12 +797,13 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
   };
 
   const handleAutoTranslate = async (index: number, currentLanguage: Language) => {
-    console.log("🚀 handleAutoTranslate called for index:", index, "language:", currentLanguage);
     // 0. Guard Clauses: Kiểm tra điều kiện trước khi gọi AI
     const currentRow = rows[index];
     if (!currentRow) return;
 
     const term = currentRow.word.trim();
+    console.log("👉 GIAO DIỆN BẮT ĐẦU GỌI API | Từ khóa:", term, "| Ngôn ngữ:", currentLanguage);
+    
     const definition = currentRow.meaning.trim();
 
     // Điều kiện 1: Ô Tiếng Anh phải có dữ liệu

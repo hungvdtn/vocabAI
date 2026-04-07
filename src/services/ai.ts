@@ -48,8 +48,10 @@ const callWithRetry = async (fn: () => Promise<any>, retries = 3, delay = 1000):
 
 // Tra cứu siêu tốc (O(1) Lookup) từ từ điển cục bộ
 export const checkLocalDictionary = (word: string, language: string) => {
+  console.log("🔍 checkLocalDictionary called with:", word, language);
   // Chọn từ điển và log kiểm tra
   const activeDictionary = language === 'de' ? deDict : enDict;
+  console.log("📚 activeDictionary is array:", Array.isArray(activeDictionary), "length:", activeDictionary?.length);
 
   // Kiểm tra kiểu mảng và tra cứu (Array check & Find)
   if (Array.isArray(activeDictionary)) {
@@ -106,6 +108,7 @@ export const generateExampleSentence = async (word: string, language: string) =>
 };
 
 export const translateWord = async (word: string, language: string, signal?: AbortSignal) => {
+  console.log("🌍 translateWord called for:", word, "language:", language);
   const cacheKey = `${language}:${word.toLowerCase().trim()}`;
   
   // 1. Check Cache first

@@ -797,6 +797,7 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
   };
 
   const handleAutoTranslate = async (index: number, currentLanguage: Language) => {
+    console.log("🚀 handleAutoTranslate called for index:", index, "language:", currentLanguage);
     // 0. Guard Clauses: Kiểm tra điều kiện trước khi gọi AI
     const currentRow = rows[index];
     if (!currentRow) return;
@@ -819,6 +820,7 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
 
     // 1. Caching: Kiểm tra bộ nhớ tạm (0ms)
     if (translationCache.current[word]) {
+      console.log("💾 Cache hit for:", word);
       const data = translationCache.current[word];
       lastTranslatedWords.current[index] = term; // Đánh dấu đã dịch thành công
       setRows(prevRows => {
@@ -826,26 +828,8 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
         if (updatedRows[index] && !updatedRows[index].meaning) {
           updatedRows[index] = {
             ...updatedRows[index],
-            meaning: data.translations[0] || '',
+            meaning: data.displayMeaning || data.translations[0] || '',
             suggestions: data.translations
-          };
-        }
-        return updatedRows;
-      });
-      return;
-    }
-
-    // 1.1. Local Dictionary: Tra cứu siêu tốc (O(1))
-    const localResult = checkLocalDictionary(word, currentLanguage);
-    if (localResult) {
-      lastTranslatedWords.current[index] = term; // Đánh dấu đã dịch thành công
-      setRows(prevRows => {
-        const updatedRows = [...prevRows];
-        if (updatedRows[index] && !updatedRows[index].meaning) {
-          updatedRows[index] = {
-            ...updatedRows[index],
-            meaning: typeof localResult === 'string' ? localResult : (localResult.displayMeaning || localResult.translations[0] || ''),
-            suggestions: typeof localResult === 'string' ? [localResult] : localResult.translations
           };
         }
         return updatedRows;
@@ -869,7 +853,10 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
     });
 
     try {
+      console.log("🌐 Calling translateWord for:", word);
       const data = await translateWord(word, currentLanguage, abortControllers.current[index].signal);
+      console.log("✅ Translation result:", data);
+      
       translationCache.current[word] = data;
       lastTranslatedWords.current[index] = term; // Đánh dấu đã dịch thành công
       
@@ -884,7 +871,7 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
         if (data.translations && data.translations.length > 0) {
           updatedRows[index].suggestions = data.translations;
           if (!currentMeaning.trim()) {
-            updatedRows[index].meaning = data.translations[0];
+            updatedRows[index].meaning = data.displayMeaning || data.translations[0];
           }
         }
         return updatedRows;

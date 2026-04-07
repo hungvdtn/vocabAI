@@ -796,7 +796,7 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
     });
   };
 
-  const handleAutoTranslate = async (index: number) => {
+  const handleAutoTranslate = async (index: number, currentLanguage: Language) => {
     // 0. Guard Clauses: Kiểm tra điều kiện trước khi gọi AI
     const currentRow = rows[index];
     if (!currentRow) return;
@@ -836,7 +836,7 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
     }
 
     // 1.1. Local Dictionary: Tra cứu siêu tốc (O(1))
-    const localResult = checkLocalDictionary(word, language);
+    const localResult = checkLocalDictionary(word, currentLanguage);
     if (localResult) {
       lastTranslatedWords.current[index] = term; // Đánh dấu đã dịch thành công
       setRows(prevRows => {
@@ -844,8 +844,8 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
         if (updatedRows[index] && !updatedRows[index].meaning) {
           updatedRows[index] = {
             ...updatedRows[index],
-            meaning: localResult.displayMeaning || localResult.translations[0] || '',
-            suggestions: localResult.translations
+            meaning: typeof localResult === 'string' ? localResult : (localResult.displayMeaning || localResult.translations[0] || ''),
+            suggestions: typeof localResult === 'string' ? [localResult] : localResult.translations
           };
         }
         return updatedRows;
@@ -869,7 +869,7 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
     });
 
     try {
-      const data = await translateWord(word, language, abortControllers.current[index].signal);
+      const data = await translateWord(word, currentLanguage, abortControllers.current[index].signal);
       translationCache.current[word] = data;
       lastTranslatedWords.current[index] = term; // Đánh dấu đã dịch thành công
       
@@ -1102,7 +1102,7 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
                     type="text" 
                     value={row.word}
                     onChange={(e) => updateRow(index, 'word', e.target.value)}
-                    onBlur={() => handleAutoTranslate(index)}
+                    onBlur={() => handleAutoTranslate(index, language)}
                     className="w-full bg-slate-50 border-2 border-transparent rounded-2xl px-5 py-4 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all text-lg font-medium placeholder:text-slate-300"
                     placeholder="Nhập từ..."
                   />

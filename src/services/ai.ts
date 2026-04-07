@@ -1,6 +1,10 @@
 import { GoogleGenAI } from "@google/genai";
-import enDict from '../data/en_3000.json';
-import deDict from '../data/de_3000.json';
+import enDictRaw from '../data/en_3000.json';
+import deDictRaw from '../data/de_3000.json';
+
+// Khắc phục lỗi bọc Module (Default Export)
+const enDict = (enDictRaw as any).default || enDictRaw;
+const deDict = (deDictRaw as any).default || deDictRaw;
 
 // Using the key from environment variables (Vite standard)
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
@@ -44,39 +48,21 @@ const callWithRetry = async (fn: () => Promise<any>, retries = 3, delay = 1000):
 
 // Tra cứu siêu tốc (O(1) Lookup) từ từ điển cục bộ
 export const checkLocalDictionary = (word: string, language: string) => {
-  // Nối đúng đường ống dữ liệu (Real Data Binding)
-  const activeDictionary = language === 'en' ? enDict : deDict;
+  // Chọn từ điển và log kiểm tra
+  const activeDictionary = language === 'de' ? deDict : enDict;
 
   // Kiểm tra kiểu mảng và tra cứu (Array check & Find)
   if (Array.isArray(activeDictionary)) {
     const searchKey = word.trim().toLowerCase();
-    const foundItem = activeDictionary.find(item => item.word && item.word.trim().toLowerCase() === searchKey);
+    const foundItem = activeDictionary.find(item => item?.word?.trim().toLowerCase() === searchKey);
 
-    if (foundItem && foundItem.vietnamese_meaning) {
-      const rawMeaning = foundItem.vietnamese_meaning.trim();
-      let processedMeaning = "";
-      let translations: string[] = [];
-      
-      if (Array.isArray(rawMeaning)) {
-        processedMeaning = (rawMeaning as string[]).join(', ');
-        translations = rawMeaning as string[];
-      } else if (typeof rawMeaning === 'string') {
-        processedMeaning = rawMeaning.trim();
-        translations = processedMeaning.split(',').map(s => s.trim());
-      }
-      
-      return {
-        translations: translations,
-        displayMeaning: processedMeaning,
-        type: "Local Dictionary",
-        pronunciation: (foundItem as any).pronunciation || "",
-        definition: (foundItem as any).definition || "",
-        example: (foundItem as any).example || "",
-        exampleTranslation: (foundItem as any).example_translation || ""
-      };
+    if (foundItem?.vietnamese_meaning) {
+      console.log(`✅ Đã tìm thấy "${searchKey}" trong Local Dictionary!`);
+      return foundItem.vietnamese_meaning.trim(); // Ngắt API ngay lập tức
     }
   } else {
-    console.error("Lỗi: activeDictionary không phải là một Array. Kiểm tra lại file JSON.");
+    // Báo cáo nếu file JSON bị đọc sai định dạng
+    console.error("❌ activeDictionary không phải là mảng. Kiểu dữ liệu:", typeof activeDictionary, activeDictionary);
   }
   
   return null;
@@ -130,8 +116,17 @@ export const translateWord = async (word: string, language: string, signal?: Abo
   // 2. Check Local Dictionary (O(1))
   const localResult = checkLocalDictionary(word, language);
   if (localResult) {
-    translationCache[cacheKey] = localResult;
-    return localResult;
+    const result = {
+      translations: [localResult],
+      displayMeaning: localResult,
+      type: "Local Dictionary",
+      pronunciation: "",
+      definition: "",
+      example: "",
+      exampleTranslation: ""
+    };
+    translationCache[cacheKey] = result;
+    return result;
   }
 
   return callWithRetry(async () => {

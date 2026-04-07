@@ -121,8 +121,11 @@ export const translateWord = async (word: string, language: string, signal?: Abo
   // 2. Check Local Dictionary (O(1))
   const localResult = checkLocalDictionary(word, language);
   if (localResult) {
+    // Tách chuỗi đa nghĩa thành mảng các nghĩa riêng biệt
+    const translations = localResult.split(',').map(item => item.trim()).filter(item => item !== '');
+    
     const result = {
-      translations: [localResult],
+      translations: translations,
       displayMeaning: localResult,
       type: "Local Dictionary",
       pronunciation: "",

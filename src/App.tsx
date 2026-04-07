@@ -826,10 +826,9 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
       lastTranslatedWords.current[index] = term; // Đánh dấu đã dịch thành công
       setRows(prevRows => {
         const updatedRows = [...prevRows];
-        if (updatedRows[index] && !updatedRows[index].meaning) {
+        if (updatedRows[index]) {
           updatedRows[index] = {
             ...updatedRows[index],
-            meaning: data.displayMeaning || data.translations[0] || '',
             suggestions: data.translations
           };
         }
@@ -866,14 +865,10 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
         if (!updatedRows[index]) return prevRows;
         
         // Race Condition: Chỉ cập nhật nếu người dùng chưa tự gõ nghĩa
-        const currentMeaning = updatedRows[index].meaning;
         updatedRows[index] = { ...updatedRows[index], loading: false };
         
         if (data.translations && data.translations.length > 0) {
           updatedRows[index].suggestions = data.translations;
-          if (!currentMeaning.trim()) {
-            updatedRows[index].meaning = data.displayMeaning || data.translations[0];
-          }
         }
         return updatedRows;
       });
@@ -1128,12 +1123,22 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
                       {row.suggestions.map((s, i) => (
                         <button 
                           key={i}
-                          onClick={() => updateRow(index, 'meaning', s)}
+                          onClick={() => {
+                            updateRow(index, 'meaning', s);
+                            // Xóa gợi ý sau khi chọn để giao diện gọn gàng
+                            setRows(prevRows => {
+                              const updatedRows = [...prevRows];
+                              if (updatedRows[index]) {
+                                updatedRows[index] = { ...updatedRows[index], suggestions: [] };
+                              }
+                              return updatedRows;
+                            });
+                          }}
                           className={cn(
-                            "text-xs px-3 py-2 rounded-xl border-2 transition-all font-medium",
+                            "text-xs px-4 py-2 rounded-full border-2 transition-all font-bold shadow-sm",
                             row.meaning === s 
-                              ? "bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-200" 
-                              : "bg-white border-white text-slate-600 hover:border-indigo-200 hover:text-indigo-600"
+                              ? "bg-indigo-600 border-indigo-600 text-white shadow-indigo-200" 
+                              : "bg-white border-indigo-100 text-indigo-600 hover:bg-indigo-50 hover:border-indigo-300 hover:scale-105"
                           )}
                         >
                           {s}

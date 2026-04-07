@@ -79,6 +79,7 @@ interface Vocabulary {
   language: Language;
   userId: string;
   createdAt: any;
+  suggestions?: string[];
 }
 
 interface Lesson {
@@ -730,9 +731,9 @@ function LibraryView({ lessons, language, onEdit, onPlay, onDelete }: { lessons:
 }
 
 function InputView({ language, user, onSaved, initialLesson }: { language: Language, user: User, onSaved: () => void, initialLesson?: Lesson }) {
-  const [rows, setRows] = useState<{ word: string, meaning: string, loading: boolean, suggestions?: string[] }[]>(
-    initialLesson ? initialLesson.vocabularies.map(v => ({ ...v, loading: false })) : 
-    [{ word: '', meaning: '', loading: false }]
+  const [rows, setRows] = useState<{ word: string, meaning: string, loading: boolean, suggestions: string[] }[]>(
+    initialLesson ? initialLesson.vocabularies.map(v => ({ ...v, loading: false, suggestions: v.suggestions || [] })) : 
+    [{ word: '', meaning: '', loading: false, suggestions: [] }]
   );
   const [lessonTitle, setLessonTitle] = useState(initialLesson?.title || '');
   const [showSaveModal, setShowSaveModal] = useState(false);
@@ -791,6 +792,20 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
         newRows[index].suggestions = [];
         // Hủy bỏ các request cũ của dòng này
         if (abortControllers.current[index]) abortControllers.current[index].abort();
+      }
+      return newRows;
+    });
+  };
+
+  const handleSelectSuggestion = (index: number, selectedText: string) => {
+    setRows(prevRows => {
+      const newRows = [...prevRows];
+      if (newRows[index]) {
+        newRows[index] = { 
+          ...newRows[index], 
+          meaning: selectedText, 
+          suggestions: [] // Xóa gợi ý sau khi chọn để giao diện gọn gàng
+        };
       }
       return newRows;
     });
@@ -1123,17 +1138,8 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
                       {row.suggestions.map((s, i) => (
                         <button 
                           key={i}
-                          onClick={() => {
-                            updateRow(index, 'meaning', s);
-                            // Xóa gợi ý sau khi chọn để giao diện gọn gàng
-                            setRows(prevRows => {
-                              const updatedRows = [...prevRows];
-                              if (updatedRows[index]) {
-                                updatedRows[index] = { ...updatedRows[index], suggestions: [] };
-                              }
-                              return updatedRows;
-                            });
-                          }}
+                          type="button"
+                          onClick={() => handleSelectSuggestion(index, s)}
                           className={cn(
                             "text-xs px-4 py-2 rounded-full border-2 transition-all font-bold shadow-sm",
                             row.meaning === s 

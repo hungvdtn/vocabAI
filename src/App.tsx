@@ -221,7 +221,6 @@ export default function App() {
         { id: '1', word: 'Hello', meaning: 'Xin chào', type: 'noun', example: 'Hello, how are you?', pronunciation: '/həˈloʊ/', userId: 'test-user-123', language: 'en', createdAt: Date.now() },
         { id: '2', word: 'World', meaning: 'Thế giới', type: 'noun', example: 'The world is big.', pronunciation: '/wɜːrld/', userId: 'test-user-123', language: 'en', createdAt: Date.now() },
         { id: '3', word: 'Apple', meaning: 'Quả táo', type: 'noun', example: 'I like apples.', pronunciation: '/ˈæp.əl/', userId: 'test-user-123', language: 'en', createdAt: Date.now() },
-        { id: '4', word: 'Book', meaning: 'Quyển sách', type: 'noun', example: 'I read a book.', pronunciation: '/bʊk/', userId: 'test-user-123', language: 'en', createdAt: Date.now() },
         { id: '5', word: 'Computer', meaning: 'Máy tính', type: 'noun', example: 'I use a computer.', pronunciation: '/kəmˈpjuːtər/', userId: 'test-user-123', language: 'en', createdAt: Date.now() },
         { id: '6', word: 'Guten Tag', meaning: 'Chào ngày mới', type: 'noun', example: 'Guten Tag, mein Herr.', pronunciation: '/ˌɡuːtn̩ ˈtaːk/', userId: 'test-user-123', language: 'de', createdAt: Date.now() },
         { id: '7', word: 'Haus', meaning: 'Ngôi nhà', type: 'noun', example: 'Das Haus ist schön.', pronunciation: '/haʊs/', userId: 'test-user-123', language: 'de', createdAt: Date.now() },

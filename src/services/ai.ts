@@ -42,43 +42,43 @@ const callWithRetry = async (fn: () => Promise<any>, retries = 3, delay = 1000):
   }
 };
 
-// Local Dictionaries
-const dictionaries: Record<string, any[]> = {
-  en: enDict,
-  de: deDict
-};
-
 // Tra cứu siêu tốc (O(1) Lookup) từ từ điển cục bộ
 export const checkLocalDictionary = (word: string, language: string) => {
-  const localDictionary = dictionaries[language];
-  if (!localDictionary || !Array.isArray(localDictionary)) return null;
-  
-  const searchKey = word.trim().toLowerCase();
-  const foundItem = localDictionary.find(item => item.word.toLowerCase() === searchKey);
-  
-  if (foundItem && foundItem.vietnamese_meaning) {
-    const rawMeaning = foundItem.vietnamese_meaning;
-    let processedMeaning = "";
-    let translations: string[] = [];
-    
-    if (Array.isArray(rawMeaning)) {
-      processedMeaning = rawMeaning.join(', ');
-      translations = rawMeaning;
-    } else if (typeof rawMeaning === 'string') {
-      processedMeaning = rawMeaning.trim();
-      translations = processedMeaning.split(',').map(s => s.trim());
+  // Nối đúng đường ống dữ liệu (Real Data Binding)
+  const activeDictionary = language === 'en' ? enDict : deDict;
+
+  // Kiểm tra kiểu mảng và tra cứu (Array check & Find)
+  if (Array.isArray(activeDictionary)) {
+    const searchKey = word.trim().toLowerCase();
+    const foundItem = activeDictionary.find(item => item.word && item.word.trim().toLowerCase() === searchKey);
+
+    if (foundItem && foundItem.vietnamese_meaning) {
+      const rawMeaning = foundItem.vietnamese_meaning.trim();
+      let processedMeaning = "";
+      let translations: string[] = [];
+      
+      if (Array.isArray(rawMeaning)) {
+        processedMeaning = (rawMeaning as string[]).join(', ');
+        translations = rawMeaning as string[];
+      } else if (typeof rawMeaning === 'string') {
+        processedMeaning = rawMeaning.trim();
+        translations = processedMeaning.split(',').map(s => s.trim());
+      }
+      
+      return {
+        translations: translations,
+        displayMeaning: processedMeaning,
+        type: "Local Dictionary",
+        pronunciation: (foundItem as any).pronunciation || "",
+        definition: (foundItem as any).definition || "",
+        example: (foundItem as any).example || "",
+        exampleTranslation: (foundItem as any).example_translation || ""
+      };
     }
-    
-    return {
-      translations: translations,
-      displayMeaning: processedMeaning,
-      type: "Local Dictionary",
-      pronunciation: foundItem.pronunciation || "",
-      definition: foundItem.definition || "",
-      example: foundItem.example || "",
-      exampleTranslation: foundItem.example_translation || ""
-    };
+  } else {
+    console.error("Lỗi: activeDictionary không phải là một Array. Kiểm tra lại file JSON.");
   }
+  
   return null;
 };
 

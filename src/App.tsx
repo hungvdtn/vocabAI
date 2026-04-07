@@ -1152,7 +1152,7 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
                           type="button"
                           onClick={() => handleSelectSuggestion(index, s)}
                           className={cn(
-                            "text-xs px-4 py-2 rounded-full border-2 transition-all font-bold shadow-sm",
+                            "text-[15px] px-5 py-2.5 rounded-full border-2 transition-all font-medium shadow-sm",
                             row.meaning === s 
                               ? "bg-indigo-600 border-indigo-600 text-white shadow-indigo-200" 
                               : "bg-white border-indigo-100 text-indigo-600 hover:bg-indigo-50 hover:border-indigo-300 hover:scale-105"

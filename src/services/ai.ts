@@ -43,20 +43,21 @@ const callWithRetry = async (fn: () => Promise<any>, retries = 3, delay = 1000):
 };
 
 // Local Dictionaries
-const dictionaries: Record<string, Record<string, string | string[]>> = {
-  en: enDict as Record<string, string | string[]>,
-  de: deDict as Record<string, string | string[]>
+const dictionaries: Record<string, any[]> = {
+  en: enDict,
+  de: deDict
 };
 
 // Tra cứu siêu tốc (O(1) Lookup) từ từ điển cục bộ
 export const checkLocalDictionary = (word: string, language: string) => {
-  const dict = dictionaries[language];
-  if (!dict) return null;
+  const localDictionary = dictionaries[language];
+  if (!localDictionary || !Array.isArray(localDictionary)) return null;
   
-  const cleanWord = word.toLowerCase().trim();
-  const rawMeaning = dict[cleanWord];
+  const searchKey = word.trim().toLowerCase();
+  const foundItem = localDictionary.find(item => item.word.toLowerCase() === searchKey);
   
-  if (rawMeaning) {
+  if (foundItem && foundItem.vietnamese_meaning) {
+    const rawMeaning = foundItem.vietnamese_meaning;
     let processedMeaning = "";
     let translations: string[] = [];
     
@@ -72,10 +73,10 @@ export const checkLocalDictionary = (word: string, language: string) => {
       translations: translations,
       displayMeaning: processedMeaning,
       type: "Local Dictionary",
-      pronunciation: "",
-      definition: "",
-      example: "",
-      exampleTranslation: ""
+      pronunciation: foundItem.pronunciation || "",
+      definition: foundItem.definition || "",
+      example: foundItem.example || "",
+      exampleTranslation: foundItem.example_translation || ""
     };
   }
   return null;

@@ -872,37 +872,48 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
       const data = await translateWord(word, currentLanguage, abortControllers.current[index].signal);
       console.log("✅ Translation result:", data);
       
+      // 1. Bọc thép hàm xử lý chuỗi (Safe Splitting)
+      // Chấp nhận cả trường hợp data là object (chuẩn hiện tại) hoặc string (phòng hờ)
+      let meaningArray: string[] = [];
+      if (data && Array.isArray(data.translations)) {
+        meaningArray = data.translations;
+      } else if (typeof data === 'string' && data.trim() !== '') {
+        meaningArray = data.split(',').map(s => s.trim()).filter(s => s !== '');
+      }
+      console.log("📦 Mảng Gợi ý đã bóc tách:", meaningArray);
+
       translationCache.current[word] = data;
       lastTranslatedWords.current[index] = term; // Đánh dấu đã dịch thành công
       
+      // 2. Tuân thủ tuyệt đối React Immutability
       setRows(prevRows => {
-        const updatedRows = [...prevRows];
-        if (!updatedRows[index]) return prevRows;
-        
-        // Race Condition: Chỉ cập nhật nếu người dùng chưa tự gõ nghĩa
-        updatedRows[index] = { ...updatedRows[index], loading: false };
-        
-        if (data.translations && data.translations.length > 0) {
-          updatedRows[index].suggestions = data.translations;
+        const newRows = [...prevRows];
+        if (newRows[index]) {
+          // Tạo object mới hoàn toàn để ép React render lại
+          newRows[index] = { 
+            ...newRows[index], 
+            suggestions: meaningArray,
+            loading: false 
+          };
         }
-        return updatedRows;
+        return newRows;
       });
-    } catch (e: any) {
-      if (e.message === 'Aborted') return;
+    } catch (error: any) {
+      if (error.message === 'Aborted') return;
       
-      // Silent Mode cho API: Tắt loading và chỉ console.error
-      if (e.message === 'QUOTA_EXCEEDED') {
-        console.warn("AI Quota Exceeded (429).");
-      } else {
-        console.error("LỖI DỊCH AI:", e);
-      }
+      // 3. Bắt lỗi ngầm (Catch block)
+      console.error("❌ Lỗi ngầm UI:", error);
       
       setRows(prevRows => {
-        const updatedRows = [...prevRows];
-        if (updatedRows[index]) {
-          updatedRows[index] = { ...updatedRows[index], loading: false, suggestions: [] };
+        const newRows = [...prevRows];
+        if (newRows[index]) {
+          newRows[index] = { 
+            ...newRows[index], 
+            loading: false, 
+            suggestions: [] 
+          };
         }
-        return updatedRows;
+        return newRows;
       });
     }
   };

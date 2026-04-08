@@ -1116,4 +1116,734 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
                     value={row.word}
                     onChange={(e) => updateRow(index, 'word', e.target.value)}
                     onBlur={() => handleAutoTranslate(index, language)}
-                    className="w-full bg-slate-50 border-2 border-
+                    className="w-full bg-slate-50 border-2 border-transparent rounded-2xl px-5 py-4 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all text-lg font-medium placeholder:text-slate-300"
+                    placeholder="Nhập từ..."
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Định nghĩa (Tiếng Việt)</label>
+                  <div className="relative">
+                    <input 
+                      type="text" 
+                      value={row.meaning}
+                      onChange={(e) => updateRow(index, 'meaning', e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Tab' && !e.shiftKey && index === rows.length - 1) {
+                          addRow();
+                        }
+                      }}
+                      className="w-full bg-slate-50 border-2 border-transparent rounded-2xl px-5 py-4 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all text-lg font-medium placeholder:text-slate-300"
+                      placeholder="Nhập nghĩa..."
+                    />
+                    {row.loading && (
+                      <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2 bg-white/80 backdrop-blur-sm px-2 py-1 rounded-lg border border-slate-100">
+                        <Loader2 className="animate-spin text-indigo-500 w-4 h-4" />
+                        <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-tighter">AI đang dịch...</span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* CẬP NHẬT GIAO DIỆN HIỂN THỊ NÚT THÔNG MINH */}
+                  {(() => {
+                    // Kiểm tra điều kiện hiển thị: Ô trống HOẶC kết thúc bằng phẩy + khoảng trắng
+                    const shouldShowSuggestions = row.meaning === '' || row.meaning.endsWith(', ');
+                    // Lọc những nghĩa đã được chọn để không hiển thị trùng lặp
+                    const availableSuggestions = (row.suggestions || []).filter(s => !row.meaning.includes(s));
+
+                    return shouldShowSuggestions && availableSuggestions.length > 0 && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mt-2 p-2 bg-slate-50 rounded-2xl border border-slate-100 flex flex-wrap gap-2"
+                      >
+                        {availableSuggestions.map((s, i) => (
+                          <button 
+                            key={i}
+                            type="button"
+                            onClick={() => handleSelectSuggestion(index, s)}
+                            className="text-[15px] px-5 py-2.5 rounded-full border-2 transition-all font-medium shadow-sm bg-white border-indigo-100 text-indigo-600 hover:bg-indigo-50 hover:border-indigo-300 hover:scale-105"
+                          >
+                            {s}
+                          </button>
+                        ))}
+                      </motion.div>
+                    );
+                  })()}
+                </div>
+              </div>
+
+              <div className="flex md:flex-col items-center justify-center gap-2">
+                <button 
+                  onClick={() => removeRow(index)}
+                  className="p-3 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                  title="Xóa hàng"
+                >
+                  <Trash2 size={20} />
+                </button>
+              </div>
+            </div>
+
+            {/* Insert Button */}
+            <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 z-10 opacity-0 group-hover:opacity-100 transition-all">
+              <button 
+                onClick={() => addRowAtIndex(index)}
+                className="bg-white border-2 border-slate-200 text-indigo-600 p-2 rounded-full shadow-xl hover:scale-110 hover:border-indigo-500 transition-all"
+                title="Thêm hàng ở đây"
+              >
+                <PlusCircle size={20} />
+              </button>
+            </div>
+          </div>
+        ))}
+
+        <button 
+          onClick={addRow}
+          className="w-full py-8 border-2 border-dashed border-slate-200 rounded-[2.5rem] text-slate-400 font-bold hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all flex items-center justify-center gap-3 group"
+        >
+          <PlusCircle size={24} className="group-hover:rotate-90 transition-transform duration-300" /> Thêm hàng mới
+        </button>
+      </div>
+
+      {/* Floating Action Bar */}
+      <div className="fixed bottom-24 left-1/2 -translate-x-1/2 w-full max-w-2xl px-4 z-40">
+        <div className="bg-white/90 backdrop-blur-2xl border border-white/20 p-4 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.1)] flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4 ml-2">
+            <div className={cn(
+              "w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-lg transition-all",
+              totalValidWords >= 5 ? "bg-emerald-500 text-white shadow-lg shadow-emerald-200" : "bg-slate-100 text-slate-400"
+            )}>
+              {totalValidWords}
+            </div>
+            <div>
+              <p className="text-sm font-bold text-slate-900 leading-none">Từ đã nhập</p>
+              <p className="text-xs text-slate-500 mt-1">{totalValidWords >= 5 ? "Sẵn sàng để lưu!" : `Cần thêm ${5 - totalValidWords} từ nữa`}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <button 
+              type="button"
+              onClick={cancelInput}
+              className="px-6 py-3 rounded-2xl font-bold text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all"
+            >
+              Hủy
+            </button>
+            <button 
+              onClick={() => setShowSaveModal(true)}
+              disabled={totalValidWords < 5}
+              className={cn(
+                "px-8 py-3 rounded-2xl font-bold transition-all shadow-lg flex items-center gap-2",
+                totalValidWords >= 5 
+                  ? "bg-indigo-600 text-white hover:bg-indigo-700 hover:scale-105 active:scale-95" 
+                  : "bg-slate-200 text-slate-400 cursor-not-allowed"
+              )}
+            >
+              Lưu bài học <ChevronRight size={20} />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Save Modal */}
+      <AnimatePresence>
+        {showSaveModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowSaveModal(false)}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative bg-white w-full max-w-lg rounded-[3rem] p-10 shadow-2xl overflow-hidden"
+            >
+              <div className="absolute top-0 left-0 w-full h-3 bg-indigo-600" />
+              <h3 className="text-3xl font-bold mb-2">Lưu bài học</h3>
+              <p className="text-slate-500 mb-8">Đặt tên cho bài học của bạn để dễ dàng tìm kiếm sau này.</p>
+              
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Tên bài học</label>
+                  <input 
+                    type="text" 
+                    autoFocus
+                    value={lessonTitle}
+                    onChange={(e) => setLessonTitle(e.target.value)}
+                    placeholder="Ví dụ: Từ vựng Unit 1, Business English..."
+                    className="w-full bg-slate-50 border-2 border-transparent rounded-2xl px-6 py-5 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all text-xl font-bold"
+                  />
+                </div>
+                
+                <div className="flex gap-4 pt-4">
+                  <button 
+                    onClick={() => setShowSaveModal(false)}
+                    className="flex-1 py-5 rounded-2xl font-bold text-slate-500 hover:bg-slate-100 transition-all"
+                  >
+                    Hủy
+                  </button>
+                  <button 
+                    onClick={saveLesson}
+                    disabled={loading || !lessonTitle.trim()}
+                    className="flex-1 bg-indigo-600 text-white py-5 rounded-2xl font-bold hover:bg-indigo-700 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-indigo-200 flex items-center justify-center gap-2"
+                  >
+                    {loading ? <Loader2 className="animate-spin" /> : "Xác nhận lưu"}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function GamesView({ vocabList, language, onComplete, playSound, activeGame, setActiveGame }: { vocabList: Vocabulary[], language: Language, onComplete: (res: GameResult) => void, playSound: (t: 'correct' | 'wrong') => void, activeGame: GameType | null, setActiveGame: (g: GameType | null) => void }) {
+  // Filter vocabList by language just in case
+  const filteredVocab = vocabList.filter(v => v.language === language);
+
+  if (filteredVocab.length < 5) {
+    return (
+      <div className="text-center py-20 bg-white rounded-[3rem] shadow-xl border border-slate-100">
+        <RobotAnimation type="sad" />
+        <h3 className="text-2xl font-bold mt-6">Bạn cần ít nhất 5 từ để bắt đầu!</h3>
+        <p className="text-slate-500 mt-2">Hãy thêm thêm từ vựng để mở khóa các trò chơi nhé.</p>
+        <p className="text-indigo-600 font-bold mt-4">Hiện có: {filteredVocab.length} từ</p>
+      </div>
+    );
+  }
+
+  if (activeGame) {
+    return (
+      <GameContainer 
+        type={activeGame} 
+        vocabList={filteredVocab} 
+        language={language} 
+        onBack={() => setActiveGame(null)} 
+        onFinish={(score) => {
+          onComplete({ gameType: activeGame, score, total: 5, timestamp: Date.now(), language });
+          setActiveGame(null);
+        }}
+        playSound={playSound}
+      />
+    );
+  }
+
+  return (
+    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <GameCard 
+        title="Flashcards" 
+        desc="Thẻ lật 3 mặt giúp ghi nhớ sâu." 
+        icon={<BrainCircuit />} 
+        colorClass="bg-blue-500"
+        onClick={() => setActiveGame('flashcards')} 
+      />
+      <GameCard 
+        title="Trắc nghiệm" 
+        desc="AI tạo từ nhiễu thông minh." 
+        icon={<CheckCircle2 />} 
+        colorClass="bg-indigo-500"
+        onClick={() => setActiveGame('quiz')} 
+      />
+      <GameCard 
+        title="Nối từ" 
+        desc="Thử thách phản xạ nhanh." 
+        icon={<RefreshCw />} 
+        colorClass="bg-orange-500"
+        onClick={() => setActiveGame('matching')} 
+      />
+      <GameCard 
+        title="Luyện viết" 
+        desc="Nghe và viết lại chính xác." 
+        icon={<Volume2 />} 
+        colorClass="bg-emerald-500"
+        onClick={() => setActiveGame('writing')} 
+      />
+      <GameCard 
+        title="Điền từ" 
+        desc="Sử dụng từ trong ngữ cảnh AI." 
+        icon={<ChevronRight />} 
+        colorClass="bg-pink-500"
+        onClick={() => setActiveGame('fill')} 
+      />
+    </div>
+  );
+}
+
+function GameCard({ title, desc, icon, onClick, colorClass }: { title: string, desc: string, icon: React.ReactNode, onClick: () => void, colorClass: string }) {
+  return (
+    <motion.button 
+      whileHover={{ y: -8, scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      onClick={onClick}
+      className={cn(
+        "bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100 text-left transition-all group relative overflow-hidden",
+        "hover:shadow-2xl hover:shadow-indigo-100"
+      )}
+    >
+      <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center mb-6 shadow-lg rotate-3 group-hover:rotate-6 transition-transform", colorClass)}>
+        {React.cloneElement(icon as React.ReactElement, { size: 32, className: "text-white" })}
+      </div>
+      <h3 className="text-xl font-bold mb-2 text-slate-900">{title}</h3>
+      <p className="text-slate-500 text-sm leading-relaxed">{desc}</p>
+      
+      <div className="absolute top-8 right-8 opacity-0 group-hover:opacity-100 transition-opacity">
+        <ChevronRight className="text-slate-300" />
+      </div>
+      
+      {/* Decorative background element */}
+      <div className={cn("absolute -bottom-6 -right-6 w-24 h-24 rounded-full opacity-5 group-hover:scale-150 transition-transform", colorClass)}></div>
+    </motion.button>
+  );
+}
+
+// --- GAME LOGIC ---
+
+function GameContainer({ type, vocabList, language, onBack, onFinish, playSound }: { type: GameType, vocabList: Vocabulary[], language: Language, onBack: () => void, onFinish: (score: number) => void, playSound: (t: 'correct' | 'wrong') => void }) {
+  const [step, setStep] = useState(0);
+  const [score, setScore] = useState(0);
+  const [gameVocabs] = useState(() => [...vocabList].sort(() => 0.5 - Math.random()).slice(0, 5));
+  
+  const currentVocab = gameVocabs[step];
+
+  const next = (correct: boolean) => {
+    if (correct) {
+      setScore(s => s + 1);
+      playSound('correct');
+    } else {
+      playSound('wrong');
+    }
+    
+    if (step < 4) {
+      setStep(s => s + 1);
+    } else {
+      onFinish(correct ? score + 1 : score);
+    }
+  };
+
+  return (
+    <div className="max-w-3xl mx-auto">
+      <div className="flex items-center justify-between mb-8">
+        <button onClick={onBack} className="flex items-center gap-2 text-slate-500 hover:text-indigo-600 font-bold">
+          <ChevronLeft size={20} /> Quay lại
+        </button>
+        <div className="flex gap-2">
+          {[0, 1, 2, 3, 4].map(i => (
+            <div key={i} className={cn("w-12 h-2 rounded-full transition-all", i <= step ? "bg-indigo-600" : "bg-slate-200")} />
+          ))}
+        </div>
+        <div className="font-bold text-indigo-600">Điểm: {score}</div>
+      </div>
+
+      <AnimatePresence mode="wait">
+        {type === 'flashcards' && (
+          <motion.div key={step} initial={{ opacity: 0, rotateY: 90 }} animate={{ opacity: 1, rotateY: 0 }} exit={{ opacity: 0, rotateY: -90 }}>
+            <FlashcardGame vocab={currentVocab} onNext={() => next(true)} language={language} />
+          </motion.div>
+        )}
+        {type === 'quiz' && (
+          <motion.div key={step} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+            <QuizGame vocab={currentVocab} allVocabs={vocabList} onNext={next} language={language} />
+          </motion.div>
+        )}
+        {type === 'matching' && (
+          <motion.div key="matching" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <MatchingGame vocabs={gameVocabs} onFinish={onFinish} playSound={playSound} />
+          </motion.div>
+        )}
+        {type === 'writing' && (
+          <motion.div key={step} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
+            <WritingGame vocab={currentVocab} onNext={next} language={language} />
+          </motion.div>
+        )}
+        {type === 'fill' && (
+          <motion.div key={step} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <FillGame vocab={currentVocab} onNext={next} language={language} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function FlashcardGame({ vocab, onNext, language }: { vocab: Vocabulary, onNext: () => void, language: Language }) {
+  const [side, setSide] = useState(0); // 0: Word, 1: Meaning, 2: Example
+
+  return (
+    <div className="space-y-8">
+      <div 
+        onClick={() => setSide((side + 1) % 3)}
+        className="aspect-[4/3] bg-white rounded-[3rem] shadow-2xl flex flex-col items-center justify-center p-12 text-center cursor-pointer relative overflow-hidden group"
+      >
+        <div className="absolute top-6 right-6">
+          <button onClick={(e) => { e.stopPropagation(); speak(vocab.word, language); }} className="p-4 bg-indigo-50 text-indigo-600 rounded-2xl hover:bg-indigo-100 transition-all">
+            <Volume2 size={24} />
+          </button>
+        </div>
+
+        <AnimatePresence mode="wait">
+          {side === 0 && (
+            <motion.div key="0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+              <span className="text-slate-400 font-bold uppercase tracking-widest text-sm">Từ vựng</span>
+              <h3 className="text-5xl font-black text-indigo-600">{vocab.word}</h3>
+            </motion.div>
+          )}
+          {side === 1 && (
+            <motion.div key="1" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+              <span className="text-slate-400 font-bold uppercase tracking-widest text-sm">Nghĩa Tiếng Việt</span>
+              <h3 className="text-5xl font-black text-emerald-600">{vocab.meaning}</h3>
+            </motion.div>
+          )}
+          {side === 2 && (
+            <motion.div key="2" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4 max-w-md">
+              <span className="text-slate-400 font-bold uppercase tracking-widest text-sm">Ví dụ</span>
+              <p className="text-2xl font-medium text-slate-700 italic">"{vocab.example || 'Đang tải ví dụ...'}"</p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        
+        <div className="absolute bottom-8 text-slate-300 font-bold text-xs uppercase tracking-widest">Nhấn để lật mặt</div>
+      </div>
+
+      <button onClick={onNext} className="w-full bg-indigo-600 text-white py-5 rounded-3xl font-bold text-xl shadow-xl hover:bg-indigo-700 transition-all">
+        Tiếp theo
+      </button>
+    </div>
+  );
+}
+
+function QuizGame({ vocab, allVocabs, onNext, language }: { vocab: Vocabulary, allVocabs: Vocabulary[], onNext: (c: boolean) => void, language: Language }) {
+  const [options, setOptions] = useState<string[]>([]);
+  const [selected, setSelected] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadOptions = async () => {
+      const distractors = await generateDistractors(vocab.word, vocab.meaning, language);
+      const all = [vocab.meaning, ...distractors].sort(() => 0.5 - Math.random());
+      setOptions(all);
+    };
+    loadOptions();
+  }, [vocab]);
+
+  return (
+    <div className="space-y-8">
+      <div className="bg-white p-12 rounded-[3rem] shadow-xl text-center">
+        <span className="text-slate-400 font-bold uppercase tracking-widest text-sm mb-4 block">Chọn nghĩa đúng của</span>
+        <h3 className="text-5xl font-black text-indigo-600 mb-6">{vocab.word}</h3>
+        <button onClick={() => speak(vocab.word, language)} className="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
+          <Volume2 size={20} />
+        </button>
+      </div>
+
+      <div className="grid gap-4">
+        {options.map((opt, i) => (
+          <button 
+            key={i}
+            disabled={!!selected}
+            onClick={() => {
+              setSelected(opt);
+              setTimeout(() => onNext(opt === vocab.meaning), 1000);
+            }}
+            className={cn(
+              "p-6 rounded-2xl text-left font-bold text-lg transition-all border-2",
+              selected === opt 
+                ? (opt === vocab.meaning ? "bg-emerald-50 border-emerald-500 text-emerald-700" : "bg-red-50 border-red-500 text-red-700")
+                : "bg-white border-slate-100 hover:border-indigo-300 hover:bg-indigo-50"
+            )}
+          >
+            {opt}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function MatchingGame({ vocabs, onFinish, playSound }: { vocabs: Vocabulary[], onFinish: (s: number) => void, playSound: (t: 'correct' | 'wrong') => void }) {
+  const [words, setWords] = useState(() => [...vocabs].sort(() => 0.5 - Math.random()));
+  const [meanings, setMeanings] = useState(() => [...vocabs].sort(() => 0.5 - Math.random()));
+  const [selectedWord, setSelectedWord] = useState<string | null>(null);
+  const [selectedMeaning, setSelectedMeaning] = useState<string | null>(null);
+  const [matches, setMatches] = useState<string[]>([]);
+  const [wrong, setWrong] = useState<[string, string] | null>(null);
+
+  useEffect(() => {
+    if (selectedWord && selectedMeaning) {
+      const vocab = vocabs.find(v => v.word === selectedWord);
+      if (vocab?.meaning === selectedMeaning) {
+        setMatches(prev => [...prev, selectedWord]);
+        playSound('correct');
+        setSelectedWord(null);
+        setSelectedMeaning(null);
+        if (matches.length + 1 === vocabs.length) {
+          setTimeout(() => onFinish(5), 1000);
+        }
+      } else {
+        setWrong([selectedWord, selectedMeaning]);
+        playSound('wrong');
+        setTimeout(() => {
+          setWrong(null);
+          setSelectedWord(null);
+          setSelectedMeaning(null);
+        }, 1000);
+      }
+    }
+  }, [selectedWord, selectedMeaning]);
+
+  return (
+    <div className="grid grid-cols-2 gap-8">
+      <div className="space-y-4">
+        {words.map(v => (
+          <button 
+            key={v.word}
+            disabled={matches.includes(v.word)}
+            onClick={() => setSelectedWord(v.word)}
+            className={cn(
+              "w-full p-6 rounded-2xl font-bold text-lg border-2 transition-all",
+              matches.includes(v.word) ? "bg-emerald-500 text-white border-emerald-500 opacity-50" :
+              selectedWord === v.word ? "bg-indigo-600 text-white border-indigo-600" :
+              wrong?.[0] === v.word ? "bg-red-500 text-white border-red-500" :
+              "bg-white border-slate-100 hover:border-indigo-300"
+            )}
+          >
+            {v.word}
+          </button>
+        ))}
+      </div>
+      <div className="space-y-4">
+        {meanings.map(v => (
+          <button 
+            key={v.meaning}
+            disabled={matches.some(m => vocabs.find(voc => voc.word === m)?.meaning === v.meaning)}
+            onClick={() => setSelectedMeaning(v.meaning)}
+            className={cn(
+              "w-full p-6 rounded-2xl font-bold text-lg border-2 transition-all",
+              matches.some(m => vocabs.find(voc => voc.word === m)?.meaning === v.meaning) ? "bg-emerald-500 text-white border-emerald-500 opacity-50" :
+              selectedMeaning === v.meaning ? "bg-indigo-600 text-white border-indigo-600" :
+              wrong?.[1] === v.meaning ? "bg-red-500 text-white border-red-500" :
+              "bg-white border-slate-100 hover:border-indigo-300"
+            )}
+          >
+            {v.meaning}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function WritingGame({ vocab, onNext, language }: { vocab: Vocabulary, onNext: (c: boolean) => void, language: Language }) {
+  const [input, setInput] = useState('');
+  const [submitted, setSubmitted] = useState(false);
+
+  useEffect(() => {
+    speak(vocab.word, language);
+  }, [vocab]);
+
+  const check = () => {
+    setSubmitted(true);
+    setTimeout(() => onNext(input.toLowerCase().trim() === vocab.word.toLowerCase().trim()), 1500);
+  };
+
+  return (
+    <div className="space-y-8">
+      <div className="bg-white p-12 rounded-[3rem] shadow-xl text-center">
+        <button onClick={() => speak(vocab.word, language)} className="w-24 h-24 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-6 hover:scale-110 transition-transform">
+          <Volume2 size={40} />
+        </button>
+        <p className="text-slate-500 font-bold">Nghe và viết lại từ này</p>
+        <p className="text-sm text-slate-400 mt-2">Nghĩa: {vocab.meaning}</p>
+      </div>
+
+      <div className="space-y-4">
+        <input 
+          autoFocus
+          type="text" 
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && check()}
+          className={cn(
+            "w-full bg-white border-4 rounded-3xl px-8 py-6 text-3xl font-black text-center focus:outline-none transition-all",
+            submitted ? (input.toLowerCase().trim() === vocab.word.toLowerCase().trim() ? "border-emerald-500 text-emerald-600" : "border-red-500 text-red-600") : "border-slate-100 focus:border-indigo-500"
+          )}
+          placeholder="..."
+        />
+        {submitted && input.toLowerCase().trim() !== vocab.word.toLowerCase().trim() && (
+          <p className="text-center font-bold text-emerald-600">Đáp án đúng: {vocab.word}</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function FillGame({ vocab, onNext, language }: { vocab: Vocabulary, onNext: (c: boolean) => void, language: Language }) {
+  const [sentence, setSentence] = useState('');
+  const [input, setInput] = useState('');
+  const [submitted, setSubmitted] = useState(false);
+
+  useEffect(() => {
+    const load = async () => {
+      const s = await generateExampleSentence(vocab.word, language);
+      setSentence(s);
+    };
+    load();
+  }, [vocab]);
+
+  const parts = sentence.split(new RegExp(`(${vocab.word})`, 'gi'));
+
+  const check = () => {
+    setSubmitted(true);
+    setTimeout(() => onNext(input.toLowerCase().trim() === vocab.word.toLowerCase().trim()), 1500);
+  };
+
+  return (
+    <div className="space-y-8">
+      <div className="bg-white p-12 rounded-[3rem] shadow-xl">
+        <h3 className="text-2xl font-medium leading-loose text-slate-700 text-center">
+          {parts.map((p, i) => 
+            p.toLowerCase() === vocab.word.toLowerCase() ? (
+              <span key={i} className="inline-block min-w-[120px] border-b-4 border-indigo-300 mx-2 text-indigo-600 font-bold">
+                {submitted ? p : (input || '...')}
+              </span>
+            ) : p
+          )}
+        </h3>
+        <p className="text-center text-slate-400 mt-8 font-bold">Nghĩa của từ cần điền: {vocab.meaning}</p>
+      </div>
+
+      <div className="space-y-4">
+        <input 
+          autoFocus
+          type="text" 
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && check()}
+          className={cn(
+            "w-full bg-white border-4 rounded-3xl px-8 py-6 text-2xl font-bold text-center focus:outline-none transition-all",
+            submitted ? (input.toLowerCase().trim() === vocab.word.toLowerCase().trim() ? "border-emerald-500 text-emerald-600" : "border-red-500 text-red-600") : "border-slate-100 focus:border-indigo-500"
+          )}
+          placeholder="Nhập từ còn thiếu"
+        />
+      </div>
+    </div>
+  );
+}
+
+// --- REPORT VIEW ---
+
+function ReportView({ results, language, vocabList }: { results: GameResult[], language: Language, vocabList: Vocabulary[] }) {
+  const [analysis, setAnalysis] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const filteredResults = results.filter(r => r.language === language);
+
+  useEffect(() => {
+    if (filteredResults.length === 0) return;
+    const runAnalysis = async () => {
+      setLoading(true);
+      const feedback = await analyzePerformance(filteredResults, language);
+      setAnalysis(feedback);
+      setLoading(false);
+    };
+    runAnalysis();
+  }, [filteredResults, language]);
+
+  const chartData = filteredResults.map((r, i) => ({
+    name: `Game ${i + 1}`,
+    score: r.score,
+    total: r.total
+  }));
+
+  const totalScore = filteredResults.reduce((acc, r) => acc + r.score, 0);
+  const totalPossible = filteredResults.reduce((acc, r) => acc + r.total, 0);
+  const accuracy = totalPossible > 0 ? Math.round((totalScore / totalPossible) * 100) : 0;
+
+  return (
+    <div className="space-y-8 pb-20">
+      <div className="text-center">
+        <h2 className="text-3xl font-bold mb-2">Kết quả học tập</h2>
+        <p className="text-slate-500">Phân tích chi tiết quá trình rèn luyện của bạn.</p>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-8">
+        <div className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100">
+          <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+            <BarChart3 className="text-indigo-600" /> Tiến độ gần đây
+          </h3>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                <Tooltip 
+                  contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                  cursor={{ fill: '#f8fafc' }}
+                />
+                <Bar dataKey="score" fill="#4f46e5" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="bg-indigo-600 p-8 rounded-[2.5rem] shadow-xl text-white flex flex-col justify-center items-center text-center">
+          <Trophy size={64} className="mb-4 text-indigo-200" />
+          <h3 className="text-2xl font-bold mb-2">Tổng điểm tích lũy</h3>
+          <div className="text-6xl font-black mb-4">{totalScore}</div>
+          <div className="bg-indigo-500/50 px-6 py-2 rounded-full font-bold">
+            Độ chính xác: {accuracy}%
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100">
+        <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+          <BrainCircuit className="text-indigo-600" /> AI Nhận xét & Khuyên dùng
+        </h3>
+        {loading ? (
+          <div className="flex flex-col items-center py-8">
+            <RefreshCw className="animate-spin text-indigo-600 mb-4" size={32} />
+            <p className="text-slate-500 font-medium italic">Gemini đang phân tích kết quả của bạn...</p>
+          </div>
+        ) : (
+          <div className="prose prose-slate max-w-none">
+            <p className="text-slate-700 leading-relaxed whitespace-pre-wrap">{analysis || "Bắt đầu chơi để nhận nhận xét từ AI!"}</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Footer() {
+  return (
+    <footer className="bg-slate-900 text-white py-4 mt-auto border-t border-slate-800">
+      <div className="max-w-7xl mx-auto px-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-slate-400 text-xs md:text-sm">
+        <div className="flex items-center gap-2">
+          <img 
+            src="/chan_trang.PNG" 
+            alt="AIBTeM Logo" 
+            className="h-6 object-contain"
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+            }}
+          />
+          <span className="font-bold text-white tracking-wider">AIBTeM</span>
+        </div>
+        
+        <p>
+          © 2026 Vũ Xuân Hùng | Vocab AIBTeM. All Rights Reserved.
+        </p>
+        
+        <div className="flex items-center gap-2 hover:text-white transition-colors">
+          <Mail size={14} className="text-indigo-400" />
+          <span>hungvdtnai@gmail.com</span>
+        </div>
+      </div>
+    </footer>
+  );
+}

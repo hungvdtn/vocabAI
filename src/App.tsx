@@ -64,9 +64,13 @@ import {
   Cell
 } from 'recharts';
 
+// IMPORT TRỰC TIẾP CƠ SỞ DỮ LIỆU TỪ ĐIỂN 3000 TỪ
+import enDictDataRaw from './data/en_3000.json';
+import deDictDataRaw from './data/de_3000.json';
+
 // Types
 type Language = 'en' | 'de';
-type View = 'home' | 'input' | 'dictionary' | 'library' | 'games' | 'report';
+type View = 'home' | 'input' | 'library' | 'games' | 'report' | 'dictionary';
 type GameType = 'flashcards' | 'quiz' | 'matching' | 'writing' | 'fill';
 
 interface Vocabulary {
@@ -111,6 +115,16 @@ interface GameResult {
   language: Language;
 }
 
+// Hàm hỗ trợ bôi màu từ vựng trong câu ví dụ
+const highlightWordInSentence = (sentence: string, targetWord: string) => {
+  if (!sentence || !targetWord) return sentence;
+  const regex = new RegExp(`(${targetWord})`, 'gi');
+  const parts = sentence.split(regex);
+  return parts.map((part, i) => 
+    regex.test(part) ? <span key={i} className="text-blue-600 font-bold">{part}</span> : part
+  );
+};
+
 // Components
 const RobotAnimation = ({ type }: { type: 'happy' | 'thinking' | 'sad' }) => {
   const lottiePaths = {
@@ -153,11 +167,6 @@ export default function App() {
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  
-  // Quick Search States
-  const [quickSearch, setQuickSearch] = useState('');
-  const [showQuickResults, setShowQuickResults] = useState(false);
-  const quickSearchRef = useRef<HTMLDivElement>(null);
 
   // Auth
   useEffect(() => {
@@ -167,19 +176,16 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  // Click outside menu and quick search to close
+  // Click outside menu to close
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setIsMenuOpen(false);
       }
-      if (quickSearchRef.current && !quickSearchRef.current.contains(event.target as Node)) {
-        setShowQuickResults(false);
-      }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [menuRef, quickSearchRef]);
+  }, [menuRef]);
 
   // Fetch Lessons
   useEffect(() => {
@@ -234,9 +240,7 @@ export default function App() {
     
     if (isTestMode) {
       const mockVocab: Vocabulary[] = [
-        { id: '1', word: 'Hello', meaning: 'Xin chào', type: 'noun', example: 'Hello, how are you?', phonetic: '/həˈloʊ/', english_definition: 'Used as a greeting or to begin a phone conversation.', userId: 'test-user-123', language: 'en', createdAt: Date.now() },
-        { id: '2', word: 'abandon', meaning: 'từ bỏ, bỏ rơi', type: 'verb', part_of_speech: 'v.', example_english: 'We had to abandon the car.', example_vietnamese: 'Chúng tôi đã phải bỏ lại chiếc xe.', phonetic: '/əˈbæn.dən/', english_definition: 'To leave a place, thing, or person, usually for ever.', userId: 'test-user-123', language: 'en', createdAt: Date.now() },
-        { id: '6', word: 'Tisch', meaning: 'cái bàn', type: 'noun', article: 'der', plural: 'die Tische', part_of_speech: 'n.', example_german: 'Das Buch liegt auf dem Tisch.', example_vietnamese: 'Quyển sách nằm trên bàn.', phonetic: '/tɪʃ/', german_definition: 'Ein Möbelstück mit einer flachen Platte und Beinen.', userId: 'test-user-123', language: 'de', createdAt: Date.now() },
+        { id: '1', word: 'Hello', meaning: 'Xin chào', type: 'noun', example: 'Hello, how are you?', phonetic: '/həˈloʊ/', english_definition: 'Used as a greeting or to begin a phone conversation.', userId: 'test-user-123', language: 'en', createdAt: Date.now() }
       ];
       setVocabList(mockVocab.filter(v => v.language === language));
       return;
@@ -269,16 +273,6 @@ export default function App() {
       alert("Không thể xóa bài học.");
     }
   };
-
-  const handleQuickSearch = (term: string) => {
-    setQuickSearch(term);
-    setShowQuickResults(true);
-  };
-
-  const quickSearchResults = vocabList.filter(v => 
-    v.language === language && 
-    (v.word.toLowerCase().includes(quickSearch.toLowerCase()) || v.meaning.toLowerCase().includes(quickSearch.toLowerCase()))
-  ).slice(0, 5); // Limit to 5 results for quick search
 
   if (!user) {
     return (
@@ -327,56 +321,16 @@ export default function App() {
           
           <div className="hidden md:flex items-center gap-4 lg:gap-6">
             <NavButton active={view === 'input'} onClick={() => setView('input')} icon={<PlusCircle size={18} />} label="Nhập liệu" />
-            <NavButton active={view === 'dictionary'} onClick={() => setView('dictionary')} icon={<BookOpen size={18} />} label="Từ điển" />
             <NavButton active={view === 'library'} onClick={() => setView('library')} icon={<FileText size={18} />} label="Thư viện" />
             <NavButton active={view === 'games'} onClick={() => setView('games')} icon={<Gamepad2 size={18} />} label="Trò chơi" />
             <NavButton active={view === 'report'} onClick={() => setView('report')} icon={<BarChart3 size={18} />} label="Báo cáo" />
+            {/* Từ điển đặt sau Báo cáo */}
+            <NavButton active={view === 'dictionary'} onClick={() => setView('dictionary')} icon={<BookOpen size={18} />} label="Từ điển" />
           </div>
 
           <div className="flex items-center gap-3 lg:gap-4">
             
-            {/* Quick Search Bar */}
-            <div className="relative hidden sm:block" ref={quickSearchRef}>
-              <div className="flex items-center bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200 focus-within:border-indigo-300 focus-within:ring-2 focus-within:ring-indigo-100 transition-all">
-                <Search size={16} className="text-slate-400 mr-2" />
-                <input 
-                  type="text" 
-                  placeholder="Tra nhanh..." 
-                  value={quickSearch}
-                  onChange={(e) => handleQuickSearch(e.target.value)}
-                  onFocus={() => quickSearch && setShowQuickResults(true)}
-                  className="bg-transparent border-none outline-none text-sm w-24 focus:w-40 transition-all placeholder:text-slate-400"
-                />
-              </div>
-              <AnimatePresence>
-                {showQuickResults && quickSearch && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 10 }}
-                    className="absolute right-0 top-full mt-2 w-72 bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden z-50"
-                  >
-                    {quickSearchResults.length > 0 ? (
-                      <div className="py-2">
-                        {quickSearchResults.map(v => (
-                          <div key={v.id} className="px-4 py-3 hover:bg-slate-50 cursor-pointer border-b border-slate-50 last:border-0" onClick={() => { setView('dictionary'); setQuickSearch(''); setShowQuickResults(false); }}>
-                            <div className="font-bold text-indigo-600 flex items-center gap-2">
-                              {v.word}
-                              {v.phonetic && <span className="text-xs font-normal text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-md">{v.phonetic}</span>}
-                            </div>
-                            <div className="text-sm text-slate-600 mt-1 truncate">{v.meaning}</div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="p-4 text-center text-sm text-slate-500">
-                        Không tìm thấy từ "{quickSearch}"
-                      </div>
-                    )}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+            {/* Đã bỏ thanh Tra Nhanh (Quick Search) theo yêu cầu */}
 
             <div className="flex bg-slate-100 p-1 rounded-xl">
               <button 
@@ -477,7 +431,7 @@ export default function App() {
           )}
           {view === 'dictionary' && (
             <motion.div key="dictionary" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
-              <DictionaryView vocabList={vocabList} language={language} />
+              <DictionaryView language={language} />
             </motion.div>
           )}
           {view === 'input' && (
@@ -533,10 +487,10 @@ export default function App() {
       {/* Mobile Nav */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around p-2 z-50">
         <MobileNavButton active={view === 'input'} onClick={() => setView('input')} icon={<PlusCircle />} />
-        <MobileNavButton active={view === 'dictionary'} onClick={() => setView('dictionary')} icon={<BookOpen />} />
         <MobileNavButton active={view === 'library'} onClick={() => setView('library')} icon={<FileText />} />
         <MobileNavButton active={view === 'games'} onClick={() => setView('games')} icon={<Gamepad2 />} />
-        <MobileNavButton active={view === 'home'} onClick={() => { setView('home'); setActiveGame(null); }} icon={<Home />} />
+        <MobileNavButton active={view === 'report'} onClick={() => setView('report')} icon={<BarChart3 />} />
+        <MobileNavButton active={view === 'dictionary'} onClick={() => setView('dictionary')} icon={<BookOpen />} />
       </div>
       <Footer />
     </div>
@@ -625,164 +579,182 @@ function StatCard({ title, value, color }: { title: string, value: string, color
   );
 }
 
-// --- DICTIONARY VIEW ---
-function DictionaryView({ vocabList, language }: { vocabList: Vocabulary[], language: Language }) {
+// --- DICTIONARY VIEW CHUYÊN SÂU ---
+function DictionaryView({ language }: { language: Language }) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedWord, setSelectedWord] = useState<Vocabulary | null>(null);
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [selectedWord, setSelectedWord] = useState<any | null>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
 
-  const filteredVocab = vocabList.filter(v => 
-    v.language === language && 
-    (v.word.toLowerCase().includes(searchTerm.toLowerCase()) || v.meaning.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  // Lựa chọn Database gốc theo ngôn ngữ
+  const currentDict: any[] = language === 'en' ? enDictDataRaw : deDictDataRaw;
+
+  // Xử lý Gợi ý từ khi gõ (Chỉ tra Ngoại ngữ -> Tiếng Việt)
+  const handleSearchChange = (text: string) => {
+    setSearchTerm(text);
+    if (text.trim() === '') {
+      setSuggestions([]);
+      setSelectedWord(null);
+      return;
+    }
+    
+    // Tìm kiếm các từ BẮT ĐẦU BẰNG chuỗi đang gõ
+    const results = currentDict.filter(item => 
+      item.word && item.word.toLowerCase().startsWith(text.toLowerCase())
+    ).slice(0, 8); // Hiển thị tối đa 8 gợi ý
+    
+    setSuggestions(results);
+    setSelectedWord(null); // Ẩn kết quả cũ khi đang gõ từ mới
+  };
+
+  const handleSelectWord = (wordObj: any) => {
+    setSelectedWord(wordObj);
+    setSearchTerm(wordObj.word);
+    setSuggestions([]); // Ẩn dropdown
+  };
+
+  // Đóng dropdown khi click ra ngoài
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setSuggestions([]);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [searchRef]);
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 pb-32">
-      <div className="text-center space-y-4">
+    <div className="pb-32">
+      <div className="text-center space-y-4 mb-8 mt-4">
         <h2 className="text-4xl font-bold text-slate-900">Từ điển {language === 'en' ? 'Anh - Việt' : 'Đức - Việt'}</h2>
-        <p className="text-slate-500">Tra cứu nhanh chóng, nắm bắt ngữ pháp chuyên sâu.</p>
       </div>
 
-      <div className="relative">
-        <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 w-6 h-6" />
-        <input 
-          type="text"
-          placeholder="Nhập từ vựng hoặc nghĩa tiếng Việt cần tra..."
-          value={searchTerm}
-          onChange={(e) => {
-            setSearchTerm(e.target.value);
-            if (e.target.value === '') setSelectedWord(null);
-          }}
-          className="w-full bg-white border-2 border-slate-200 rounded-[2rem] pl-16 pr-6 py-5 text-lg font-medium focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all shadow-sm"
-        />
-      </div>
+      {/* Khung Nhập từ vựng (Full width, Bo góc) */}
+      <div className="relative w-full max-w-5xl mx-auto" ref={searchRef}>
+        <div className="relative">
+          <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 w-6 h-6" />
+          <input 
+            type="text"
+            placeholder="Nhập từ vựng cần tra..."
+            value={searchTerm}
+            onChange={(e) => handleSearchChange(e.target.value)}
+            className="w-full bg-white border-2 border-slate-200 rounded-[2rem] pl-16 pr-6 py-4 text-xl font-medium focus:border-indigo-500 outline-none transition-all shadow-sm"
+          />
+        </div>
 
-      {!selectedWord && searchTerm && (
-        <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
-          {filteredVocab.length > 0 ? (
-            <div className="divide-y divide-slate-50">
-              {filteredVocab.map((vocab, idx) => (
+        {/* Dropdown Gợi ý tự động */}
+        <AnimatePresence>
+          {suggestions.length > 0 && !selectedWord && (
+            <motion.div 
+              initial={{ opacity: 0, y: -5 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -5 }}
+              className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden z-50"
+            >
+              {suggestions.map((item, idx) => (
                 <div 
-                  key={idx} 
-                  onClick={() => setSelectedWord(vocab)}
-                  className="p-4 hover:bg-slate-50 cursor-pointer transition-colors flex items-center justify-between group"
+                  key={idx}
+                  onClick={() => handleSelectWord(item)}
+                  className="px-6 py-4 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-none flex items-center justify-between"
                 >
-                  <div>
-                    <span className="font-bold text-lg text-slate-900 group-hover:text-indigo-600 transition-colors">
-                      {vocab.article && <span className="text-slate-400 font-normal mr-1">{vocab.article}</span>}
-                      {vocab.word}
-                    </span>
-                    <span className="text-slate-500 ml-4">{vocab.meaning}</span>
-                  </div>
-                  <ChevronRight className="text-slate-300 group-hover:text-indigo-400" />
+                  <span className="text-lg font-bold text-slate-800">{item.word}</span>
+                  <span className="text-slate-500 truncate ml-4 max-w-xs">{item.vietnamese_meaning}</span>
                 </div>
               ))}
-            </div>
-          ) : (
-            <div className="p-12 text-center text-slate-400">
-              <Search className="w-12 h-12 mx-auto mb-4 opacity-20" />
-              <p>Không tìm thấy từ vựng nào phù hợp trong cơ sở dữ liệu.</p>
-            </div>
+            </motion.div>
           )}
+        </AnimatePresence>
+      </div>
+
+      {/* HIỂN THỊ KHI CHƯA TRA TỪ (Màn hình Home Từ điển) */}
+      {!selectedWord && (
+        <div className="w-full max-w-5xl mx-auto mt-8 grid grid-cols-1 md:grid-cols-2 gap-8 items-center bg-white p-8 md:p-12 rounded-[2rem] shadow-sm border border-slate-100">
+          <div className="space-y-5 text-slate-700 text-lg leading-relaxed">
+            <h3 className="text-3xl font-black text-indigo-700 mb-6">AIBTeM Dictionary</h3>
+            <p className="flex items-center gap-3"><CheckCircle2 className="text-emerald-500" size={24}/> Từ điển trực tuyến miễn phí;</p>
+            <p className="flex items-center gap-3"><CheckCircle2 className="text-emerald-500" size={24}/> Tra cứu nhanh;</p>
+            <p className="flex items-center gap-3"><CheckCircle2 className="text-emerald-500" size={24}/> Kho từ đồ sộ, gợi ý thông minh;</p>
+            <p className="flex items-center gap-3"><CheckCircle2 className="text-emerald-500" size={24}/> Nghe được phát âm;</p>
+            <p className="flex items-center gap-3"><CheckCircle2 className="text-emerald-500" size={24}/> Hỗ trợ tra từ bằng giọng nói.</p>
+          </div>
+          <div className="flex justify-center">
+            <RobotAnimation type="happy" />
+          </div>
         </div>
       )}
 
+      {/* HIỂN THỊ KẾT QUẢ TRA TỪ CHUẨN CAMBRIDGE */}
       {selectedWord && (
         <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white p-8 md:p-12 rounded-[3rem] shadow-xl border border-slate-100 relative overflow-hidden"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="w-full max-w-5xl mx-auto mt-6 bg-white p-8 md:p-10 border border-slate-200 shadow-sm"
         >
-          <button 
-            onClick={() => setSelectedWord(null)}
-            className="absolute top-6 right-6 text-slate-400 hover:text-slate-600 bg-slate-50 p-2 rounded-full"
-          >
-            <XCircle />
-          </button>
-
-          <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 mb-10">
-            <div>
-              <h2 className="text-5xl font-black text-slate-900 mb-4 flex items-baseline gap-3">
-                {selectedWord.article && (
-                  <span className={cn(
-                    "text-3xl",
-                    selectedWord.article.toLowerCase() === 'der' ? "text-blue-500" :
-                    selectedWord.article.toLowerCase() === 'die' ? "text-red-500" :
-                    "text-green-500"
-                  )}>
-                    {selectedWord.article}
-                  </span>
-                )}
-                {selectedWord.word}
-              </h2>
-              <div className="flex flex-wrap items-center gap-3">
-                {selectedWord.phonetic && (
-                  <span className="font-mono bg-slate-100 text-slate-600 px-3 py-1.5 rounded-xl text-sm border border-slate-200">
-                    {selectedWord.phonetic}
-                  </span>
-                )}
-                {selectedWord.part_of_speech && (
-                  <span className="italic text-indigo-600 font-medium">
-                    {selectedWord.part_of_speech}
-                  </span>
-                )}
-                {selectedWord.plural && (
-                  <span className="text-sm font-bold text-slate-500 border-2 border-slate-100 px-3 py-1 rounded-xl">
-                    Số nhiều: <span className="text-slate-800">{selectedWord.plural}</span>
-                  </span>
-                )}
-              </div>
-            </div>
-            
-            <button 
-              onClick={() => speak(selectedWord.word, language)}
-              className="w-16 h-16 shrink-0 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center hover:bg-indigo-600 hover:text-white transition-all shadow-sm"
-            >
-              <Volume2 size={32} />
-            </button>
-          </div>
-
-          <div className="space-y-8">
-            {/* Tiếng Việt */}
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-2 h-6 bg-emerald-500 rounded-full"></div>
-                <h4 className="text-sm font-bold uppercase tracking-widest text-slate-400">Nghĩa Tiếng Việt</h4>
-              </div>
-              <p className="text-3xl font-bold text-emerald-600 pl-4">{selectedWord.meaning}</p>
-            </div>
-
-            {/* Định nghĩa Ngoại ngữ */}
-            {(selectedWord.english_definition || selectedWord.german_definition) && (
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-2 h-6 bg-slate-300 rounded-full"></div>
-                  <h4 className="text-sm font-bold uppercase tracking-widest text-slate-400">Định nghĩa ({language === 'en' ? 'Anh' : 'Đức'})</h4>
-                </div>
-                <p className="text-xl text-slate-700 pl-4 leading-relaxed">
-                  {language === 'en' ? selectedWord.english_definition : selectedWord.german_definition}
-                </p>
-              </div>
-            )}
-
-            {/* Ví dụ */}
-            {(selectedWord.example || selectedWord.example_english || selectedWord.example_german) && (
-              <div className="bg-indigo-50/50 p-6 md:p-8 rounded-[2rem] border border-indigo-100/50">
-                <h4 className="text-sm font-bold uppercase tracking-widest text-indigo-400 mb-4 flex items-center gap-2">
-                  <BookOpen size={16} /> Ngữ cảnh sử dụng
-                </h4>
-                <div className="space-y-2">
-                  <p className="text-2xl font-medium text-indigo-900 italic">
-                    "{selectedWord.example_english || selectedWord.example_german || selectedWord.example}"
-                  </p>
-                  {selectedWord.example_vietnamese && (
-                    <p className="text-lg text-indigo-600/80">
-                      {selectedWord.example_vietnamese}
-                    </p>
-                  )}
-                </div>
-              </div>
+          {/* Dòng 1: Từ Tiếng Anh (Màu xanh vừa phải) + Từ loại */}
+          <div className="mb-2 flex items-baseline gap-2 flex-wrap">
+            <span className="text-3xl text-blue-700 font-bold">
+              {selectedWord.article && (
+                <span className={cn(
+                  "font-normal mr-2",
+                  selectedWord.article.toLowerCase() === 'der' ? "text-blue-500" :
+                  selectedWord.article.toLowerCase() === 'die' ? "text-red-500" :
+                  "text-green-600"
+                )}>
+                  {selectedWord.article}
+                </span>
+              )}
+              {selectedWord.word}
+            </span>
+            {selectedWord.part_of_speech && (
+              <span className="text-xl text-slate-500 font-medium">({selectedWord.part_of_speech})</span>
             )}
           </div>
+
+          {/* Dòng 2: Loa + Phiên âm */}
+          {selectedWord.phonetic && (
+            <div className="flex items-center gap-3 mb-6">
+              <Volume2 
+                className="text-indigo-600 cursor-pointer hover:text-indigo-800 hover:scale-110 transition-transform" 
+                onClick={() => speak(selectedWord.word, language)} 
+                size={22} 
+              />
+              <span className="font-mono text-slate-600 text-lg">[{selectedWord.phonetic}]</span>
+            </div>
+          )}
+
+          {/* Dòng 3: Định nghĩa Anh/Đức */}
+          {(selectedWord.english_definition || selectedWord.german_definition) && (
+            <div className="text-slate-800 mb-3 text-lg font-medium">
+              {language === 'en' ? selectedWord.english_definition : selectedWord.german_definition}
+            </div>
+          )}
+
+          {/* Dòng 4: Nghĩa Tiếng Việt */}
+          <div className="text-emerald-700 mb-8 text-xl font-bold">
+            {selectedWord.vietnamese_meaning}
+          </div>
+
+          {/* Dòng 5 & 6: Ví dụ */}
+          {(selectedWord.example_english || selectedWord.example_german) && (
+            <div className="mt-4 border-t border-slate-100 pt-6">
+              <div className="flex items-start gap-3 mb-2">
+                <Volume2 
+                  className="text-slate-400 cursor-pointer hover:text-indigo-600 mt-1 flex-shrink-0 transition-colors" 
+                  onClick={() => speak(selectedWord.example_english || selectedWord.example_german, language)} 
+                  size={20} 
+                />
+                <span className="italic text-slate-800 text-lg leading-relaxed">
+                  {highlightWordInSentence(selectedWord.example_english || selectedWord.example_german, selectedWord.word)}
+                </span>
+              </div>
+              {selectedWord.example_vietnamese && (
+                <div className="ml-8 text-slate-600 text-lg">
+                  {selectedWord.example_vietnamese}
+                </div>
+              )}
+            </div>
+          )}
         </motion.div>
       )}
     </div>

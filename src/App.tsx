@@ -28,7 +28,8 @@ import {
   Download,
   LogOut,
   ChevronDown,
-  BookOpen
+  BookOpen,
+  Mic
 } from 'lucide-react';
 import Lottie from 'lottie-react';
 import * as mammoth from 'mammoth';
@@ -123,6 +124,22 @@ const highlightWordInSentence = (sentence: string, targetWord: string) => {
   return parts.map((part, i) => 
     regex.test(part) ? <span key={i} className="text-blue-600 font-bold">{part}</span> : part
   );
+};
+
+// Hàm phát âm dự phòng (Web Speech API Native)
+const handleSpeak = (text: string, lang: Language) => {
+  try {
+    speak(text, lang); // Thử gọi dịch vụ TTS của app trước
+  } catch (error) {
+    console.log("TTS service fallback to native.");
+  }
+  // Bật loa dự phòng của trình duyệt
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.cancel(); // Tắt âm thanh cũ nếu đang đọc
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = lang === 'en' ? 'en-US' : 'de-DE';
+    window.speechSynthesis.speak(utterance);
+  }
 };
 
 // Components
@@ -330,8 +347,6 @@ export default function App() {
 
           <div className="flex items-center gap-3 lg:gap-4">
             
-            {/* Đã bỏ thanh Tra Nhanh (Quick Search) theo yêu cầu */}
-
             <div className="flex bg-slate-100 p-1 rounded-xl">
               <button 
                 onClick={() => { setLanguage('en'); setEditingLesson(null); }}
@@ -430,7 +445,7 @@ export default function App() {
             </motion.div>
           )}
           {view === 'dictionary' && (
-            <motion.div key="dictionary" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
+            <motion.div key={`dict-${language}`} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
               <DictionaryView language={language} />
             </motion.div>
           )}
@@ -586,6 +601,13 @@ function DictionaryView({ language }: { language: Language }) {
   const [selectedWord, setSelectedWord] = useState<any | null>(null);
   const searchRef = useRef<HTMLDivElement>(null);
 
+  // Reset tra cứu khi đổi ngôn ngữ
+  useEffect(() => {
+    setSearchTerm('');
+    setSelectedWord(null);
+    setSuggestions([]);
+  }, [language]);
+
   // Lựa chọn Database gốc theo ngôn ngữ
   const currentDict: any[] = language === 'en' ? enDictDataRaw : deDictDataRaw;
 
@@ -613,6 +635,37 @@ function DictionaryView({ language }: { language: Language }) {
     setSuggestions([]); // Ẩn dropdown
   };
 
+  // Tính năng ấn Enter để tra từ
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && searchTerm.trim() !== '') {
+      // Ưu tiên khớp chính xác 100%
+      const exactMatch = currentDict.find(item => item.word && item.word.toLowerCase() === searchTerm.toLowerCase().trim());
+      if (exactMatch) {
+        handleSelectWord(exactMatch);
+      } else if (suggestions.length > 0) {
+        // Nếu không khớp chính xác, tự động chọn từ đầu tiên trong danh sách gợi ý
+        handleSelectWord(suggestions[0]);
+      }
+    }
+  };
+
+  // Tính năng Tra từ bằng Giọng nói (Web Speech API)
+  const startVoiceSearch = () => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      const recognition = new SpeechRecognition();
+      recognition.lang = language === 'en' ? 'en-US' : 'de-DE';
+      recognition.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        setSearchTerm(transcript);
+        handleSearchChange(transcript);
+      };
+      recognition.start();
+    } else {
+      alert("Trình duyệt của bạn không hỗ trợ tính năng nhận diện giọng nói (Vui lòng sử dụng Google Chrome).");
+    }
+  };
+
   // Đóng dropdown khi click ra ngoài
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -627,7 +680,8 @@ function DictionaryView({ language }: { language: Language }) {
   return (
     <div className="pb-32">
       <div className="text-center space-y-4 mb-8 mt-4">
-        <h2 className="text-4xl font-bold text-slate-900">Từ điển {language === 'en' ? 'Anh - Việt' : 'Đức - Việt'}</h2>
+        {/* Đổi Font, Size và Màu sắc giống hệt AIBTeM Dictionary */}
+        <h2 className="text-3xl font-black text-indigo-700">Từ điển {language === 'en' ? 'Anh - Việt' : 'Đức - Việt'}</h2>
       </div>
 
       {/* Khung Nhập từ vựng (Full width, Bo góc) */}
@@ -639,8 +693,17 @@ function DictionaryView({ language }: { language: Language }) {
             placeholder="Nhập từ vựng cần tra..."
             value={searchTerm}
             onChange={(e) => handleSearchChange(e.target.value)}
-            className="w-full bg-white border-2 border-slate-200 rounded-[2rem] pl-16 pr-6 py-4 text-xl font-medium focus:border-indigo-500 outline-none transition-all shadow-sm"
+            onKeyDown={handleKeyDown}
+            className="w-full bg-white border-2 border-slate-200 rounded-[2rem] pl-16 pr-16 py-4 text-xl font-medium focus:border-indigo-500 outline-none transition-all shadow-sm"
           />
+          {/* Nút Micro để tra cứu bằng giọng nói */}
+          <button 
+            onClick={startVoiceSearch} 
+            className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-600 transition-colors p-2 bg-slate-50 hover:bg-indigo-50 rounded-full"
+            title="Tra từ bằng giọng nói"
+          >
+            <Mic size={20} />
+          </button>
         </div>
 
         {/* Dropdown Gợi ý tự động */}
@@ -670,16 +733,25 @@ function DictionaryView({ language }: { language: Language }) {
       {/* HIỂN THỊ KHI CHƯA TRA TỪ (Màn hình Home Từ điển) */}
       {!selectedWord && (
         <div className="w-full max-w-5xl mx-auto mt-8 grid grid-cols-1 md:grid-cols-2 gap-8 items-center bg-white p-8 md:p-12 rounded-[2rem] shadow-sm border border-slate-100">
-          <div className="space-y-5 text-slate-700 text-lg leading-relaxed">
-            <h3 className="text-3xl font-black text-indigo-700 mb-6">AIBTeM Dictionary</h3>
-            <p className="flex items-center gap-3"><CheckCircle2 className="text-emerald-500" size={24}/> Từ điển trực tuyến miễn phí;</p>
-            <p className="flex items-center gap-3"><CheckCircle2 className="text-emerald-500" size={24}/> Tra cứu nhanh;</p>
-            <p className="flex items-center gap-3"><CheckCircle2 className="text-emerald-500" size={24}/> Kho từ đồ sộ, gợi ý thông minh;</p>
-            <p className="flex items-center gap-3"><CheckCircle2 className="text-emerald-500" size={24}/> Nghe được phát âm;</p>
-            <p className="flex items-center gap-3"><CheckCircle2 className="text-emerald-500" size={24}/> Hỗ trợ tra từ bằng giọng nói.</p>
+          {/* Cột trái: Thông tin đã được thu nhỏ tinh tế */}
+          <div className="space-y-4">
+            <h3 className="text-2xl font-black text-indigo-700 mb-2">AIBTeM Dictionary</h3>
+            <div className="space-y-3 text-slate-600 text-sm md:text-base leading-relaxed">
+              <p className="flex items-center gap-2"><CheckCircle2 className="text-emerald-500 shrink-0" size={18}/> Từ điển trực tuyến miễn phí;</p>
+              <p className="flex items-center gap-2"><CheckCircle2 className="text-emerald-500 shrink-0" size={18}/> Tra cứu nhanh;</p>
+              <p className="flex items-center gap-2"><CheckCircle2 className="text-emerald-500 shrink-0" size={18}/> Kho từ đồ sộ, gợi ý thông minh;</p>
+              <p className="flex items-center gap-2"><CheckCircle2 className="text-emerald-500 shrink-0" size={18}/> Nghe được phát âm;</p>
+              <p className="flex items-center gap-2"><CheckCircle2 className="text-emerald-500 shrink-0" size={18}/> Hỗ trợ tra từ bằng giọng nói.</p>
+            </div>
           </div>
+          {/* Cột phải: Hình ảnh Mochi Placeholder */}
           <div className="flex justify-center">
-            <RobotAnimation type="happy" />
+            {/* Ảnh minh họa sẽ được anh Hùng thay bằng link thật sau */}
+            <img 
+              src="https://placehold.co/400x400/4f46e5/white?text=Mochi+Image" 
+              alt="Mochi" 
+              className="w-64 h-64 object-contain animate-[bounce_3s_infinite]" 
+            />
           </div>
         </div>
       )}
@@ -691,7 +763,7 @@ function DictionaryView({ language }: { language: Language }) {
           animate={{ opacity: 1 }}
           className="w-full max-w-5xl mx-auto mt-6 bg-white p-8 md:p-10 border border-slate-200 shadow-sm"
         >
-          {/* Dòng 1: Từ Tiếng Anh (Màu xanh vừa phải) + Từ loại */}
+          {/* Dòng 1: Từ Ngoại ngữ + Từ loại */}
           <div className="mb-2 flex items-baseline gap-2 flex-wrap">
             <span className="text-3xl text-blue-700 font-bold">
               {selectedWord.article && (
@@ -716,7 +788,7 @@ function DictionaryView({ language }: { language: Language }) {
             <div className="flex items-center gap-3 mb-6">
               <Volume2 
                 className="text-indigo-600 cursor-pointer hover:text-indigo-800 hover:scale-110 transition-transform" 
-                onClick={() => speak(selectedWord.word, language)} 
+                onClick={() => handleSpeak(selectedWord.word, language)} 
                 size={22} 
               />
               <span className="font-mono text-slate-600 text-lg">[{selectedWord.phonetic}]</span>
@@ -741,7 +813,7 @@ function DictionaryView({ language }: { language: Language }) {
               <div className="flex items-start gap-3 mb-2">
                 <Volume2 
                   className="text-slate-400 cursor-pointer hover:text-indigo-600 mt-1 flex-shrink-0 transition-colors" 
-                  onClick={() => speak(selectedWord.example_english || selectedWord.example_german, language)} 
+                  onClick={() => handleSpeak(selectedWord.example_english || selectedWord.example_german, language)} 
                   size={20} 
                 />
                 <span className="italic text-slate-800 text-lg leading-relaxed">
@@ -1606,7 +1678,7 @@ function FlashcardGame({ vocab, onNext, language }: { vocab: Vocabulary, onNext:
         className="aspect-[4/3] bg-white rounded-[3rem] shadow-2xl flex flex-col items-center justify-center p-12 text-center cursor-pointer relative overflow-hidden group"
       >
         <div className="absolute top-6 right-6">
-          <button onClick={(e) => { e.stopPropagation(); speak(vocab.word, language); }} className="p-4 bg-indigo-50 text-indigo-600 rounded-2xl hover:bg-indigo-100 transition-all">
+          <button onClick={(e) => { e.stopPropagation(); handleSpeak(vocab.word, language); }} className="p-4 bg-indigo-50 text-indigo-600 rounded-2xl hover:bg-indigo-100 transition-all">
             <Volume2 size={24} />
           </button>
         </div>
@@ -1663,7 +1735,7 @@ function QuizGame({ vocab, allVocabs, onNext, language }: { vocab: Vocabulary, a
       <div className="bg-white p-12 rounded-[3rem] shadow-xl text-center">
         <span className="text-slate-400 font-bold uppercase tracking-widest text-sm mb-4 block">Chọn nghĩa đúng của</span>
         <h3 className="text-5xl font-black text-indigo-600 mb-6">{vocab.word}</h3>
-        <button onClick={() => speak(vocab.word, language)} className="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
+        <button onClick={() => handleSpeak(vocab.word, language)} className="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
           <Volume2 size={20} />
         </button>
       </div>
@@ -1770,7 +1842,7 @@ function WritingGame({ vocab, onNext, language }: { vocab: Vocabulary, onNext: (
   const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
-    speak(vocab.word, language);
+    handleSpeak(vocab.word, language);
   }, [vocab]);
 
   const check = () => {
@@ -1781,7 +1853,7 @@ function WritingGame({ vocab, onNext, language }: { vocab: Vocabulary, onNext: (
   return (
     <div className="space-y-8">
       <div className="bg-white p-12 rounded-[3rem] shadow-xl text-center">
-        <button onClick={() => speak(vocab.word, language)} className="w-24 h-24 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-6 hover:scale-110 transition-transform">
+        <button onClick={() => handleSpeak(vocab.word, language)} className="w-24 h-24 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-6 hover:scale-110 transition-transform">
           <Volume2 size={40} />
         </button>
         <p className="text-slate-500 font-bold">Nghe và viết lại từ này</p>

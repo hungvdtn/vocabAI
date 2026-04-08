@@ -48,7 +48,6 @@ import {
 } from 'firebase/firestore';
 import { signInWithPopup, onAuthStateChanged, User, signOut } from 'firebase/auth';
 import { db, auth, googleProvider } from './firebase';
-import { speak } from './services/tts';
 import { generateDistractors, generateExampleSentence, analyzePerformance, translateWord, checkLocalDictionary } from './services/ai';
 import { cn } from './lib/utils';
 
@@ -116,6 +115,47 @@ interface GameResult {
   language: Language;
 }
 
+// ------------------------------------------------------------------------------------
+// HỆ THỐNG ÂM THANH NATIVE (Tích hợp sâu, không bao giờ lỗi mạng, chuẩn giọng bản xứ)
+// ------------------------------------------------------------------------------------
+const handleSpeak = (text: string, lang: Language) => {
+  if (!('speechSynthesis' in window)) {
+    console.warn("Trình duyệt không hỗ trợ âm thanh.");
+    return;
+  }
+  
+  // Dừng mọi âm thanh đang phát trước đó
+  window.speechSynthesis.cancel();
+  
+  const utterance = new SpeechSynthesisUtterance(text);
+  const targetLang = lang === 'en' ? 'en-US' : 'de-DE';
+  utterance.lang = targetLang;
+  
+  // Tìm kiếm và ép chọn giọng chất lượng cao (Google, Microsoft Natural)
+  const voices = window.speechSynthesis.getVoices();
+  if (voices.length > 0) {
+    const langPrefix = lang === 'en' ? 'en' : 'de';
+    
+    // Ưu tiên 1: Giọng tự nhiên của Google hoặc Microsoft
+    let selectedVoice = voices.find(v => 
+      v.lang.toLowerCase().startsWith(langPrefix) && 
+      (v.name.includes('Natural') || v.name.includes('Premium') || v.name.includes('Google'))
+    );
+    
+    // Ưu tiên 2: Bất kỳ giọng nào đúng ngôn ngữ
+    if (!selectedVoice) {
+      selectedVoice = voices.find(v => v.lang.toLowerCase().startsWith(langPrefix));
+    }
+    
+    if (selectedVoice) {
+      utterance.voice = selectedVoice;
+    }
+  }
+  
+  window.speechSynthesis.speak(utterance);
+};
+// ------------------------------------------------------------------------------------
+
 // Hàm hỗ trợ bôi màu từ vựng trong câu ví dụ
 const highlightWordInSentence = (sentence: string, targetWord: string) => {
   if (!sentence || !targetWord) return sentence;
@@ -126,37 +166,17 @@ const highlightWordInSentence = (sentence: string, targetWord: string) => {
   );
 };
 
-// Hàm phát âm (Fallback thông minh ép chọn giọng Bản ngữ)
-const handleSpeakFallback = (text: string, lang: Language) => {
-  if (!('speechSynthesis' in window)) return;
-  window.speechSynthesis.cancel();
-  
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = lang === 'en' ? 'en-US' : 'de-DE';
-  
-  // Ép trình duyệt tìm đúng giọng Mỹ hoặc Đức (Loại bỏ giọng Việt Nam đọc tiếng Anh)
-  const voices = window.speechSynthesis.getVoices();
-  if (voices.length > 0) {
-    if (lang === 'en') {
-      const enVoice = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Google') || v.name.includes('Microsoft') || v.name.includes('Natural')));
-      if (enVoice) utterance.voice = enVoice;
-    } else {
-      const deVoice = voices.find(v => v.lang.startsWith('de') && (v.name.includes('Google') || v.name.includes('Microsoft') || v.name.includes('Natural')));
-      if (deVoice) utterance.voice = deVoice;
-    }
+// Hàm định dạng phiên âm chuẩn /.../
+const renderPhonetic = (rawPhonetic?: string) => {
+  if (!rawPhonetic) return null;
+  let clean = rawPhonetic.trim();
+  // Xóa ngoặc vuông nếu có
+  if (clean.startsWith('[') && clean.endsWith(']')) {
+    clean = clean.substring(1, clean.length - 1);
   }
-  
-  window.speechSynthesis.speak(utterance);
-};
-
-const handleSpeak = async (text: string, lang: Language) => {
-  try {
-    // Thử gọi dịch vụ TTS của app trước
-    await speak(text, lang); 
-  } catch (error) {
-    console.warn("TTS service failed, fallback to native browser TTS.");
-    handleSpeakFallback(text, lang);
-  }
+  // Bỏ gạch chéo cũ để ráp lại cho đồng nhất
+  clean = clean.replace(/\//g, '');
+  return `/${clean}/`;
 };
 
 // Components
@@ -202,7 +222,7 @@ export default function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // Auth
+  // Auth & Tải giọng nói
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (u) => {
       setUser(u);
@@ -347,9 +367,9 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans flex flex-col">
-      {/* Navigation */}
+      {/* Navigation (Căn lề px-4 md:px-8 để gióng thẳng cột) */}
       <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => { setView('home'); setActiveGame(null); }}>
             <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
               <Languages className="text-white w-5 h-5" />
@@ -434,9 +454,9 @@ export default function App() {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="bg-indigo-600 text-white overflow-hidden"
+            className="bg-indigo-600 text-white overflow-hidden w-full"
           >
-            <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div className="max-w-7xl mx-auto px-4 md:px-8 py-3 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="bg-white/20 p-1.5 rounded-lg">
                   <Gamepad2 size={18} />
@@ -456,21 +476,21 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto p-4 md:p-8 flex-grow">
+      {/* Main Content (Thiết lập padding px-4 md:px-8 chuẩn tuyệt đối để gióng thẳng hàng với Navbar) */}
+      <main className="max-w-7xl mx-auto px-4 md:px-8 py-8 flex-grow w-full flex flex-col">
         <AnimatePresence mode="wait">
           {view === 'home' && (
-            <motion.div key="home" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
+            <motion.div key="home" className="w-full" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
               <HomeView setView={setView} language={language} user={user} />
             </motion.div>
           )}
           {view === 'dictionary' && (
-            <motion.div key={`dict-${language}`} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
+            <motion.div key={`dict-${language}`} className="w-full" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
               <DictionaryView language={language} />
             </motion.div>
           )}
           {view === 'input' && (
-            <motion.div key={`input-${language}`} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}>
+            <motion.div key={`input-${language}`} className="w-full" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}>
               <InputView 
                 language={language} 
                 user={user} 
@@ -483,7 +503,7 @@ export default function App() {
             </motion.div>
           )}
           {view === 'games' && (
-            <motion.div key="games" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <motion.div key="games" className="w-full" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <GamesView 
                 vocabList={vocabList} 
                 language={language} 
@@ -495,7 +515,7 @@ export default function App() {
             </motion.div>
           )}
           {view === 'library' && (
-            <motion.div key="library" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <motion.div key="library" className="w-full" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <LibraryView 
                 lessons={lessons} 
                 language={language}
@@ -512,7 +532,7 @@ export default function App() {
             </motion.div>
           )}
           {view === 'report' && (
-            <motion.div key="report" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <motion.div key="report" className="w-full" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <ReportView results={gameResults} language={language} vocabList={vocabList} />
             </motion.div>
           )}
@@ -566,7 +586,7 @@ function MobileNavButton({ active, onClick, icon }: { active: boolean, onClick: 
 
 function HomeView({ setView, language, user }: { setView: (v: View) => void, language: Language, user: User }) {
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 w-full">
       <div className="bg-indigo-600 rounded-[2.5rem] p-8 md:p-12 text-white relative overflow-hidden shadow-2xl">
         <div className="relative z-10 max-w-2xl">
           <h2 className="text-4xl md:text-5xl font-bold mb-4 leading-tight">Chào mừng, {user.displayName?.split(' ')[0]}!</h2>
@@ -623,7 +643,7 @@ function DictionaryView({ language }: { language: Language }) {
   const [isTranslating, setIsTranslating] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
 
-  // Reset tra cứu khi đổi ngôn ngữ
+  // Xóa trắng kết quả khi đổi ngôn ngữ để tránh hiển thị sai lệch
   useEffect(() => {
     setSearchTerm('');
     setSelectedWord(null);
@@ -631,19 +651,20 @@ function DictionaryView({ language }: { language: Language }) {
     setAiTranslation(null);
   }, [language]);
 
-  // Lựa chọn Database gốc theo ngôn ngữ
+  // Chọn bộ từ điển
   const currentDict: any[] = language === 'en' ? enDictDataRaw : deDictDataRaw;
 
-  // Xử lý Gợi ý từ khi gõ
+  // Xử lý Gợi ý từ
   const handleSearchChange = (text: string) => {
     setSearchTerm(text);
-    setAiTranslation(null); // Reset AI translation when typing new word
+    setAiTranslation(null); 
     if (text.trim() === '') {
       setSuggestions([]);
       setSelectedWord(null);
       return;
     }
     
+    // Tìm các từ bắt đầu bằng chữ vừa gõ
     const results = currentDict.filter(item => 
       item.word && item.word.toLowerCase().startsWith(text.toLowerCase())
     ).slice(0, 8); 
@@ -659,24 +680,22 @@ function DictionaryView({ language }: { language: Language }) {
     setAiTranslation(null);
   };
 
-  // Tính năng ấn Enter để tra từ
+  // Tính năng Enter
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && searchTerm.trim() !== '') {
-      // Ưu tiên khớp chính xác 100%
       const exactMatch = currentDict.find(item => item.word && item.word.toLowerCase() === searchTerm.toLowerCase().trim());
       if (exactMatch) {
         handleSelectWord(exactMatch);
       } else if (suggestions.length > 0) {
-        // Nếu không khớp chính xác, tự động chọn từ đầu tiên
         handleSelectWord(suggestions[0]);
       } else {
-        // Nếu không có trong dict và ấn enter -> Cho phép bấm dịch AI
+        // Tự động đóng gợi ý để mở đường cho AI dịch
         setSuggestions([]);
       }
     }
   };
 
-  // Tính năng dịch AI khi không tìm thấy từ
+  // Tính năng Dịch bằng AI
   const handleAITranslate = async () => {
     if (!searchTerm.trim()) return;
     setIsTranslating(true);
@@ -697,7 +716,7 @@ function DictionaryView({ language }: { language: Language }) {
     }
   };
 
-  // Tính năng Tra từ bằng Giọng nói (Web Speech API)
+  // Tính năng Tra từ bằng Giọng nói
   const startVoiceSearch = () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (SpeechRecognition) {
@@ -714,7 +733,6 @@ function DictionaryView({ language }: { language: Language }) {
     }
   };
 
-  // Đóng dropdown khi click ra ngoài
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
@@ -725,27 +743,15 @@ function DictionaryView({ language }: { language: Language }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [searchRef]);
 
-  // Xử lý logic hiển thị phiên âm (tự động thêm // nếu thiếu)
-  const renderPhonetic = (rawPhonetic?: string) => {
-    if (!rawPhonetic) return null;
-    let clean = rawPhonetic.trim();
-    if (clean.startsWith('[') && clean.endsWith(']')) {
-      clean = clean.substring(1, clean.length - 1);
-    }
-    if (!clean.startsWith('/')) clean = '/' + clean;
-    if (!clean.endsWith('/')) clean = clean + '/';
-    return clean;
-  };
-
   return (
     <div className="w-full pb-32">
+      {/* Tiêu đề */}
       <div className="text-center space-y-4 mb-8 mt-4">
-        {/* Đổi Font, Size và Màu sắc giống hệt AIBTeM Dictionary */}
-        <h2 className="text-3xl font-black text-indigo-700">Từ điển {language === 'en' ? 'Anh - Việt' : 'Đức - Việt'}</h2>
+        <h2 className="text-4xl md:text-5xl font-bold text-indigo-600">Từ điển {language === 'en' ? 'Anh - Việt' : 'Đức - Việt'}</h2>
       </div>
 
-      {/* Khung Nhập từ vựng (Full width theo layout chung) */}
-      <div className="relative w-full mx-auto" ref={searchRef}>
+      {/* Khung Nhập (Đã ép w-full để dãn 100% bằng màn hình xung quanh) */}
+      <div className="relative w-full" ref={searchRef}>
         <div className="relative">
           <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 w-6 h-6" />
           <input 
@@ -756,7 +762,6 @@ function DictionaryView({ language }: { language: Language }) {
             onKeyDown={handleKeyDown}
             className="w-full bg-white border-2 border-slate-200 rounded-[2rem] pl-16 pr-16 py-4 text-xl font-medium focus:border-indigo-500 outline-none transition-all shadow-sm"
           />
-          {/* Nút Micro để tra cứu bằng giọng nói */}
           <button 
             onClick={startVoiceSearch} 
             className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-600 transition-colors p-2 bg-slate-50 hover:bg-indigo-50 rounded-full"
@@ -766,7 +771,7 @@ function DictionaryView({ language }: { language: Language }) {
           </button>
         </div>
 
-        {/* Dropdown Gợi ý tự động */}
+        {/* Dropdown */}
         <AnimatePresence>
           {suggestions.length > 0 && !selectedWord && (
             <motion.div 
@@ -790,12 +795,11 @@ function DictionaryView({ language }: { language: Language }) {
         </AnimatePresence>
       </div>
 
-      {/* HIỂN THỊ KHI CHƯA TRA TỪ (Màn hình Home Từ điển) */}
+      {/* MÀN HÌNH HOME TỪ ĐIỂN */}
       {!selectedWord && (!searchTerm || (searchTerm && suggestions.length > 0)) && (
-        <div className="w-full mx-auto mt-8 grid grid-cols-1 md:grid-cols-2 gap-8 items-center bg-white p-8 md:p-12 rounded-[2rem] shadow-sm border border-slate-100">
-          {/* Cột trái: Thông tin đã được thu nhỏ tinh tế */}
+        <div className="w-full mt-8 grid grid-cols-1 md:grid-cols-2 gap-8 items-center bg-white p-8 md:p-12 rounded-[2rem] shadow-sm border border-slate-100">
           <div className="space-y-4">
-            <h3 className="text-2xl font-black text-indigo-700 mb-2">AIBTeM Dictionary</h3>
+            <h3 className="text-xl md:text-2xl font-black text-indigo-700 mb-2">AIBTeM Dictionary</h3>
             <div className="space-y-3 text-slate-600 text-sm md:text-base leading-relaxed">
               <p className="flex items-center gap-2"><CheckCircle2 className="text-emerald-500 shrink-0" size={18}/> Từ điển trực tuyến miễn phí;</p>
               <p className="flex items-center gap-2"><CheckCircle2 className="text-emerald-500 shrink-0" size={18}/> Tra cứu nhanh;</p>
@@ -804,24 +808,22 @@ function DictionaryView({ language }: { language: Language }) {
               <p className="flex items-center gap-2"><CheckCircle2 className="text-emerald-500 shrink-0" size={18}/> Hỗ trợ tra từ bằng giọng nói.</p>
             </div>
           </div>
-          {/* Cột phải: Hình ảnh Mochi Placeholder */}
           <div className="flex justify-center">
-            {/* Ảnh minh họa sẽ được anh Hùng thay bằng link thật sau */}
             <img 
-              src="https://placehold.co/400x400/4f46e5/white?text=Mochi+Image" 
-              alt="Mochi" 
-              className="w-64 h-64 object-contain animate-[bounce_3s_infinite]" 
+              src="https://placehold.co/300x300/4f46e5/white?text=AIBTeM+Mochi" 
+              alt="Mochi Placeholder" 
+              className="w-48 h-48 md:w-64 md:h-64 object-contain animate-[bounce_3s_infinite]" 
             />
           </div>
         </div>
       )}
 
-      {/* HIỂN THỊ TỪ KHÔNG CÓ TRONG CSDL VÀ DỊCH AI */}
+      {/* TỪ KHÔNG CÓ TRONG CSDL VÀ DỊCH AI */}
       {!selectedWord && searchTerm && suggestions.length === 0 && (
         <motion.div 
           initial={{ opacity: 0 }} 
           animate={{ opacity: 1 }} 
-          className="w-full mt-6 bg-white p-12 rounded-[2rem] border border-slate-100 shadow-sm text-center"
+          className="w-full mt-6 bg-white p-12 border border-slate-200 shadow-sm text-center"
         >
           <Search className="w-16 h-16 mx-auto mb-4 text-slate-200" />
           <p className="text-xl text-slate-600 font-medium mb-6">Từ cần tra chưa có trong cơ sở dữ liệu.</p>
@@ -863,14 +865,14 @@ function DictionaryView({ language }: { language: Language }) {
         </motion.div>
       )}
 
-      {/* HIỂN THỊ KẾT QUẢ TRA TỪ CHUẨN CAMBRIDGE (Full width) */}
+      {/* HIỂN THỊ KẾT QUẢ TRA TỪ CAMBRIDGE (Khung vuông, giãn Full-width) */}
       {selectedWord && (
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="w-full mx-auto mt-6 bg-white p-8 md:p-10 border border-slate-200 shadow-sm"
+          className="w-full mt-6 bg-white p-8 md:p-10 border border-slate-200 shadow-sm"
         >
-          {/* Dòng 1: Từ Ngoại ngữ + Từ loại */}
+          {/* Dòng 1: Từ + Từ loại */}
           <div className="mb-2 flex items-baseline gap-2 flex-wrap">
             <span className="text-3xl text-blue-700 font-bold">
               {selectedWord.article && (
@@ -890,7 +892,7 @@ function DictionaryView({ language }: { language: Language }) {
             )}
           </div>
 
-          {/* Dòng 2: Loa + Phiên âm */}
+          {/* Dòng 2: Loa + Phiên âm chuẩn /.../ */}
           {selectedWord.phonetic && (
             <div className="flex items-center gap-3 mb-6">
               <Volume2 
@@ -904,14 +906,14 @@ function DictionaryView({ language }: { language: Language }) {
             </div>
           )}
 
-          {/* Dòng 3: Định nghĩa Anh/Đức */}
+          {/* Dòng 3: Định nghĩa */}
           {(selectedWord.english_definition || selectedWord.german_definition) && (
             <div className="text-slate-800 mb-3 text-lg font-medium">
               {language === 'en' ? selectedWord.english_definition : selectedWord.german_definition}
             </div>
           )}
 
-          {/* Dòng 4: Nghĩa Tiếng Việt */}
+          {/* Dòng 4: Nghĩa tiếng Việt */}
           <div className="text-emerald-700 mb-8 text-xl font-bold">
             {selectedWord.vietnamese_meaning}
           </div>
@@ -968,7 +970,7 @@ function LibraryView({ lessons, language, onEdit, onPlay, onDelete }: { lessons:
   );
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 w-full">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-3xl font-bold">Thư viện của bạn</h2>
@@ -1394,7 +1396,7 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
   const totalValidWords = rows.filter(r => r.word.trim() && r.meaning.trim()).length;
 
   return (
-    <div className="w-full mx-auto space-y-8 pb-32">
+    <div className="w-full space-y-8 pb-32">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <h2 className="text-3xl font-bold mb-2">{initialLesson ? "Sửa bài học" : "Tạo bài học mới"}</h2>
@@ -1616,7 +1618,7 @@ function GamesView({ vocabList, language, onComplete, playSound, activeGame, set
 
   if (filteredVocab.length < 5) {
     return (
-      <div className="text-center py-20 bg-white rounded-[3rem] shadow-xl border border-slate-100">
+      <div className="text-center py-20 bg-white rounded-[3rem] shadow-xl border border-slate-100 w-full">
         <RobotAnimation type="sad" />
         <h3 className="text-2xl font-bold mt-6">Bạn cần ít nhất 5 từ để bắt đầu!</h3>
         <p className="text-slate-500 mt-2">Hãy thêm thêm từ vựng để mở khóa các trò chơi nhé.</p>
@@ -1642,7 +1644,7 @@ function GamesView({ vocabList, language, onComplete, playSound, activeGame, set
   }
 
   return (
-    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 w-full">
       <GameCard 
         title="Flashcards" 
         desc="Thẻ lật 3 mặt giúp ghi nhớ sâu." 
@@ -1733,7 +1735,7 @@ function GameContainer({ type, vocabList, language, onBack, onFinish, playSound 
   };
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="w-full max-w-3xl mx-auto">
       <div className="flex items-center justify-between mb-8">
         <button onClick={onBack} className="flex items-center gap-2 text-slate-500 hover:text-indigo-600 font-bold">
           <ChevronLeft size={20} /> Quay lại
@@ -1787,7 +1789,7 @@ function FlashcardGame({ vocab, onNext, language }: { vocab: Vocabulary, onNext:
         className="aspect-[4/3] bg-white rounded-[3rem] shadow-2xl flex flex-col items-center justify-center p-12 text-center cursor-pointer relative overflow-hidden group"
       >
         <div className="absolute top-6 right-6">
-          <button onClick={(e) => { e.stopPropagation(); handleSpeakFallback(vocab.word, language); }} className="p-4 bg-indigo-50 text-indigo-600 rounded-2xl hover:bg-indigo-100 transition-all">
+          <button onClick={(e) => { e.stopPropagation(); handleSpeak(vocab.word, language); }} className="p-4 bg-indigo-50 text-indigo-600 rounded-2xl hover:bg-indigo-100 transition-all">
             <Volume2 size={24} />
           </button>
         </div>
@@ -1844,7 +1846,7 @@ function QuizGame({ vocab, allVocabs, onNext, language }: { vocab: Vocabulary, a
       <div className="bg-white p-12 rounded-[3rem] shadow-xl text-center">
         <span className="text-slate-400 font-bold uppercase tracking-widest text-sm mb-4 block">Chọn nghĩa đúng của</span>
         <h3 className="text-5xl font-black text-indigo-600 mb-6">{vocab.word}</h3>
-        <button onClick={() => handleSpeakFallback(vocab.word, language)} className="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
+        <button onClick={() => handleSpeak(vocab.word, language)} className="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
           <Volume2 size={20} />
         </button>
       </div>
@@ -1951,7 +1953,7 @@ function WritingGame({ vocab, onNext, language }: { vocab: Vocabulary, onNext: (
   const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
-    handleSpeakFallback(vocab.word, language);
+    handleSpeak(vocab.word, language);
   }, [vocab]);
 
   const check = () => {
@@ -1962,7 +1964,7 @@ function WritingGame({ vocab, onNext, language }: { vocab: Vocabulary, onNext: (
   return (
     <div className="space-y-8">
       <div className="bg-white p-12 rounded-[3rem] shadow-xl text-center">
-        <button onClick={() => handleSpeakFallback(vocab.word, language)} className="w-24 h-24 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-6 hover:scale-110 transition-transform">
+        <button onClick={() => handleSpeak(vocab.word, language)} className="w-24 h-24 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-6 hover:scale-110 transition-transform">
           <Volume2 size={40} />
         </button>
         <p className="text-slate-500 font-bold">Nghe và viết lại từ này</p>
@@ -2073,7 +2075,7 @@ function ReportView({ results, language, vocabList }: { results: GameResult[], l
   const accuracy = totalPossible > 0 ? Math.round((totalScore / totalPossible) * 100) : 0;
 
   return (
-    <div className="space-y-8 pb-20">
+    <div className="w-full space-y-8 pb-20">
       <div className="text-center">
         <h2 className="text-3xl font-bold mb-2">Kết quả học tập</h2>
         <p className="text-slate-500">Phân tích chi tiết quá trình rèn luyện của bạn.</p>

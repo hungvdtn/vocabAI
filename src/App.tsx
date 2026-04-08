@@ -29,7 +29,17 @@ import {
   LogOut,
   ChevronDown,
   BookOpen,
-  Mic
+  Mic,
+  LayoutGrid,
+  GraduationCap,
+  Briefcase,
+  Coffee,
+  HeartPulse,
+  Rocket,
+  Globe,
+  Leaf,
+  Plane,
+  Shuffle
 } from 'lucide-react';
 import Lottie from 'lottie-react';
 import * as mammoth from 'mammoth';
@@ -70,7 +80,7 @@ import deDictDataRaw from './data/de_3000.json';
 
 // Types
 type Language = 'en' | 'de';
-type View = 'home' | 'input' | 'library' | 'games' | 'report' | 'dictionary';
+type View = 'home' | 'topics' | 'input' | 'library' | 'games' | 'report' | 'dictionary';
 type GameType = 'flashcards' | 'quiz' | 'matching' | 'writing' | 'fill';
 
 interface Vocabulary {
@@ -90,6 +100,7 @@ interface Vocabulary {
   example_vietnamese?: string;
   article?: string;
   plural?: string;
+  topic?: string;
   language: Language;
   userId: string;
   createdAt: any;
@@ -124,25 +135,21 @@ const handleSpeak = (text: string, lang: Language) => {
     return;
   }
   
-  // Dừng mọi âm thanh đang phát trước đó
   window.speechSynthesis.cancel();
   
   const utterance = new SpeechSynthesisUtterance(text);
   const targetLang = lang === 'en' ? 'en-US' : 'de-DE';
   utterance.lang = targetLang;
   
-  // Tìm kiếm và ép chọn giọng chất lượng cao (Google, Microsoft Natural)
   const voices = window.speechSynthesis.getVoices();
   if (voices.length > 0) {
     const langPrefix = lang === 'en' ? 'en' : 'de';
     
-    // Ưu tiên 1: Giọng tự nhiên của Google hoặc Microsoft
     let selectedVoice = voices.find(v => 
       v.lang.toLowerCase().startsWith(langPrefix) && 
       (v.name.includes('Natural') || v.name.includes('Premium') || v.name.includes('Google'))
     );
     
-    // Ưu tiên 2: Bất kỳ giọng nào đúng ngôn ngữ
     if (!selectedVoice) {
       selectedVoice = voices.find(v => v.lang.toLowerCase().startsWith(langPrefix));
     }
@@ -154,7 +161,6 @@ const handleSpeak = (text: string, lang: Language) => {
   
   window.speechSynthesis.speak(utterance);
 };
-// ------------------------------------------------------------------------------------
 
 // Hàm hỗ trợ bôi màu từ vựng trong câu ví dụ
 const highlightWordInSentence = (sentence: string, targetWord: string) => {
@@ -170,11 +176,9 @@ const highlightWordInSentence = (sentence: string, targetWord: string) => {
 const renderPhonetic = (rawPhonetic?: string) => {
   if (!rawPhonetic) return null;
   let clean = rawPhonetic.trim();
-  // Xóa ngoặc vuông nếu có
   if (clean.startsWith('[') && clean.endsWith(']')) {
     clean = clean.substring(1, clean.length - 1);
   }
-  // Bỏ gạch chéo cũ để ráp lại cho đồng nhất
   clean = clean.replace(/\//g, '');
   return `/${clean}/`;
 };
@@ -215,8 +219,14 @@ export default function App() {
   const [language, setLanguage] = useState<Language>('en');
   const [view, setView] = useState<View>('home');
   const [activeGame, setActiveGame] = useState<GameType | null>(null);
+  
+  // Dữ liệu cá nhân từ Firebase
   const [vocabList, setVocabList] = useState<Vocabulary[]>([]);
   const [lessons, setLessons] = useState<Lesson[]>([]);
+  
+  // Dữ liệu dùng để nạp vào khu vực Trò chơi (Game)
+  const [playVocabList, setPlayVocabList] = useState<Vocabulary[]>([]);
+
   const [gameResults, setGameResults] = useState<GameResult[]>([]);
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -227,7 +237,6 @@ export default function App() {
     const unsubscribe = onAuthStateChanged(auth, (u) => {
       setUser(u);
     });
-    // Kích hoạt nạp sẵn giọng nói của trình duyệt để lần ấn loa đầu tiên không bị nghẽn
     if ('speechSynthesis' in window) {
       window.speechSynthesis.getVoices();
     }
@@ -292,7 +301,7 @@ export default function App() {
     setUser(mockUser);
   };
 
-  // Fetch Vocab
+  // Fetch Personal Vocab
   useEffect(() => {
     if (!user) return;
     
@@ -367,7 +376,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans flex flex-col">
-      {/* Navigation (Căn lề px-4 md:px-8 để gióng thẳng cột) */}
+      {/* Navigation */}
       <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 md:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => { setView('home'); setActiveGame(null); }}>
@@ -377,25 +386,25 @@ export default function App() {
             <span className="font-bold text-xl tracking-tight hidden sm:block">Vocab AIBTeM</span>
           </div>
           
-          <div className="hidden md:flex items-center gap-4 lg:gap-6">
+          <div className="hidden md:flex items-center gap-2 lg:gap-4 overflow-x-auto">
+            <NavButton active={view === 'topics'} onClick={() => setView('topics')} icon={<LayoutGrid size={18} />} label="Chủ đề" />
             <NavButton active={view === 'input'} onClick={() => setView('input')} icon={<PlusCircle size={18} />} label="Nhập liệu" />
             <NavButton active={view === 'library'} onClick={() => setView('library')} icon={<FileText size={18} />} label="Thư viện" />
             <NavButton active={view === 'games'} onClick={() => setView('games')} icon={<Gamepad2 size={18} />} label="Trò chơi" />
             <NavButton active={view === 'report'} onClick={() => setView('report')} icon={<BarChart3 size={18} />} label="Báo cáo" />
-            {/* Từ điển đặt sau Báo cáo */}
             <NavButton active={view === 'dictionary'} onClick={() => setView('dictionary')} icon={<BookOpen size={18} />} label="Từ điển" />
           </div>
 
           <div className="flex items-center gap-3 lg:gap-4">
             <div className="flex bg-slate-100 p-1 rounded-xl">
               <button 
-                onClick={() => { setLanguage('en'); setEditingLesson(null); }}
+                onClick={() => { setLanguage('en'); setEditingLesson(null); setPlayVocabList([]); }}
                 className={cn("px-2 lg:px-3 py-1 rounded-lg text-sm font-medium transition-all", language === 'en' ? "bg-white shadow-sm text-indigo-600" : "text-slate-500")}
               >
                 EN
               </button>
               <button 
-                onClick={() => { setLanguage('de'); setEditingLesson(null); }}
+                onClick={() => { setLanguage('de'); setEditingLesson(null); setPlayVocabList([]); }}
                 className={cn("px-2 lg:px-3 py-1 rounded-lg text-sm font-medium transition-all", language === 'de' ? "bg-white shadow-sm text-indigo-600" : "text-slate-500")}
               >
                 DE
@@ -476,12 +485,23 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* Main Content (Thiết lập padding px-4 md:px-8 chuẩn tuyệt đối để gióng thẳng hàng với Navbar) */}
+      {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 md:px-8 py-8 flex-grow w-full flex flex-col">
         <AnimatePresence mode="wait">
           {view === 'home' && (
             <motion.div key="home" className="w-full" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
               <HomeView setView={setView} language={language} user={user} />
+            </motion.div>
+          )}
+          {view === 'topics' && (
+            <motion.div key={`topics-${language}`} className="w-full" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
+              <TopicLibraryView 
+                language={language} 
+                onPlayTopic={(vocabData) => {
+                  setPlayVocabList(vocabData);
+                  setView('games');
+                }} 
+              />
             </motion.div>
           )}
           {view === 'dictionary' && (
@@ -505,12 +525,13 @@ export default function App() {
           {view === 'games' && (
             <motion.div key="games" className="w-full" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <GamesView 
-                vocabList={vocabList} 
+                vocabList={playVocabList} 
                 language={language} 
                 onComplete={(res) => setGameResults(prev => [...prev, { ...res, language }])} 
                 playSound={playSound}
                 activeGame={activeGame}
                 setActiveGame={setActiveGame}
+                onGoToLibrary={() => setView('topics')}
               />
             </motion.div>
           )}
@@ -524,7 +545,7 @@ export default function App() {
                   setView('input');
                 }}
                 onPlay={(lesson) => {
-                  setVocabList(lesson.vocabularies);
+                  setPlayVocabList(lesson.vocabularies);
                   setView('games');
                 }}
                 onDelete={deleteLesson}
@@ -533,7 +554,7 @@ export default function App() {
           )}
           {view === 'report' && (
             <motion.div key="report" className="w-full" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <ReportView results={gameResults} language={language} vocabList={vocabList} />
+              <ReportView results={gameResults} language={language} />
             </motion.div>
           )}
         </AnimatePresence>
@@ -541,11 +562,11 @@ export default function App() {
 
       {/* Mobile Nav */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around p-2 z-50">
+        <MobileNavButton active={view === 'topics'} onClick={() => setView('topics')} icon={<LayoutGrid />} />
         <MobileNavButton active={view === 'input'} onClick={() => setView('input')} icon={<PlusCircle />} />
-        <MobileNavButton active={view === 'library'} onClick={() => setView('library')} icon={<FileText />} />
         <MobileNavButton active={view === 'games'} onClick={() => setView('games')} icon={<Gamepad2 />} />
-        <MobileNavButton active={view === 'report'} onClick={() => setView('report')} icon={<BarChart3 />} />
         <MobileNavButton active={view === 'dictionary'} onClick={() => setView('dictionary')} icon={<BookOpen />} />
+        <MobileNavButton active={view === 'home'} onClick={() => { setView('home'); setActiveGame(null); }} icon={<Home />} />
       </div>
       <Footer />
     </div>
@@ -558,7 +579,7 @@ function NavButton({ active, onClick, icon, label }: { active: boolean, onClick:
     <button 
       onClick={onClick}
       className={cn(
-        "flex items-center gap-2 px-3 py-2 rounded-xl font-medium transition-all",
+        "flex items-center gap-2 px-3 py-2 rounded-xl font-medium transition-all whitespace-nowrap",
         active ? "bg-indigo-50 text-indigo-600" : "text-slate-600 hover:bg-slate-50"
       )}
     >
@@ -593,10 +614,10 @@ function HomeView({ setView, language, user }: { setView: (v: View) => void, lan
           <p className="text-indigo-100 text-lg mb-8 opacity-90">Bạn đã sẵn sàng chinh phục {language === 'en' ? 'Tiếng Anh' : 'Tiếng Đức'} hôm nay chưa?</p>
           <div className="flex flex-wrap gap-4">
             <button 
-              onClick={() => setView('games')}
+              onClick={() => setView('topics')}
               className="bg-white text-indigo-600 px-8 py-4 rounded-2xl font-bold hover:bg-indigo-50 transition-all flex items-center gap-2 shadow-lg"
             >
-              Bắt đầu học ngay <ChevronRight size={20} />
+              Khám phá Chủ đề <ChevronRight size={20} />
             </button>
             <button 
               onClick={() => setView('input')}
@@ -634,6 +655,156 @@ function StatCard({ title, value, color }: { title: string, value: string, color
   );
 }
 
+// --- TOPIC LIBRARY VIEW ---
+function TopicLibraryView({ language, onPlayTopic }: { language: Language, onPlayTopic: (vocab: Vocabulary[]) => void }) {
+  const currentDict: any[] = language === 'en' ? enDictDataRaw : deDictDataRaw;
+  const [selectedTopic, setSelectedTopic] = useState<any | null>(null);
+
+  const topics = [
+    { id: 'education_and_learning', name: 'Giáo dục & Học tập', desc: 'Trường học, bằng cấp, nghiên cứu...', icon: GraduationCap, color: 'bg-blue-500', textCol: 'text-blue-500', bgSoft: 'bg-blue-50' },
+    { id: 'work_and_business', name: 'Công sở & Kinh doanh', desc: 'Quản trị, tài chính, cuộc họp...', icon: Briefcase, color: 'bg-indigo-500', textCol: 'text-indigo-500', bgSoft: 'bg-indigo-50' },
+    { id: 'daily_life', name: 'Đời sống hàng ngày', desc: 'Gia đình, mua sắm, thời gian...', icon: Coffee, color: 'bg-orange-500', textCol: 'text-orange-500', bgSoft: 'bg-orange-50' },
+    { id: 'health_and_body', name: 'Sức khỏe & Cơ thể', desc: 'Y tế, bệnh lý, dinh dưỡng...', icon: HeartPulse, color: 'bg-rose-500', textCol: 'text-rose-500', bgSoft: 'bg-rose-50' },
+    { id: 'science_and_technology', name: 'Khoa học & Công nghệ', desc: 'AI, máy tính, phát minh...', icon: Rocket, color: 'bg-cyan-500', textCol: 'text-cyan-500', bgSoft: 'bg-cyan-50' },
+    { id: 'society_and_culture', name: 'Xã hội & Văn hóa', desc: 'Nghệ thuật, luật pháp, chính trị...', icon: Globe, color: 'bg-purple-500', textCol: 'text-purple-500', bgSoft: 'bg-purple-50' },
+    { id: 'nature_and_environment', name: 'Thiên nhiên & Môi trường', desc: 'Khí hậu, động vật, địa lý...', icon: Leaf, color: 'bg-emerald-500', textCol: 'text-emerald-500', bgSoft: 'bg-emerald-50' },
+    { id: 'travel_and_transport', name: 'Du lịch & Giao thông', desc: 'Giao thông công cộng, kỳ nghỉ...', icon: Plane, color: 'bg-amber-500', textCol: 'text-amber-500', bgSoft: 'bg-amber-50' }
+  ];
+
+  const handleLearnRandom = (topicId: string) => {
+    const wordsInTopic = currentDict.filter(w => w.topic === topicId);
+    if (wordsInTopic.length === 0) {
+      alert("Chủ đề này hiện chưa có từ vựng trong cơ sở dữ liệu!");
+      return;
+    }
+    // Lấy ngẫu nhiên 15 từ
+    const shuffled = [...wordsInTopic].sort(() => 0.5 - Math.random()).slice(0, 15);
+    
+    // Ép kiểu (Mapping) sang cấu trúc chuẩn của Game
+    const gameReadyVocab: Vocabulary[] = shuffled.map(w => ({
+      id: w.word,
+      word: w.word,
+      meaning: w.vietnamese_meaning,
+      type: w.part_of_speech,
+      phonetic: w.phonetic,
+      example: language === 'en' ? w.example_english : w.example_german,
+      article: w.article,
+      plural: w.plural,
+      language: language,
+      userId: 'system',
+      createdAt: Date.now()
+    }));
+
+    onPlayTopic(gameReadyVocab);
+  };
+
+  if (selectedTopic) {
+    const words = currentDict.filter(w => w.topic === selectedTopic.id);
+    return (
+      <div className="w-full pb-32">
+        <button onClick={() => setSelectedTopic(null)} className="flex items-center gap-2 text-slate-500 hover:text-indigo-600 font-bold mb-6 transition-colors">
+          <ChevronLeft size={20} /> Quay lại danh sách
+        </button>
+        
+        <div className={cn("rounded-[2.5rem] p-8 md:p-12 text-white relative overflow-hidden shadow-xl mb-8", selectedTopic.color)}>
+          <div className="relative z-10">
+            <div className="bg-white/20 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 backdrop-blur-sm">
+              <selectedTopic.icon size={32} />
+            </div>
+            <h2 className="text-4xl font-bold mb-2">{selectedTopic.name}</h2>
+            <p className="text-white/80 text-lg mb-8">{selectedTopic.desc}</p>
+            <div className="flex flex-wrap items-center gap-4">
+              <span className="bg-black/20 px-6 py-3 rounded-xl font-bold backdrop-blur-md">
+                Tổng cộng: {words.length} từ vựng
+              </span>
+              <button 
+                onClick={() => handleLearnRandom(selectedTopic.id)}
+                className="bg-white text-slate-900 px-8 py-3 rounded-xl font-bold hover:scale-105 transition-transform flex items-center gap-2 shadow-lg"
+              >
+                <Shuffle size={20} className={selectedTopic.textCol} /> Học 15 từ ngẫu nhiên
+              </button>
+            </div>
+          </div>
+          <div className="absolute -right-10 -bottom-10 opacity-10">
+            <selectedTopic.icon size={300} />
+          </div>
+        </div>
+
+        <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
+          <div className="p-6 border-b border-slate-50 bg-slate-50/50 flex justify-between items-center">
+            <h3 className="font-bold text-slate-700">Danh sách từ vựng</h3>
+          </div>
+          <div className="divide-y divide-slate-50">
+            {words.length > 0 ? words.map((vocab, idx) => (
+              <div key={idx} className="p-6 hover:bg-slate-50 transition-colors flex items-center justify-between group">
+                <div>
+                  <div className="flex items-baseline gap-2 mb-1">
+                    <span className="font-bold text-xl text-slate-900 group-hover:text-indigo-600 transition-colors">
+                      {vocab.article && <span className={cn(
+                        "font-normal mr-2",
+                        vocab.article.toLowerCase() === 'der' ? "text-blue-500" :
+                        vocab.article.toLowerCase() === 'die' ? "text-red-500" : "text-green-500"
+                      )}>{vocab.article}</span>}
+                      {vocab.word}
+                    </span>
+                    {vocab.phonetic && <span className="text-sm font-mono text-slate-400">{renderPhonetic(vocab.phonetic)}</span>}
+                  </div>
+                  <div className="text-slate-600">{vocab.vietnamese_meaning}</div>
+                </div>
+                <button 
+                  onClick={() => handleSpeak(vocab.word, language)}
+                  className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 group-hover:bg-indigo-100 group-hover:text-indigo-600 flex items-center justify-center transition-all"
+                >
+                  <Volume2 size={20} />
+                </button>
+              </div>
+            )) : (
+              <div className="p-12 text-center text-slate-400">
+                Đang cập nhật từ vựng cho chủ đề này...
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full pb-32">
+      <div className="mb-10">
+        <h2 className="text-4xl font-bold text-slate-900 mb-2">Thư viện Chủ đề</h2>
+        <p className="text-slate-500 text-lg">Học từ vựng theo ngữ cảnh để ghi nhớ sâu hơn.</p>
+      </div>
+
+      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {topics.map((topic) => {
+          const count = currentDict.filter(w => w.topic === topic.id).length;
+          return (
+            <motion.button 
+              key={topic.id}
+              whileHover={{ y: -8 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setSelectedTopic(topic)}
+              className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 text-left transition-all hover:shadow-xl group relative overflow-hidden flex flex-col h-full"
+            >
+              <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center mb-6 transition-transform group-hover:scale-110", topic.bgSoft, topic.textCol)}>
+                <topic.icon size={28} />
+              </div>
+              <h3 className="text-xl font-bold mb-2 text-slate-900 group-hover:text-indigo-600 transition-colors">{topic.name}</h3>
+              <p className="text-slate-500 text-sm leading-relaxed mb-6 flex-grow">{topic.desc}</p>
+              
+              <div className="mt-auto flex items-center justify-between pt-4 border-t border-slate-50">
+                <span className="text-sm font-bold text-slate-400">{count} từ</span>
+                <ChevronRight className="text-slate-300 group-hover:text-indigo-500 group-hover:translate-x-1 transition-all" size={20} />
+              </div>
+            </motion.button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // --- DICTIONARY VIEW CHUYÊN SÂU ---
 function DictionaryView({ language }: { language: Language }) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -643,7 +814,6 @@ function DictionaryView({ language }: { language: Language }) {
   const [isTranslating, setIsTranslating] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
 
-  // Xóa trắng kết quả khi đổi ngôn ngữ để tránh hiển thị sai lệch
   useEffect(() => {
     setSearchTerm('');
     setSelectedWord(null);
@@ -651,10 +821,8 @@ function DictionaryView({ language }: { language: Language }) {
     setAiTranslation(null);
   }, [language]);
 
-  // Chọn bộ từ điển
   const currentDict: any[] = language === 'en' ? enDictDataRaw : deDictDataRaw;
 
-  // Xử lý Gợi ý từ
   const handleSearchChange = (text: string) => {
     setSearchTerm(text);
     setAiTranslation(null); 
@@ -664,7 +832,6 @@ function DictionaryView({ language }: { language: Language }) {
       return;
     }
     
-    // Tìm các từ bắt đầu bằng chữ vừa gõ
     const results = currentDict.filter(item => 
       item.word && item.word.toLowerCase().startsWith(text.toLowerCase())
     ).slice(0, 8); 
@@ -680,7 +847,6 @@ function DictionaryView({ language }: { language: Language }) {
     setAiTranslation(null);
   };
 
-  // Tính năng Enter
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && searchTerm.trim() !== '') {
       const exactMatch = currentDict.find(item => item.word && item.word.toLowerCase() === searchTerm.toLowerCase().trim());
@@ -689,13 +855,11 @@ function DictionaryView({ language }: { language: Language }) {
       } else if (suggestions.length > 0) {
         handleSelectWord(suggestions[0]);
       } else {
-        // Tự động đóng gợi ý để mở đường cho AI dịch
         setSuggestions([]);
       }
     }
   };
 
-  // Tính năng Dịch bằng AI
   const handleAITranslate = async () => {
     if (!searchTerm.trim()) return;
     setIsTranslating(true);
@@ -716,7 +880,6 @@ function DictionaryView({ language }: { language: Language }) {
     }
   };
 
-  // Tính năng Tra từ bằng Giọng nói
   const startVoiceSearch = () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (SpeechRecognition) {
@@ -745,12 +908,10 @@ function DictionaryView({ language }: { language: Language }) {
 
   return (
     <div className="w-full pb-32">
-      {/* Tiêu đề */}
       <div className="text-center space-y-4 mb-8 mt-4">
-        <h2 className="text-4xl md:text-5xl font-bold text-indigo-600">Từ điển {language === 'en' ? 'Anh - Việt' : 'Đức - Việt'}</h2>
+        <h2 className="text-3xl font-black text-indigo-700">Từ điển {language === 'en' ? 'Anh - Việt' : 'Đức - Việt'}</h2>
       </div>
 
-      {/* Khung Nhập (Đã ép w-full để dãn 100% bằng màn hình xung quanh) */}
       <div className="relative w-full" ref={searchRef}>
         <div className="relative">
           <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 w-6 h-6" />
@@ -771,7 +932,6 @@ function DictionaryView({ language }: { language: Language }) {
           </button>
         </div>
 
-        {/* Dropdown */}
         <AnimatePresence>
           {suggestions.length > 0 && !selectedWord && (
             <motion.div 
@@ -795,11 +955,10 @@ function DictionaryView({ language }: { language: Language }) {
         </AnimatePresence>
       </div>
 
-      {/* MÀN HÌNH HOME TỪ ĐIỂN */}
       {!selectedWord && (!searchTerm || (searchTerm && suggestions.length > 0)) && (
         <div className="w-full mt-8 grid grid-cols-1 md:grid-cols-2 gap-8 items-center bg-white p-8 md:p-12 rounded-[2rem] shadow-sm border border-slate-100">
           <div className="space-y-4">
-            <h3 className="text-xl md:text-2xl font-black text-indigo-700 mb-2">AIBTeM Dictionary</h3>
+            <h3 className="text-2xl font-black text-indigo-700 mb-2">AIBTeM Dictionary</h3>
             <div className="space-y-3 text-slate-600 text-sm md:text-base leading-relaxed">
               <p className="flex items-center gap-2"><CheckCircle2 className="text-emerald-500 shrink-0" size={18}/> Từ điển trực tuyến miễn phí;</p>
               <p className="flex items-center gap-2"><CheckCircle2 className="text-emerald-500 shrink-0" size={18}/> Tra cứu nhanh;</p>
@@ -818,7 +977,6 @@ function DictionaryView({ language }: { language: Language }) {
         </div>
       )}
 
-      {/* TỪ KHÔNG CÓ TRONG CSDL VÀ DỊCH AI */}
       {!selectedWord && searchTerm && suggestions.length === 0 && (
         <motion.div 
           initial={{ opacity: 0 }} 
@@ -865,14 +1023,12 @@ function DictionaryView({ language }: { language: Language }) {
         </motion.div>
       )}
 
-      {/* HIỂN THỊ KẾT QUẢ TRA TỪ CAMBRIDGE (Khung vuông, giãn Full-width) */}
       {selectedWord && (
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           className="w-full mt-6 bg-white p-8 md:p-10 border border-slate-200 shadow-sm"
         >
-          {/* Dòng 1: Từ + Từ loại */}
           <div className="mb-2 flex items-baseline gap-2 flex-wrap">
             <span className="text-3xl text-blue-700 font-bold">
               {selectedWord.article && (
@@ -892,7 +1048,6 @@ function DictionaryView({ language }: { language: Language }) {
             )}
           </div>
 
-          {/* Dòng 2: Loa + Phiên âm chuẩn /.../ */}
           {selectedWord.phonetic && (
             <div className="flex items-center gap-3 mb-6">
               <Volume2 
@@ -906,19 +1061,16 @@ function DictionaryView({ language }: { language: Language }) {
             </div>
           )}
 
-          {/* Dòng 3: Định nghĩa */}
           {(selectedWord.english_definition || selectedWord.german_definition) && (
             <div className="text-slate-800 mb-3 text-lg font-medium">
               {language === 'en' ? selectedWord.english_definition : selectedWord.german_definition}
             </div>
           )}
 
-          {/* Dòng 4: Nghĩa tiếng Việt */}
           <div className="text-emerald-700 mb-8 text-xl font-bold">
             {selectedWord.vietnamese_meaning}
           </div>
 
-          {/* Dòng 5 & 6: Ví dụ */}
           {(selectedWord.example_english || selectedWord.example_german) && (
             <div className="mt-4 border-t border-slate-100 pt-6">
               <div className="flex items-start gap-3 mb-2">
@@ -1396,7 +1548,7 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
   const totalValidWords = rows.filter(r => r.word.trim() && r.meaning.trim()).length;
 
   return (
-    <div className="w-full space-y-8 pb-32">
+    <div className="w-full mx-auto space-y-8 pb-32">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <h2 className="text-3xl font-bold mb-2">{initialLesson ? "Sửa bài học" : "Tạo bài học mới"}</h2>
@@ -1613,16 +1765,21 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
   );
 }
 
-function GamesView({ vocabList, language, onComplete, playSound, activeGame, setActiveGame }: { vocabList: Vocabulary[], language: Language, onComplete: (res: GameResult) => void, playSound: (t: 'correct' | 'wrong') => void, activeGame: GameType | null, setActiveGame: (g: GameType | null) => void }) {
+function GamesView({ vocabList, language, onComplete, playSound, activeGame, setActiveGame, onGoToLibrary }: { vocabList: Vocabulary[], language: Language, onComplete: (res: GameResult) => void, playSound: (t: 'correct' | 'wrong') => void, activeGame: GameType | null, setActiveGame: (g: GameType | null) => void, onGoToLibrary: () => void }) {
   const filteredVocab = vocabList.filter(v => v.language === language);
 
   if (filteredVocab.length < 5) {
     return (
       <div className="text-center py-20 bg-white rounded-[3rem] shadow-xl border border-slate-100 w-full">
         <RobotAnimation type="sad" />
-        <h3 className="text-2xl font-bold mt-6">Bạn cần ít nhất 5 từ để bắt đầu!</h3>
-        <p className="text-slate-500 mt-2">Hãy thêm thêm từ vựng để mở khóa các trò chơi nhé.</p>
-        <p className="text-indigo-600 font-bold mt-4">Hiện có: {filteredVocab.length} từ</p>
+        <h3 className="text-2xl font-bold mt-6">Chưa có dữ liệu từ vựng!</h3>
+        <p className="text-slate-500 mt-2 mb-8">Vui lòng chọn một Bài học từ Thư viện hoặc một Chủ đề để bắt đầu chơi.</p>
+        <button 
+          onClick={onGoToLibrary}
+          className="bg-indigo-600 text-white px-8 py-4 rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg"
+        >
+          Đến kho Chủ đề ngay
+        </button>
       </div>
     );
   }
@@ -1644,42 +1801,48 @@ function GamesView({ vocabList, language, onComplete, playSound, activeGame, set
   }
 
   return (
-    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 w-full">
-      <GameCard 
-        title="Flashcards" 
-        desc="Thẻ lật 3 mặt giúp ghi nhớ sâu." 
-        icon={<BrainCircuit />} 
-        colorClass="bg-blue-500"
-        onClick={() => setActiveGame('flashcards')} 
-      />
-      <GameCard 
-        title="Trắc nghiệm" 
-        desc="AI tạo từ nhiễu thông minh." 
-        icon={<CheckCircle2 />} 
-        colorClass="bg-indigo-500"
-        onClick={() => setActiveGame('quiz')} 
-      />
-      <GameCard 
-        title="Nối từ" 
-        desc="Thử thách phản xạ nhanh." 
-        icon={<RefreshCw />} 
-        colorClass="bg-orange-500"
-        onClick={() => setActiveGame('matching')} 
-      />
-      <GameCard 
-        title="Luyện viết" 
-        desc="Nghe và viết lại chính xác." 
-        icon={<Volume2 />} 
-        colorClass="bg-emerald-500"
-        onClick={() => setActiveGame('writing')} 
-      />
-      <GameCard 
-        title="Điền từ" 
-        desc="Sử dụng từ trong ngữ cảnh AI." 
-        icon={<ChevronRight />} 
-        colorClass="bg-pink-500"
-        onClick={() => setActiveGame('fill')} 
-      />
+    <div className="w-full">
+      <div className="mb-8 bg-indigo-50 border border-indigo-100 p-4 rounded-2xl flex items-center justify-between">
+        <span className="text-indigo-800 font-medium">Đang sử dụng gói từ vựng: <strong className="text-indigo-600">{filteredVocab.length} từ</strong></span>
+        <button onClick={onGoToLibrary} className="text-sm font-bold text-indigo-600 bg-white px-4 py-2 rounded-xl shadow-sm hover:shadow-md transition-all">Đổi gói khác</button>
+      </div>
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <GameCard 
+          title="Flashcards" 
+          desc="Thẻ lật 3 mặt giúp ghi nhớ sâu." 
+          icon={<BrainCircuit />} 
+          colorClass="bg-blue-500"
+          onClick={() => setActiveGame('flashcards')} 
+        />
+        <GameCard 
+          title="Trắc nghiệm" 
+          desc="AI tạo từ nhiễu thông minh." 
+          icon={<CheckCircle2 />} 
+          colorClass="bg-indigo-500"
+          onClick={() => setActiveGame('quiz')} 
+        />
+        <GameCard 
+          title="Nối từ" 
+          desc="Thử thách phản xạ nhanh." 
+          icon={<RefreshCw />} 
+          colorClass="bg-orange-500"
+          onClick={() => setActiveGame('matching')} 
+        />
+        <GameCard 
+          title="Luyện viết" 
+          desc="Nghe và viết lại chính xác." 
+          icon={<Volume2 />} 
+          colorClass="bg-emerald-500"
+          onClick={() => setActiveGame('writing')} 
+        />
+        <GameCard 
+          title="Điền từ" 
+          desc="Sử dụng từ trong ngữ cảnh AI." 
+          icon={<ChevronRight />} 
+          colorClass="bg-pink-500"
+          onClick={() => setActiveGame('fill')} 
+        />
+      </div>
     </div>
   );
 }
@@ -2047,7 +2210,7 @@ function FillGame({ vocab, onNext, language }: { vocab: Vocabulary, onNext: (c: 
 
 // --- REPORT VIEW ---
 
-function ReportView({ results, language, vocabList }: { results: GameResult[], language: Language, vocabList: Vocabulary[] }) {
+function ReportView({ results, language }: { results: GameResult[], language: Language }) {
   const [analysis, setAnalysis] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -2134,7 +2297,7 @@ function ReportView({ results, language, vocabList }: { results: GameResult[], l
 function Footer() {
   return (
     <footer className="bg-slate-900 text-white py-4 mt-auto border-t border-slate-800">
-      <div className="max-w-7xl mx-auto px-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-slate-400 text-xs md:text-sm">
+      <div className="max-w-7xl mx-auto px-4 md:px-8 flex flex-wrap items-center gap-x-6 gap-y-2 text-slate-400 text-xs md:text-sm">
         <div className="flex items-center gap-2">
           <img 
             src="/chan_trang.PNG" 

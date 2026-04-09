@@ -184,13 +184,14 @@ const getRandomPraise = () => PRAISE_MESSAGES[Math.floor(Math.random() * PRAISE_
 
 const playGameSound = (type: 'correct' | 'wrong' | 'success') => {
   let audioSrc = '';
+  // Hệ thống sẽ tìm các file âm thanh trong thư mục public/assets/ của dự án
   if (type === 'correct') audioSrc = '/assets/correct.mp3'; 
   else if (type === 'wrong') audioSrc = '/assets/error-3.mp3';
   else if (type === 'success') audioSrc = '/assets/great-success.mp3';
   
   if (audioSrc) {
     const audio = new Audio(audioSrc);
-    audio.play().catch(e => console.warn("Lỗi phát âm thanh (có thể chưa có file trong thư mục public/assets):", e));
+    audio.play().catch(e => console.warn("Audio file missing in /assets folder", e));
   }
 };
 
@@ -534,6 +535,7 @@ export default function App() {
                 onGoToInput={() => setView('input')} 
                 hasLessons={lessons.some(l => l.language === language)}
                 activeLessonId={activeLessonId || ''}
+                playSound={playGameSound}
               />
             </motion.div>
           )}
@@ -1429,14 +1431,6 @@ function GameContainer({ type, vocabList, language, onBack, onFinish, playSound,
   
   const [answerHistory, setAnswerHistory] = useState<('correct'|'wrong'|null)[]>(new Array(gameVocabs.length).fill(null));
 
-  useEffect(() => {
-     if (type === 'flashcards') {
-         const newHistory = [...answerHistory];
-         newHistory[step] = 'correct'; // Đánh dấu màu xanh cho Flashcard
-         setAnswerHistory(newHistory);
-     }
-  }, [step, type]);
-
   const handleAnswer = (correct: boolean, userAnswer: string, customMistakeWord?: string, customCorrectAns?: string) => {
       const newHistory = [...answerHistory];
       newHistory[step] = correct ? 'correct' : 'wrong';
@@ -1472,11 +1466,12 @@ function GameContainer({ type, vocabList, language, onBack, onFinish, playSound,
   // MÀN HÌNH TỔNG KẾT CHUẨN UX
   if (isFinished) {
       const percentage = Math.round((score / gameVocabs.length) * 100);
-      const isGood = percentage >= 80; // 4/5 câu
+      const isGood = percentage >= 80; // Đạt 4/5 câu trở lên thì tung pháo hoa
 
+      // Bật âm thanh chúc mừng 1 lần duy nhất khi vừa vào màn hình này
       useEffect(() => {
           if (isGood) playSound('success');
-      }, [isGood]);
+      }, [isGood, playSound]);
       
       return (
           <div className="w-full max-w-3xl mx-auto">
@@ -1522,10 +1517,10 @@ function GameContainer({ type, vocabList, language, onBack, onFinish, playSound,
           <div className="flex gap-2 flex-1 max-w-sm mx-4">
             {gameVocabs.map((_, i) => {
                let bgColor = "bg-slate-200";
-               if (i < step || (type === 'flashcards' && i === step)) {
-                   bgColor = answerHistory[i] === 'correct' ? "bg-[#009900]" : "bg-red-500";
+               if (i < step) {
+                   bgColor = (answerHistory[i] === 'correct' || type === 'flashcards') ? "bg-[#009900]" : "bg-red-500";
                } else if (i === step) {
-                   bgColor = "bg-indigo-400 animate-pulse";
+                   bgColor = type === 'flashcards' ? "bg-[#009900]" : "bg-indigo-400 animate-pulse";
                }
                return <div key={i} className={cn("h-2 rounded-full transition-all flex-1", bgColor)} />
             })}
@@ -1746,7 +1741,7 @@ function MatchingGame({ vocabs, onCompleteGame, playSound, language }: { vocabs:
       if (correctAnswer === selectedMeaning) {
         setMatches(prev => [...prev, selectedWord]);
         playSound('correct');
-        handleSpeak(selectedWord, language); // Phát âm ĐỒNG THỜI
+        handleSpeak(selectedWord, language); 
         setSelectedWord(null);
         setSelectedMeaning(null);
         if (matches.length + 1 === vocabs.length) {
@@ -1794,7 +1789,7 @@ function WritingGame({ vocab, onAnswer, onNextStep, language }: { vocab: Vocabul
     const isCorrect = input.toLowerCase().trim() === vocab.word.toLowerCase().trim();
     setIsCorrectVal(isCorrect);
     onAnswer(isCorrect, input || 'Không gõ gì');
-    setTimeout(onNextStep, isCorrect ? 800 : 2500); // Đợi 2.5s nếu sai
+    setTimeout(onNextStep, isCorrect ? 800 : 2500); 
   };
 
   return (
@@ -1886,7 +1881,7 @@ function ReportView({ results, language, activeLessonId }: { results: GameResult
   const totalPossible = currentSessionResults.reduce((acc, r) => acc + r.total, 0);
   const accuracy = totalPossible > 0 ? Math.round((totalScore / totalPossible) * 100) : 0;
 
-  // Render nhận xét tĩnh (Bỏ hoàn toàn API của AI để chống giật nháy)
+  // Nhận xét tĩnh không phụ thuộc vào Gemini API
   const getStaticFeedback = (acc: number) => {
       if (acc >= 90) return "AIBTeM nhận thấy bạn đã nắm vững gần như toàn bộ từ vựng trong bài học này! Phản xạ xuất sắc. Bạn hoàn toàn có thể chuyển sang bài học mới khó hơn.";
       if (acc >= 70) return "Kết quả rất khả quan! Bạn đã nhớ được phần lớn từ vựng. Hãy thử chơi lại game 'Nối từ' hoặc 'Luyện viết' một lần nữa để đạt điểm tuyệt đối nhé.";
@@ -1898,7 +1893,7 @@ function ReportView({ results, language, activeLessonId }: { results: GameResult
     <div className="w-full space-y-8 pb-20">
       <div className="text-center">
         <h2 className="text-3xl font-bold mb-2">Báo cáo Tổng hợp Bài học</h2>
-        <p className="text-slate-500">Chi tiết kết quả 5 trò chơi bạn vừa hoàn thành.</p>
+        <p className="text-slate-500">Chi tiết kết quả các trò chơi bạn vừa hoàn thành.</p>
       </div>
 
       <div className="grid md:grid-cols-2 gap-8">

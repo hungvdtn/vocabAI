@@ -101,7 +101,8 @@ interface Vocabulary {
   example_vietnamese?: string;
   article?: string;
   plural?: string;
-  synonyms?: string;
+  synonym?: string; // Hỗ trợ trường hợp JSON không có "s"
+  synonyms?: string; // Hỗ trợ trường hợp JSON có "s"
   topic?: string;
   language: Language;
   userId: string;
@@ -183,6 +184,13 @@ const renderPhonetic = (rawPhonetic?: string) => {
   }
   clean = clean.replace(/\//g, '');
   return `/${clean}/`;
+};
+
+// Hàm kiểm tra một định nghĩa là cụm từ (phrase) hay câu hoàn chỉnh (sentence)
+const isDefSentence = (text?: string) => {
+  if (!text) return false;
+  const t = text.trim();
+  return t.endsWith('.') || t.endsWith('!') || t.endsWith('?');
 };
 
 // Components
@@ -678,7 +686,7 @@ function TopicLibraryView({ language, onPlayTopic }: { language: Language, onPla
     const gameReadyVocab: Vocabulary[] = shuffled.map(w => ({
       id: w.word,
       word: w.word,
-      meaning: w.vietnamese_meaning,
+      meaning: w.vietnamese_meaning || w.meaning,
       type: w.part_of_speech,
       phonetic: w.phonetic,
       example: language === 'en' ? w.example_english : w.example_german,
@@ -743,7 +751,7 @@ function TopicLibraryView({ language, onPlayTopic }: { language: Language, onPla
                     </span>
                     {vocab.phonetic && <span className="text-sm font-mono text-slate-400">{renderPhonetic(vocab.phonetic)}</span>}
                   </div>
-                  <div className="text-slate-600">{vocab.vietnamese_meaning}</div>
+                  <div className="text-slate-600">{vocab.vietnamese_meaning || vocab.meaning}</div>
                 </div>
                 <button 
                   onClick={() => handleSpeak(vocab.word, language)}
@@ -879,31 +887,11 @@ function DictionaryView({ language }: { language: Language }) {
     }
   };
 
-  // Hàm Lưu vào Google Sheets (Giả lập để chờ anh gắn link Webhook)
   const handleSaveToDatabase = async () => {
     setIsSaving(true);
-    
-    // ANH HÙNG CHÚ Ý: BƯỚC NÀY ĐỂ ĐẨY VÀO GOOGLE SHEET CỦA ANH
-    // Sau này anh tạo 1 file Google Apps Script, lấy URL dán vào đây
     const GOOGLE_SHEET_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycb.../exec"; 
-    
     try {
-      /* Mẫu code gọi thực tế (bỏ comment khi có link thật):
-      await fetch(GOOGLE_SHEET_WEBHOOK_URL, {
-        method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          word: searchTerm,
-          meaning: aiTranslation?.join(", "),
-          language: language
-        })
-      });
-      */
-      
-      // Giả lập thời gian lưu mạng 1 giây
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (error) {
@@ -981,7 +969,7 @@ function DictionaryView({ language }: { language: Language }) {
                   className="px-6 py-4 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-none flex items-center justify-between"
                 >
                   <span className="text-lg font-bold text-slate-800">{item.word}</span>
-                  <span className="text-slate-500 truncate ml-4 max-w-xs">{item.vietnamese_meaning}</span>
+                  <span className="text-slate-500 truncate ml-4 max-w-xs">{item.vietnamese_meaning || item.meaning}</span>
                 </div>
               ))}
             </motion.div>
@@ -1120,46 +1108,54 @@ function DictionaryView({ language }: { language: Language }) {
           <div className="mb-4">
             {language === 'en' && selectedWord.english_definition && (
               <div className="text-slate-800 mb-1 text-lg font-medium">
-                <span className="font-bold text-slate-500 mr-2">def. {selectedWord.part_of_speech ? `(${selectedWord.part_of_speech})` : ''}:</span>
+                <span className="font-bold text-slate-500 mr-2">
+                  def. ({isDefSentence(selectedWord.english_definition) ? 'sentence' : 'phrase'}):
+                </span>
                 {selectedWord.english_definition}
               </div>
             )}
             
             {language === 'de' && selectedWord.german_definition && (
               <div className="text-slate-800 mb-1 text-lg font-medium">
-                <span className="font-bold text-slate-500 mr-2">Begr. {selectedWord.part_of_speech ? `(${selectedWord.part_of_speech})` : ''}:</span>
+                <span className="font-bold text-slate-500 mr-2">
+                  Begr. ({isDefSentence(selectedWord.german_definition) ? 'Satz' : 'Aus'}):
+                </span>
                 {selectedWord.german_definition}
               </div>
             )}
 
-            {selectedWord.synonyms && (
-              <div className="text-slate-700 text-lg">
+            {(selectedWord.synonyms || selectedWord.synonym) && (
+              <div className="text-slate-700 text-lg mt-2">
                 <span className="font-bold text-indigo-600 mr-2">Từ đồng nghĩa:</span>
-                {selectedWord.synonyms}
+                {selectedWord.synonyms || selectedWord.synonym}
               </div>
             )}
           </div>
 
           {/* Dòng 4: Nghĩa tiếng Việt */}
-          <div className="text-emerald-700 mb-8 text-xl font-bold">
-            {selectedWord.vietnamese_meaning}
+          <div className="text-emerald-700 mb-8 text-xl font-bold flex items-start">
+            <span className="text-emerald-600 mr-2">Nghĩa:</span>
+            <span>{selectedWord.vietnamese_meaning || selectedWord.meaning}</span>
           </div>
 
           {/* Dòng 5 & 6: Ví dụ */}
-          {(selectedWord.example_english || selectedWord.example_german) && (
+          {(selectedWord.example_english || selectedWord.example_german || selectedWord.example) && (
             <div className="mt-4 border-t border-slate-100 pt-6">
               <div className="flex items-start gap-3 mb-2">
                 <Volume2 
                   className="text-slate-400 cursor-pointer hover:text-indigo-600 mt-1 flex-shrink-0 transition-colors" 
-                  onClick={() => handleSpeak(selectedWord.example_english || selectedWord.example_german, language)} 
+                  onClick={() => handleSpeak(selectedWord.example_english || selectedWord.example_german || selectedWord.example, language)} 
                   size={20} 
                 />
-                <span className="italic text-slate-800 text-lg leading-relaxed">
-                  {highlightWordInSentence(selectedWord.example_english || selectedWord.example_german, selectedWord.word)}
+                <span className="text-slate-800 text-lg leading-relaxed">
+                  <span className="font-bold text-slate-500 mr-2">Ví dụ:</span>
+                  <span className="italic">
+                    {highlightWordInSentence(selectedWord.example_english || selectedWord.example_german || selectedWord.example, selectedWord.word)}
+                  </span>
                 </span>
               </div>
               {selectedWord.example_vietnamese && (
-                <div className="ml-8 text-slate-600 text-lg">
+                <div className="ml-8 pl-1 text-slate-600 text-lg">
                   {selectedWord.example_vietnamese}
                 </div>
               )}

@@ -39,7 +39,8 @@ import {
   Globe,
   Leaf,
   Plane,
-  Shuffle
+  Shuffle,
+  Save
 } from 'lucide-react';
 import Lottie from 'lottie-react';
 import * as mammoth from 'mammoth';
@@ -100,6 +101,7 @@ interface Vocabulary {
   example_vietnamese?: string;
   article?: string;
   plural?: string;
+  synonyms?: string;
   topic?: string;
   language: Language;
   userId: string;
@@ -127,7 +129,7 @@ interface GameResult {
 }
 
 // ------------------------------------------------------------------------------------
-// HỆ THỐNG ÂM THANH NATIVE (Tích hợp sâu, không bao giờ lỗi mạng, chuẩn giọng bản xứ)
+// HỆ THỐNG ÂM THANH NATIVE
 // ------------------------------------------------------------------------------------
 const handleSpeak = (text: string, lang: Language) => {
   if (!('speechSynthesis' in window)) {
@@ -220,11 +222,9 @@ export default function App() {
   const [view, setView] = useState<View>('home');
   const [activeGame, setActiveGame] = useState<GameType | null>(null);
   
-  // Dữ liệu cá nhân từ Firebase
   const [vocabList, setVocabList] = useState<Vocabulary[]>([]);
   const [lessons, setLessons] = useState<Lesson[]>([]);
   
-  // Dữ liệu dùng để nạp vào khu vực Trò chơi (Game)
   const [playVocabList, setPlayVocabList] = useState<Vocabulary[]>([]);
 
   const [gameResults, setGameResults] = useState<GameResult[]>([]);
@@ -232,7 +232,6 @@ export default function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // Auth & Tải giọng nói
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (u) => {
       setUser(u);
@@ -243,7 +242,6 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  // Click outside menu to close
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -254,7 +252,6 @@ export default function App() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [menuRef]);
 
-  // Fetch Lessons
   useEffect(() => {
     if (!user) return;
     const q = query(collection(db, 'lessons'), where('userId', '==', user.uid));
@@ -301,7 +298,6 @@ export default function App() {
     setUser(mockUser);
   };
 
-  // Fetch Personal Vocab
   useEffect(() => {
     if (!user) return;
     
@@ -353,7 +349,7 @@ export default function App() {
             <Languages className="text-white w-10 h-10" />
           </div>
           <h1 className="text-3xl font-bold text-slate-900 mb-2">Vocab AIBTeM</h1>
-          <p className="text-slate-500 mb-8">Nâng tầm vốn từ vựng Tiếng Anh & Đức với sức mạnh AI.</p>
+          <p className="text-slate-500 mb-8">Nâng tầm vốn từ vựng Tiếng Anh & Đức với sức mạnh AIBTeM.</p>
           <button 
             onClick={login}
             className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-4 rounded-2xl transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-3 mb-4"
@@ -677,10 +673,8 @@ function TopicLibraryView({ language, onPlayTopic }: { language: Language, onPla
       alert("Chủ đề này hiện chưa có từ vựng trong cơ sở dữ liệu!");
       return;
     }
-    // Lấy ngẫu nhiên 15 từ
     const shuffled = [...wordsInTopic].sort(() => 0.5 - Math.random()).slice(0, 15);
     
-    // Ép kiểu (Mapping) sang cấu trúc chuẩn của Game
     const gameReadyVocab: Vocabulary[] = shuffled.map(w => ({
       id: w.word,
       word: w.word,
@@ -810,8 +804,13 @@ function DictionaryView({ language }: { language: Language }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [selectedWord, setSelectedWord] = useState<any | null>(null);
+  
+  // States cho Dịch vụ AIBTeM Dịch thuật
   const [aiTranslation, setAiTranslation] = useState<string[] | null>(null);
   const [isTranslating, setIsTranslating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  
   const searchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -874,9 +873,44 @@ function DictionaryView({ language }: { language: Language }) {
       setAiTranslation(meaningArray);
     } catch (error) {
       console.error(error);
-      setAiTranslation(["Lỗi kết nối AI. Vui lòng thử lại sau."]);
+      setAiTranslation(["Lỗi kết nối AIBTeM. Vui lòng thử lại sau."]);
     } finally {
       setIsTranslating(false);
+    }
+  };
+
+  // Hàm Lưu vào Google Sheets (Giả lập để chờ anh gắn link Webhook)
+  const handleSaveToDatabase = async () => {
+    setIsSaving(true);
+    
+    // ANH HÙNG CHÚ Ý: BƯỚC NÀY ĐỂ ĐẨY VÀO GOOGLE SHEET CỦA ANH
+    // Sau này anh tạo 1 file Google Apps Script, lấy URL dán vào đây
+    const GOOGLE_SHEET_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycb.../exec"; 
+    
+    try {
+      /* Mẫu code gọi thực tế (bỏ comment khi có link thật):
+      await fetch(GOOGLE_SHEET_WEBHOOK_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          word: searchTerm,
+          meaning: aiTranslation?.join(", "),
+          language: language
+        })
+      });
+      */
+      
+      // Giả lập thời gian lưu mạng 1 giây
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (error) {
+      console.error(error);
+      alert("Lỗi khi lưu vào Google Sheets!");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -955,6 +989,7 @@ function DictionaryView({ language }: { language: Language }) {
         </AnimatePresence>
       </div>
 
+      {/* MÀN HÌNH HOME TỪ ĐIỂN */}
       {!selectedWord && (!searchTerm || (searchTerm && suggestions.length > 0)) && (
         <div className="w-full mt-8 grid grid-cols-1 md:grid-cols-2 gap-8 items-center bg-white p-8 md:p-12 rounded-[2rem] shadow-sm border border-slate-100">
           <div className="space-y-4">
@@ -977,39 +1012,56 @@ function DictionaryView({ language }: { language: Language }) {
         </div>
       )}
 
+      {/* TỪ KHÔNG CÓ TRONG CSDL VÀ DỊCH AI */}
       {!selectedWord && searchTerm && suggestions.length === 0 && (
         <motion.div 
           initial={{ opacity: 0 }} 
           animate={{ opacity: 1 }} 
           className="w-full mt-6 bg-white p-12 border border-slate-200 shadow-sm text-center"
         >
-          <Search className="w-16 h-16 mx-auto mb-4 text-slate-200" />
-          <p className="text-xl text-slate-600 font-medium mb-6">Từ cần tra chưa có trong cơ sở dữ liệu.</p>
-          
+          {/* Nút gọi AIBTeM dịch */}
           {!aiTranslation ? (
-            <button 
-              onClick={handleAITranslate}
-              disabled={isTranslating}
-              className="bg-indigo-50 text-indigo-600 px-8 py-4 rounded-xl font-bold hover:bg-indigo-100 transition-all flex items-center justify-center gap-3 mx-auto shadow-sm"
-            >
-              {isTranslating ? <Loader2 className="animate-spin" size={24} /> : <BrainCircuit size={24} />}
-              Dịch bằng AI ngay
-            </button>
+            <>
+              <Search className="w-16 h-16 mx-auto mb-4 text-slate-200" />
+              <p className="text-xl text-slate-600 font-medium mb-6">Từ cần tra chưa có trong cơ sở dữ liệu.</p>
+              <button 
+                onClick={handleAITranslate}
+                disabled={isTranslating}
+                className="bg-indigo-50 text-indigo-600 px-8 py-4 rounded-xl font-bold hover:bg-indigo-100 transition-all flex items-center justify-center gap-3 mx-auto shadow-sm"
+              >
+                {isTranslating ? <Loader2 className="animate-spin" size={24} /> : <BrainCircuit size={24} />}
+                Dịch bằng AIBTeM ngay
+              </button>
+            </>
           ) : (
-            <div className="mt-8 border-t border-slate-100 pt-8 text-left">
+            <div className="text-left">
               <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-6">
                 <div>
                   <h4 className="text-sm font-bold uppercase tracking-widest text-indigo-400 flex items-center gap-2 mb-2">
-                    <BrainCircuit size={16} /> Kết quả từ AI
+                    <BrainCircuit size={16} /> Kết quả từ AIBTeM
                   </h4>
                   <h3 className="text-4xl font-bold text-slate-900">{searchTerm}</h3>
                 </div>
-                <button 
-                  onClick={() => handleSpeak(searchTerm, language)}
-                  className="w-14 h-14 shrink-0 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center hover:bg-indigo-600 hover:text-white transition-all"
-                >
-                  <Volume2 size={24} />
-                </button>
+                <div className="flex items-center gap-3">
+                  <button 
+                    onClick={() => handleSpeak(searchTerm, language)}
+                    className="w-14 h-14 shrink-0 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center hover:bg-indigo-600 hover:text-white transition-all"
+                  >
+                    <Volume2 size={24} />
+                  </button>
+                  {/* NÚT LƯU VÀO CƠ SỞ DỮ LIỆU */}
+                  <button 
+                    onClick={handleSaveToDatabase}
+                    disabled={isSaving || saveSuccess}
+                    className={cn(
+                      "px-6 h-14 shrink-0 rounded-2xl flex items-center justify-center font-bold transition-all gap-2",
+                      saveSuccess ? "bg-emerald-50 text-emerald-600 border border-emerald-200" : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-md"
+                    )}
+                  >
+                    {isSaving ? <Loader2 className="animate-spin" size={20} /> : saveSuccess ? <CheckCircle2 size={20} /> : <Save size={20} />}
+                    {saveSuccess ? "Đã lưu CSDL" : "Lưu vào CSDL"}
+                  </button>
+                </div>
               </div>
               <div className="flex flex-wrap gap-3">
                 {aiTranslation.map((meaning, idx) => (
@@ -1023,12 +1075,14 @@ function DictionaryView({ language }: { language: Language }) {
         </motion.div>
       )}
 
+      {/* HIỂN THỊ KẾT QUẢ TRA TỪ CAMBRIDGE (Khung vuông, giãn Full-width) */}
       {selectedWord && (
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           className="w-full mt-6 bg-white p-8 md:p-10 border border-slate-200 shadow-sm"
         >
+          {/* Dòng 1: Từ + Từ loại */}
           <div className="mb-2 flex items-baseline gap-2 flex-wrap">
             <span className="text-3xl text-blue-700 font-bold">
               {selectedWord.article && (
@@ -1048,6 +1102,7 @@ function DictionaryView({ language }: { language: Language }) {
             )}
           </div>
 
+          {/* Dòng 2: Loa + Phiên âm chuẩn /.../ */}
           {selectedWord.phonetic && (
             <div className="flex items-center gap-3 mb-6">
               <Volume2 
@@ -1061,16 +1116,36 @@ function DictionaryView({ language }: { language: Language }) {
             </div>
           )}
 
-          {(selectedWord.english_definition || selectedWord.german_definition) && (
-            <div className="text-slate-800 mb-3 text-lg font-medium">
-              {language === 'en' ? selectedWord.english_definition : selectedWord.german_definition}
-            </div>
-          )}
+          {/* Dòng 3: Định nghĩa Anh/Đức & Từ đồng nghĩa */}
+          <div className="mb-4">
+            {language === 'en' && selectedWord.english_definition && (
+              <div className="text-slate-800 mb-1 text-lg font-medium">
+                <span className="font-bold text-slate-500 mr-2">def. {selectedWord.part_of_speech ? `(${selectedWord.part_of_speech})` : ''}:</span>
+                {selectedWord.english_definition}
+              </div>
+            )}
+            
+            {language === 'de' && selectedWord.german_definition && (
+              <div className="text-slate-800 mb-1 text-lg font-medium">
+                <span className="font-bold text-slate-500 mr-2">Begr. {selectedWord.part_of_speech ? `(${selectedWord.part_of_speech})` : ''}:</span>
+                {selectedWord.german_definition}
+              </div>
+            )}
 
+            {selectedWord.synonyms && (
+              <div className="text-slate-700 text-lg">
+                <span className="font-bold text-indigo-600 mr-2">Từ đồng nghĩa:</span>
+                {selectedWord.synonyms}
+              </div>
+            )}
+          </div>
+
+          {/* Dòng 4: Nghĩa tiếng Việt */}
           <div className="text-emerald-700 mb-8 text-xl font-bold">
             {selectedWord.vietnamese_meaning}
           </div>
 
+          {/* Dòng 5 & 6: Ví dụ */}
           {(selectedWord.example_english || selectedWord.example_german) && (
             <div className="mt-4 border-t border-slate-100 pt-6">
               <div className="flex items-start gap-3 mb-2">
@@ -1605,7 +1680,7 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
                     {row.loading && (
                       <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2 bg-white/80 backdrop-blur-sm px-2 py-1 rounded-lg border border-slate-100">
                         <Loader2 className="animate-spin text-indigo-500 w-4 h-4" />
-                        <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-tighter">AI đang dịch...</span>
+                        <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-tighter">AIBTeM đang dịch...</span>
                       </div>
                     )}
                   </div>
@@ -1816,7 +1891,7 @@ function GamesView({ vocabList, language, onComplete, playSound, activeGame, set
         />
         <GameCard 
           title="Trắc nghiệm" 
-          desc="AI tạo từ nhiễu thông minh." 
+          desc="AIBTeM tạo từ nhiễu thông minh." 
           icon={<CheckCircle2 />} 
           colorClass="bg-indigo-500"
           onClick={() => setActiveGame('quiz')} 
@@ -1837,7 +1912,7 @@ function GamesView({ vocabList, language, onComplete, playSound, activeGame, set
         />
         <GameCard 
           title="Điền từ" 
-          desc="Sử dụng từ trong ngữ cảnh AI." 
+          desc="Sử dụng từ trong ngữ cảnh AIBTeM." 
           icon={<ChevronRight />} 
           colorClass="bg-pink-500"
           onClick={() => setActiveGame('fill')} 
@@ -2277,16 +2352,16 @@ function ReportView({ results, language }: { results: GameResult[], language: La
 
       <div className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100">
         <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-          <BrainCircuit className="text-indigo-600" /> AI Nhận xét & Khuyên dùng
+          <BrainCircuit className="text-indigo-600" /> AIBTeM Nhận xét & Khuyên dùng
         </h3>
         {loading ? (
           <div className="flex flex-col items-center py-8">
             <RefreshCw className="animate-spin text-indigo-600 mb-4" size={32} />
-            <p className="text-slate-500 font-medium italic">Gemini đang phân tích kết quả của bạn...</p>
+            <p className="text-slate-500 font-medium italic">AIBTeM đang phân tích kết quả của bạn...</p>
           </div>
         ) : (
           <div className="prose prose-slate max-w-none">
-            <p className="text-slate-700 leading-relaxed whitespace-pre-wrap">{analysis || "Bắt đầu chơi để nhận nhận xét từ AI!"}</p>
+            <p className="text-slate-700 leading-relaxed whitespace-pre-wrap">{analysis || "Bắt đầu chơi để nhận nhận xét từ AIBTeM!"}</p>
           </div>
         )}
       </div>

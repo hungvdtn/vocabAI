@@ -198,39 +198,48 @@ const isDefSentence = (text?: string) => {
 // ------------------------------------------------------------------------------------
 // THUẬT TOÁN SIÊU LỌC CHỦ ĐỀ CHO TIẾNG ĐỨC VÀ TIẾNG ANH MỞ RỘNG
 // ------------------------------------------------------------------------------------
-const mapSubTopicToMainTopic = (rawTopic?: string) => {
-  if (!rawTopic) return 'other';
-  const t = rawTopic.toLowerCase();
-  
-  // 1. Giáo dục & Học tập
-  if (/(trường|giáo dục|học|bằng cấp|nghiên cứu|thầy|cô|sinh viên|môn|ngôn ngữ|education|school|bildung|studium|schule|sprache|lernen|unterricht)/i.test(t)) return 'education_and_learning';
-  
-  // 2. Công sở & Kinh doanh
-  if (/(công việc|nghề|công sở|kinh doanh|tài chính|tiền|công ty|văn phòng|bưu chính|work|business|beruf|arbeit|büro|wirtschaft|geld|post|firma)/i.test(t)) return 'work_and_business';
-  
-  // 3. Sức khỏe & Cơ thể
-  if (/(sức khỏe|cơ thể|y tế|bệnh|dinh dưỡng|thuốc|bác sĩ|health|body|gesundheit|körper|krankheit|medizin|arzt)/i.test(t)) return 'health_and_body';
-  
-  // 4. Khoa học & Công nghệ
-  if (/(khoa học|công nghệ|máy tính|internet|phát minh|science|tech|wissenschaft|technik|computer|medien)/i.test(t)) return 'science_and_technology';
-  
-  // 5. Xã hội & Văn hóa
-  if (/(xã hội|văn hóa|nghệ thuật|thể thao|giải trí|luật|chính trị|tôn giáo|society|culture|kunst|politik|gesellschaft|recht|religion|sport)/i.test(t)) return 'society_and_culture';
-  
-  // 6. Thiên nhiên & Môi trường
-  if (/(thiên nhiên|môi trường|động vật|thực vật|khí hậu|thời tiết|địa lý|nature|environment|umwelt|tier|pflanze|wetter|klima|natur|geografie)/i.test(t)) return 'nature_and_environment';
-  
-  // 7. Du lịch & Giao thông
-  if (/(du lịch|giao thông|phương tiện|kỳ nghỉ|xe|đường|travel|transport|verkehr|reise|tourismus|urlaub)/i.test(t)) return 'travel_and_transport';
-  
-  // 8. Đời sống hàng ngày (Quét toàn bộ các từ vựng chung chung, con người, thức ăn)
-  if (/(đời sống|hàng ngày|gia đình|thời gian|đồ ăn|thức|mua sắm|nhà|cảm xúc|màu|vật|quần áo|daily|alltag|mensch|familie|essen|trinken|zeit|allgemein|wohnen|einkaufen|kleidung|gefühl|farbe)/i.test(t)) return 'daily_life';
-  
-  // Nếu không khớp cái nào, mặc định đưa vào "Đời sống hàng ngày" để người dùng dễ học các từ vựng cơ bản, thay vì bỏ vào rổ "Khác"
-  return 'daily_life'; 
+const KNOWN_TOPIC_IDS = [
+  'education_and_learning', 'work_and_business', 'daily_life', 
+  'health_and_body', 'science_and_technology', 'society_and_culture', 
+  'nature_and_environment', 'travel_and_transport', 'other'
+];
+
+const removeAccents = (str: string) => {
+  return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D');
 };
 
-// Hàm tính toán trạng thái ôn tập của Bài học
+const mapSubTopicToMainTopic = (rawTopic?: string) => {
+  if (!rawTopic) return 'other';
+  const t = removeAccents(rawTopic.toLowerCase());
+  
+  // 1. Giáo dục & Học tập
+  if (/(truong|giao duc|hoc|bang cap|nghien cuu|thay|co|sinh vien|mon|ngon ngu|education|school|learn|study|college|university|student|teacher|language|bildung|studium|schule|sprache|unterricht)/i.test(t)) return 'education_and_learning';
+  
+  // 2. Công sở & Kinh doanh
+  if (/(cong viec|nghe|cong so|kinh doanh|tai chinh|tien|cong ty|van phong|buu chinh|work|business|job|office|finance|money|company|career|beruf|arbeit|buro|wirtschaft|geld|post|firma)/i.test(t)) return 'work_and_business';
+  
+  // 3. Sức khỏe & Cơ thể
+  if (/(suc khoe|co the|y te|benh|dinh duong|thuoc|bac si|health|body|medical|medicine|doctor|disease|nutrition|gesundheit|korper|krankheit|arzt)/i.test(t)) return 'health_and_body';
+  
+  // 4. Khoa học & Công nghệ
+  if (/(khoa hoc|cong nghe|may tinh|internet|phat minh|science|tech|computer|machine|engine|invention|wissenschaft|technik|medien)/i.test(t)) return 'science_and_technology';
+  
+  // 5. Xã hội & Văn hóa
+  if (/(xa hoi|van hoa|nghe thuat|the thao|giai tri|luat|chinh tri|ton giao|society|culture|art|sport|entertain|law|politic|religion|kunst|politik|gesellschaft|recht)/i.test(t)) return 'society_and_culture';
+  
+  // 6. Thiên nhiên & Môi trường
+  if (/(thien nhien|moi truong|dong vat|thuc vat|khi hau|thoi tiet|dia ly|nature|environment|animal|plant|climate|weather|geography|earth|umwelt|tier|pflanze|wetter|klima|natur|geografie)/i.test(t)) return 'nature_and_environment';
+  
+  // 7. Du lịch & Giao thông
+  if (/(du lich|giao thong|phuong tien|ky nghi|xe|duong|travel|transport|traffic|tourism|vacation|trip|vehicle|flight|verkehr|reise|tourismus|urlaub)/i.test(t)) return 'travel_and_transport';
+  
+  // 8. Đời sống hàng ngày
+  if (/(doi song|hang ngay|gia dinh|thoi gian|do an|thuc|mua sam|nha|cam xuc|mau|vat|quan ao|daily|life|family|time|food|eat|drink|shop|home|house|emotion|color|cloth|general|alltag|mensch|familie|essen|trinken|zeit|allgemein|wohnen|einkaufen|kleidung|gefuhl|farbe)/i.test(t)) return 'daily_life';
+  
+  // Trả về Other thay vì lùa vào Daily Life để dễ soát lỗi
+  return 'other'; 
+};
+
 const getLessonStatus = (lesson: Lesson) => {
   const lastTime = lesson.lastPracticed || lesson.createdAt;
   const daysPassed = (Date.now() - lastTime) / (1000 * 60 * 60 * 24);
@@ -519,7 +528,6 @@ export default function App() {
         </div>
       </nav>
 
-      {/* Game Sub-header */}
       <AnimatePresence>
         {activeGame && (
           <motion.div 
@@ -548,7 +556,6 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 md:px-8 py-8 flex-grow w-full flex flex-col">
         <AnimatePresence mode="wait">
           {view === 'home' && (
@@ -636,7 +643,6 @@ export default function App() {
         </AnimatePresence>
       </main>
 
-      {/* Mobile Nav */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around p-2 z-50">
         <MobileNavButton active={view === 'topics'} onClick={() => setView('topics')} icon={<LayoutGrid />} />
         <MobileNavButton active={view === 'input'} onClick={() => setView('input')} icon={<PlusCircle />} />
@@ -763,19 +769,25 @@ function StatCard({ title, value, color }: { title: string, value: string, color
 // --- TOPIC LIBRARY VIEW ---
 function TopicLibraryView({ language, lessons, onOpenInInput }: { language: Language, lessons: Lesson[], onOpenInInput: (vocab: Vocabulary[], title: string) => void }) {
   
-  // Áp dụng thuật toán gom nhóm toàn bộ dữ liệu 1 cách tự động
   const currentDict = useMemo(() => {
     const rawDict = language === 'en' ? enDictDataRaw : deDictDataRaw;
-    return rawDict.map(w => ({
-      ...w,
-      topic: mapSubTopicToMainTopic(w.topic)
-    }));
+    
+    return rawDict.map(w => {
+      // 1. Nếu từ vựng có sẵn ID chuẩn thì tuyệt đối giữ nguyên
+      if (w.topic && KNOWN_TOPIC_IDS.includes(w.topic)) {
+          return w;
+      }
+      // 2. Nếu từ vựng ghi tự do (sai chính tả, tiếng Đức, tiếng Việt...) thì gọi AI lùa vào nhóm
+      return {
+          ...w,
+          topic: mapSubTopicToMainTopic(w.topic)
+      };
+    });
   }, [language]);
 
   const [selectedTopic, setSelectedTopic] = useState<any | null>(null);
   const [selectedWords, setSelectedWords] = useState<Set<string>>(new Set());
 
-  // Thuật toán theo dõi từ đã học
   const learnedWordsMap = useMemo(() => {
     const map = new Map<string, string>();
     lessons.filter(l => l.language === language).forEach(lesson => {
@@ -857,7 +869,6 @@ function TopicLibraryView({ language, lessons, onOpenInInput }: { language: Lang
   const handleLearnSelected = (topicName: string) => {
     if (selectedWords.size < 5) return;
     
-    // Kiểm tra xem có chọn nhầm từ đã học không
     const selectedLearned = Array.from(selectedWords).filter(w => learnedWordsMap.has(w));
     if (selectedLearned.length > 0) {
       const msg = selectedLearned.slice(0, 3).join(', ') + (selectedLearned.length > 3 ? '...' : '');

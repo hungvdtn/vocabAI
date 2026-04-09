@@ -62,7 +62,7 @@ import {
 } from 'firebase/firestore';
 import { signInWithPopup, onAuthStateChanged, User, signOut } from 'firebase/auth';
 import { db, auth, googleProvider } from './firebase';
-import { generateDistractors, generateExampleSentence, translateWord, checkLocalDictionary } from './services/ai';
+import { generateExampleSentence, translateWord } from './services/ai';
 import { cn } from './lib/utils';
 
 import { 
@@ -127,7 +127,7 @@ interface Lesson {
 }
 
 interface GameResult {
-  lessonId: string; // Theo dõi game thuộc lesson nào
+  lessonId: string; 
   gameType: GameType;
   score: number;
   total: number;
@@ -184,7 +184,7 @@ const getRandomPraise = () => PRAISE_MESSAGES[Math.floor(Math.random() * PRAISE_
 
 const playGameSound = (type: 'correct' | 'wrong' | 'success') => {
   let audioSrc = '';
-  if (type === 'correct') audioSrc = '/assets/correct.mp3'; // CẦN ĐỂ FILE TRONG THƯ MỤC PUBLIC/ASSETS
+  if (type === 'correct') audioSrc = '/assets/correct.mp3'; 
   else if (type === 'wrong') audioSrc = '/assets/error-3.mp3';
   else if (type === 'success') audioSrc = '/assets/great-success.mp3';
   
@@ -365,11 +365,9 @@ export default function App() {
 
   // LOGIC THEO DÕI & TỰ ĐỘNG CHUYỂN SANG BÁO CÁO KHI CHƠI ĐỦ 5 GAME
   const handleGameComplete = async (res: GameResult) => {
-    // 1. Lưu kết quả game vào bộ nhớ
     const newResults = [...gameResults, { ...res, language }];
     setGameResults(newResults);
     
-    // Cập nhật lên CSDL
     if (activeLessonId && !isTestMode) {
       try {
         const lessonRef = doc(db, 'lessons', activeLessonId);
@@ -380,18 +378,14 @@ export default function App() {
       }
     }
     
-    setActiveGame(null); // Đóng game hiện tại
+    setActiveGame(null); 
     
-    // 2. Đếm số game đã chơi của bài học này trong phiên hiện tại
     if (activeLessonId) {
        const gamesPlayedOfThisLesson = newResults.filter(r => r.lessonId === activeLessonId).map(r => r.gameType);
        const uniqueGamesPlayed = new Set(gamesPlayedOfThisLesson);
        
-       // Nếu đã chơi đủ 5 loại game khác nhau (flashcards, quiz, matching, writing, fill)
        if (uniqueGamesPlayed.size >= 5) {
-          // Bắn ra pháo hoa siêu bự
           playGameSound('success');
-          // Tự động đá sang trang Report
           setView('report');
        }
     }
@@ -1409,26 +1403,28 @@ function GameCard({ title, desc, icon, onClick, colorClass }: { title: string, d
   );
 }
 
-// --- GAME LOGIC ---
+// --- GAME LOGIC (CHỐNG NHẢY TỪ) ---
 
 function GameContainer({ type, vocabList, language, onBack, onFinish, playSound, activeLessonId }: { type: GameType, vocabList: Vocabulary[], language: Language, onBack: () => void, onFinish: (score: number) => void, playSound: (t: 'correct' | 'wrong' | 'success') => void, activeLessonId: string }) {
-  const currentDict = language === 'en' ? enDictDataRaw : deDictDataRaw;
-  const enrichedVocabList = useMemo(() => {
-      return vocabList.map(v => {
-          const dictEntry = currentDict.find(d => d.word.toLowerCase() === v.word.toLowerCase());
-          if (dictEntry) {
-              return { ...v, part_of_speech: v.part_of_speech || dictEntry.part_of_speech || dictEntry.type, phonetic: v.phonetic || dictEntry.phonetic, english_definition: v.english_definition || dictEntry.english_definition || dictEntry.definition, german_definition: v.german_definition || dictEntry.german_definition || dictEntry.definition, example: v.example || dictEntry.example, example_english: v.example_english || dictEntry.example_english, example_german: v.example_german || dictEntry.example_german, example_vietnamese: v.example_vietnamese || dictEntry.example_vietnamese };
-          }
-          return v;
-      });
-  }, [vocabList, language]);
+  
+  // 1. Chỉ bồi đắp dữ liệu 1 LẦN DUY NHẤT khi vào game (chống nhảy từ)
+  const [gameVocabs] = useState(() => {
+    const currentDict = language === 'en' ? enDictDataRaw : deDictDataRaw;
+    const enriched = vocabList.map(v => {
+        const dictEntry = currentDict.find(d => d.word.toLowerCase() === v.word.toLowerCase());
+        if (dictEntry) {
+            return { ...v, part_of_speech: v.part_of_speech || dictEntry.part_of_speech || dictEntry.type, phonetic: v.phonetic || dictEntry.phonetic, english_definition: v.english_definition || dictEntry.english_definition || dictEntry.definition, german_definition: v.german_definition || dictEntry.german_definition || dictEntry.definition, example: v.example || dictEntry.example, example_english: v.example_english || dictEntry.example_english, example_german: v.example_german || dictEntry.example_german, example_vietnamese: v.example_vietnamese || dictEntry.example_vietnamese };
+        }
+        return v;
+    });
+    return type === 'flashcards' ? enriched : [...enriched].sort(() => 0.5 - Math.random()).slice(0, 5);
+  });
 
   const [step, setStep] = useState(0);
   const [score, setScore] = useState(0);
   const [isFinished, setIsFinished] = useState(false);
   const [mistakes, setMistakes] = useState<{word: string, userAnswer: string, correctAnswer: string}[]>([]);
   
-  const gameVocabs = type === 'flashcards' ? enrichedVocabList : [...enrichedVocabList].sort(() => 0.5 - Math.random()).slice(0, 5);
   const currentVocab = gameVocabs[step];
   
   const [answerHistory, setAnswerHistory] = useState<('correct'|'wrong'|null)[]>(new Array(gameVocabs.length).fill(null));
@@ -1436,7 +1432,7 @@ function GameContainer({ type, vocabList, language, onBack, onFinish, playSound,
   useEffect(() => {
      if (type === 'flashcards') {
          const newHistory = [...answerHistory];
-         newHistory[step] = 'correct'; 
+         newHistory[step] = 'correct'; // Đánh dấu màu xanh cho Flashcard
          setAnswerHistory(newHistory);
      }
   }, [step, type]);
@@ -1455,7 +1451,7 @@ function GameContainer({ type, vocabList, language, onBack, onFinish, playSound,
               setMistakes(prev => [...prev, {
                   word: customMistakeWord || currentVocab.word,
                   userAnswer: userAnswer || 'Không trả lời',
-                  correctAnswer: customCorrectAns || (type === 'writing' ? currentVocab.word : currentVocab.meaning)
+                  correctAnswer: customCorrectAns || (type === 'writing' ? currentVocab.word : (currentVocab.vietnamese_meaning || currentVocab.meaning))
               }]);
           }
       }
@@ -1473,16 +1469,14 @@ function GameContainer({ type, vocabList, language, onBack, onFinish, playSound,
       }
   };
 
-  // MÀN HÌNH TỔNG KẾT
+  // MÀN HÌNH TỔNG KẾT CHUẨN UX
   if (isFinished) {
       const percentage = Math.round((score / gameVocabs.length) * 100);
-      const isGood = percentage >= 80;
+      const isGood = percentage >= 80; // 4/5 câu
 
       useEffect(() => {
-          if (isGood) {
-              playSound('success');
-          }
-      }, []);
+          if (isGood) playSound('success');
+      }, [isGood]);
       
       return (
           <div className="w-full max-w-3xl mx-auto">
@@ -1491,7 +1485,7 @@ function GameContainer({ type, vocabList, language, onBack, onFinish, playSound,
                   <img src={isGood ? "https://api.dicebear.com/7.x/fun-emoji/svg?seed=MochiHappy" : "https://api.dicebear.com/7.x/fun-emoji/svg?seed=MochiSad"} alt="Mochi" className="w-40 h-40 mx-auto mb-6 bg-indigo-50 rounded-full p-4 border-4 border-white shadow-lg" />
                   
                   <h2 className="text-3xl md:text-4xl font-black text-slate-800 mb-4">
-                      {isGood ? getRandomPraise() : "Cố gắng lên nhé! Luyện tập thêm sẽ thành công!"}
+                      {isGood ? getRandomPraise() : "Cố gắng lên nhé! Đừng bỏ cuộc!"}
                   </h2>
                   <p className="text-lg md:text-xl text-slate-600 mb-8 font-medium">
                       Tổng số có <strong className="text-indigo-600">{gameVocabs.length}</strong> câu, bạn đã làm đúng <strong className="text-emerald-600">{score}</strong> câu; sai <strong className="text-red-500">{gameVocabs.length - score}</strong> câu!
@@ -1529,7 +1523,7 @@ function GameContainer({ type, vocabList, language, onBack, onFinish, playSound,
             {gameVocabs.map((_, i) => {
                let bgColor = "bg-slate-200";
                if (i < step || (type === 'flashcards' && i === step)) {
-                   bgColor = answerHistory[i] === 'correct' ? "bg-emerald-500" : "bg-red-500";
+                   bgColor = answerHistory[i] === 'correct' ? "bg-[#009900]" : "bg-red-500";
                } else if (i === step) {
                    bgColor = "bg-indigo-400 animate-pulse";
                }
@@ -1543,24 +1537,17 @@ function GameContainer({ type, vocabList, language, onBack, onFinish, playSound,
       <AnimatePresence mode="wait">
         {type === 'flashcards' && (
           <motion.div key={step} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-            <FlashcardGame 
-              vocab={currentVocab} 
-              onNext={() => { handleAnswer(true, ''); handleNextStep(); }} 
-              onPrev={() => setStep(s => s > 0 ? s - 1 : s)} 
-              language={language} 
-              step={step} 
-              totalSteps={gameVocabs.length} 
-            />
+            <FlashcardGame vocab={currentVocab} onNext={() => { handleAnswer(true, ''); handleNextStep(); }} onPrev={() => setStep(s => s > 0 ? s - 1 : s)} language={language} step={step} totalSteps={gameVocabs.length} />
           </motion.div>
         )}
         {type === 'quiz' && (
           <motion.div key={step} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-            <QuizGame vocab={currentVocab} allVocabs={vocabList} onAnswer={handleAnswer} onNextStep={handleNextStep} language={language} />
+            <QuizGame vocab={currentVocab} allVocabs={gameVocabs} onAnswer={handleAnswer} onNextStep={handleNextStep} language={language} />
           </motion.div>
         )}
         {type === 'matching' && (
           <motion.div key="matching" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <MatchingGame vocabs={gameVocabs} onCompleteGame={(finalScore, finalMistakes) => { setScore(finalScore); setMistakes(finalMistakes); setIsFinished(true); }} playSound={playSound} />
+            <MatchingGame vocabs={gameVocabs} onCompleteGame={(finalScore, finalMistakes) => { setScore(finalScore); setMistakes(finalMistakes); setIsFinished(true); }} playSound={playSound} language={language} />
           </motion.div>
         )}
         {type === 'writing' && (
@@ -1586,37 +1573,21 @@ function FlashcardGame({ vocab, onNext, onPrev, language, step, totalSteps }: { 
 
   useEffect(() => {
     setSide(0);
-    setShowReportModal(false);
-    setErrorText('');
-    setShowThankYou(false);
+    setShowReportModal(false); setErrorText(''); setShowThankYou(false);
   }, [vocab]);
 
   useEffect(() => {
-    if (side === 2) {
-       handleSpeak(vocab.word, language);
-    }
+    if (side === 2) handleSpeak(vocab.word, language);
   }, [side, vocab.word, language]);
 
   const definition = language === 'en' ? (vocab.english_definition || vocab.definition) : (vocab.german_definition || vocab.definition);
   const exampleText = language === 'en' ? (vocab.example_english || vocab.example) : (vocab.example_german || vocab.example);
 
-  const handleReportSubmit = () => {
-    setShowThankYou(true);
-  };
-
   return (
     <div className="space-y-8 w-full max-w-4xl mx-auto">
       <div className="perspective-[1000px] w-full min-h-[220px]">
         <AnimatePresence mode="wait">
-          <motion.div 
-            key={side}
-            initial={{ rotateX: 90, opacity: 0 }}
-            animate={{ rotateX: 0, opacity: 1 }}
-            exit={{ rotateX: -90, opacity: 0 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
-            onClick={() => setSide((side + 1) % 3)}
-            className="w-full min-h-[220px] bg-white rounded-[2rem] shadow-xl border border-slate-100 flex flex-col p-6 md:p-10 cursor-pointer relative overflow-hidden group"
-          >
+          <motion.div key={side} initial={{ rotateX: 90, opacity: 0 }} animate={{ rotateX: 0, opacity: 1 }} exit={{ rotateX: -90, opacity: 0 }} transition={{ duration: 0.3, ease: "easeInOut" }} onClick={() => setSide((side + 1) % 3)} className="w-full min-h-[220px] bg-white rounded-[2rem] shadow-xl border border-slate-100 flex flex-col p-6 md:p-10 cursor-pointer relative overflow-hidden group">
             <div className="flex-grow flex flex-col justify-center w-full">
               {side === 0 && (
                 <div className="text-left w-full space-y-2">
@@ -1626,59 +1597,40 @@ function FlashcardGame({ vocab, onNext, onPrev, language, step, totalSteps }: { 
                    </div>
                 </div>
               )}
-              
               {side === 1 && (
                 <div className="text-left w-full space-y-4">
-                   <div className="text-xl font-bold text-emerald-600">
-                     {vocab.vietnamese_meaning || vocab.meaning}
-                   </div>
+                   <div className="text-xl font-bold text-emerald-600">{vocab.vietnamese_meaning || vocab.meaning}</div>
                    {vocab.phonetic && (
                      <div className="flex items-center gap-3 text-slate-500">
-                       <button onClick={(e) => {e.stopPropagation(); handleSpeak(vocab.word, language)}} className="hover:text-indigo-600 transition-colors p-2 bg-slate-50 rounded-full hover:bg-indigo-50 border border-slate-100 shadow-sm">
-                         <Volume2 size={20} />
-                       </button>
+                       <button onClick={(e) => {e.stopPropagation(); handleSpeak(vocab.word, language)}} className="hover:text-indigo-600 transition-colors p-2 bg-slate-50 rounded-full hover:bg-indigo-50 border border-slate-100 shadow-sm"><Volume2 size={20} /></button>
                        <span className="text-lg font-mono">{renderPhonetic(vocab.phonetic)}</span>
                      </div>
                    )}
                 </div>
               )}
-
               {side === 2 && (
                 <div className="text-left w-full space-y-4">
                    <div className="text-xl font-bold text-indigo-600">
                       {vocab.word} {vocab.part_of_speech && <span className="font-normal text-slate-500">({vocab.part_of_speech})</span>}
                    </div>
-
                    {vocab.phonetic && (
                      <div className="flex items-center gap-3 text-slate-500">
-                         <button onClick={(e) => {e.stopPropagation(); handleSpeak(vocab.word, language)}} className="hover:text-indigo-600 transition-colors p-2 bg-slate-50 rounded-full hover:bg-indigo-50 border border-slate-100 shadow-sm">
-                           <Volume2 size={20} />
-                         </button>
+                         <button onClick={(e) => {e.stopPropagation(); handleSpeak(vocab.word, language)}} className="hover:text-indigo-600 transition-colors p-2 bg-slate-50 rounded-full hover:bg-indigo-50 border border-slate-100 shadow-sm"><Volume2 size={20} /></button>
                          <span className="text-lg font-mono">{renderPhonetic(vocab.phonetic)}</span>
                      </div>
                    )}
-
                    {(exampleText) && (
                      <div className="flex items-start gap-3 mt-4 pt-4 border-t border-slate-100">
-                        <button onClick={(e) => {e.stopPropagation(); handleSpeak(exampleText || '', language)}} className="hover:text-indigo-600 transition-colors text-slate-400 mt-1 shrink-0 p-1.5 bg-white rounded-full shadow-sm border border-slate-100">
-                          <Volume2 size={18} />
-                        </button>
+                        <button onClick={(e) => {e.stopPropagation(); handleSpeak(exampleText || '', language)}} className="hover:text-indigo-600 transition-colors text-slate-400 mt-1 shrink-0 p-1.5 bg-white rounded-full shadow-sm border border-slate-100"><Volume2 size={18} /></button>
                         <div className="space-y-1">
-                           <div className="text-lg text-slate-700 leading-relaxed italic">
-                              {highlightWordInSentence(exampleText || '', vocab.word)}
-                           </div>
-                           {vocab.example_vietnamese && (
-                              <div className="text-base text-slate-500">
-                                 {vocab.example_vietnamese}
-                              </div>
-                           )}
+                           <div className="text-lg text-slate-700 leading-relaxed italic">{highlightWordInSentence(exampleText || '', vocab.word)}</div>
+                           {vocab.example_vietnamese && <div className="text-base text-slate-500">{vocab.example_vietnamese}</div>}
                         </div>
                      </div>
                    )}
                 </div>
               )}
             </div>
-            
             <div className="absolute bottom-4 right-6 text-slate-300 font-bold text-xs uppercase tracking-widest flex items-center gap-2 group-hover:text-indigo-300 transition-colors">
                <RefreshCw size={14} className="group-hover:rotate-180 transition-transform duration-500" /> Nhấn lật thẻ
             </div>
@@ -1687,25 +1639,13 @@ function FlashcardGame({ vocab, onNext, onPrev, language, step, totalSteps }: { 
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4 w-full">
-         <button 
-           onClick={onPrev} 
-           disabled={step === 0} 
-           className="flex-1 py-4 rounded-2xl font-bold text-lg bg-white border-2 border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
-         >
+         <button onClick={onPrev} disabled={step === 0} className="flex-1 py-4 rounded-2xl font-bold text-lg bg-white border-2 border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2">
            <ChevronLeft size={20} /> Lùi lại
          </button>
-
-         <button 
-           onClick={() => setShowReportModal(true)} 
-           className="flex-1 py-4 rounded-2xl font-bold text-lg bg-orange-50 border-2 border-orange-100 text-orange-600 hover:bg-orange-100 hover:border-orange-200 transition-all flex items-center justify-center gap-2"
-         >
+         <button onClick={() => setShowReportModal(true)} className="flex-1 py-4 rounded-2xl font-bold text-lg bg-orange-50 border-2 border-orange-100 text-orange-600 hover:bg-orange-100 hover:border-orange-200 transition-all flex items-center justify-center gap-2">
            <AlertCircle size={20} /> Báo lỗi
          </button>
-
-         <button 
-           onClick={onNext} 
-           className="flex-1 py-4 rounded-2xl font-bold text-lg bg-indigo-600 text-white hover:bg-indigo-700 hover:scale-[1.02] active:scale-95 shadow-xl shadow-indigo-200 transition-all flex items-center justify-center gap-2"
-         >
+         <button onClick={onNext} className="flex-1 py-4 rounded-2xl font-bold text-lg bg-indigo-600 text-white hover:bg-indigo-700 hover:scale-[1.02] active:scale-95 shadow-xl shadow-indigo-200 transition-all flex items-center justify-center gap-2">
            {step === totalSteps - 1 ? 'Hoàn thành' : 'Tiếp theo'} {step !== totalSteps - 1 && <ChevronRight size={20} />}
          </button>
       </div>
@@ -1718,35 +1658,20 @@ function FlashcardGame({ vocab, onNext, onPrev, language, step, totalSteps }: { 
               {!showThankYou ? (
                 <>
                   <div className="flex items-center gap-3 mb-6">
-                    <div className="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center shrink-0">
-                      <AlertCircle size={24} />
-                    </div>
-                    <div>
-                      <h3 className="text-2xl font-bold text-slate-900">Báo lỗi từ vựng</h3>
-                      <p className="text-slate-500 text-sm">Từ: <strong className="text-indigo-600">{vocab.word}</strong></p>
-                    </div>
+                    <div className="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center shrink-0"><AlertCircle size={24} /></div>
+                    <div><h3 className="text-2xl font-bold text-slate-900">Báo lỗi từ vựng</h3><p className="text-slate-500 text-sm">Từ: <strong className="text-indigo-600">{vocab.word}</strong></p></div>
                   </div>
-                  
                   <div className="space-y-4 mb-8">
-                    <textarea 
-                      autoFocus
-                      value={errorText}
-                      onChange={(e) => setErrorText(e.target.value)}
-                      placeholder="Vui lòng nhập nội dung lỗi vào đây..."
-                      className="w-full bg-slate-50 border-2 border-slate-200 rounded-2xl px-6 py-5 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all text-lg font-medium placeholder:text-slate-400 min-h-[150px] resize-none"
-                    />
+                    <textarea autoFocus value={errorText} onChange={(e) => setErrorText(e.target.value)} placeholder="Vui lòng nhập nội dung lỗi vào đây..." className="w-full bg-slate-50 border-2 border-slate-200 rounded-2xl px-6 py-5 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all text-lg font-medium placeholder:text-slate-400 min-h-[150px] resize-none" />
                   </div>
-                  
                   <div className="flex gap-4">
                     <button onClick={() => setShowReportModal(false)} className="flex-1 py-4 rounded-2xl font-bold text-slate-500 hover:bg-slate-100 transition-all">Hủy</button>
-                    <button onClick={handleReportSubmit} disabled={!errorText.trim()} className="flex-1 bg-indigo-600 text-white py-4 rounded-2xl font-bold hover:bg-indigo-700 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-indigo-200 disabled:opacity-50 disabled:cursor-not-allowed">Gửi báo cáo</button>
+                    <button onClick={() => setShowThankYou(true)} disabled={!errorText.trim()} className="flex-1 bg-indigo-600 text-white py-4 rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-xl disabled:opacity-50">Gửi báo cáo</button>
                   </div>
                 </>
               ) : (
                 <div className="text-center py-8">
-                  <div className="w-24 h-24 bg-emerald-100 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <CheckCircle2 size={48} />
-                  </div>
+                  <div className="w-24 h-24 bg-emerald-100 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6"><CheckCircle2 size={48} /></div>
                   <h3 className="text-3xl font-bold text-slate-900 mb-2">Cảm ơn bạn!</h3>
                   <p className="text-slate-500 text-lg mb-8">Cảm ơn bạn đã đóng góp để hệ thống hoàn thiện hơn.</p>
                   <button onClick={() => { setShowReportModal(false); setShowThankYou(false); setErrorText(''); }} className="w-full py-4 rounded-2xl font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-all">Đóng</button>
@@ -1767,13 +1692,9 @@ function QuizGame({ vocab, allVocabs, onAnswer, onNextStep, language }: { vocab:
   useEffect(() => {
     let others = allVocabs.filter(v => v.word.toLowerCase() !== vocab.word.toLowerCase());
     others = others.sort(() => 0.5 - Math.random());
-    
     let distractors = others.slice(0, 3).map(v => v.vietnamese_meaning || v.meaning);
     let i = 1;
-    while (distractors.length < 3) {
-       distractors.push("Đáp án phụ trợ số " + i++); 
-    }
-
+    while (distractors.length < 3) { distractors.push("Đáp án phụ trợ số " + i++); }
     const all = [vocab.vietnamese_meaning || vocab.meaning, ...distractors].sort(() => 0.5 - Math.random());
     setOptions(all);
     setSelected(null);
@@ -1785,29 +1706,18 @@ function QuizGame({ vocab, allVocabs, onAnswer, onNextStep, language }: { vocab:
         <span className="text-slate-400 font-bold uppercase tracking-widest text-xs mb-2 block">Chọn nghĩa đúng của</span>
         <div className="flex items-center justify-center gap-4">
            <h3 className="text-3xl md:text-4xl font-bold text-indigo-600">{vocab.word}</h3>
-           <button onClick={() => handleSpeak(vocab.word, language)} className="p-2 bg-indigo-50 text-indigo-600 rounded-full hover:bg-indigo-100 transition-colors shadow-sm">
-             <Volume2 size={24} />
-           </button>
+           <button onClick={() => handleSpeak(vocab.word, language)} className="p-2 bg-indigo-50 text-indigo-600 rounded-full hover:bg-indigo-100 transition-colors shadow-sm"><Volume2 size={24} /></button>
         </div>
       </div>
-
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {options.map((opt, i) => (
-          <button 
-            key={i}
-            disabled={!!selected}
-            onClick={() => {
+          <button key={i} disabled={!!selected} onClick={() => {
               setSelected(opt);
               const isCorrect = opt === (vocab.vietnamese_meaning || vocab.meaning);
               onAnswer(isCorrect, opt);
               setTimeout(onNextStep, 1000);
             }}
-            className={cn(
-              "p-6 rounded-3xl text-left font-bold text-lg transition-all border-2 flex items-center h-full min-h-[100px]",
-              selected === opt 
-                ? (opt === (vocab.vietnamese_meaning || vocab.meaning) ? "bg-[#009900] border-[#009900] text-white" : "bg-red-500 border-red-500 text-white")
-                : "bg-white border-slate-100 hover:border-indigo-300 hover:bg-indigo-50 hover:shadow-md"
-            )}
+            className={cn("p-6 rounded-3xl text-left font-bold text-lg transition-all border-2 flex items-center h-full min-h-[100px]", selected === opt ? (opt === (vocab.vietnamese_meaning || vocab.meaning) ? "bg-[#009900] border-[#009900] text-white" : "bg-red-500 border-red-500 text-white") : "bg-white border-slate-100 hover:border-indigo-300 hover:bg-indigo-50 hover:shadow-md")}
           >
             {opt}
           </button>
@@ -1817,7 +1727,7 @@ function QuizGame({ vocab, allVocabs, onAnswer, onNextStep, language }: { vocab:
   );
 }
 
-function MatchingGame({ vocabs, onCompleteGame, playSound }: { vocabs: Vocabulary[], onCompleteGame: (score: number, mistakes: any[]) => void, playSound: (t: 'correct' | 'wrong') => void }) {
+function MatchingGame({ vocabs, onCompleteGame, playSound, language }: { vocabs: Vocabulary[], onCompleteGame: (score: number, mistakes: any[]) => void, playSound: (t: 'correct' | 'wrong') => void, language: Language }) {
   const [words, setWords] = useState(() => [...vocabs].sort(() => 0.5 - Math.random()));
   const [meanings, setMeanings] = useState(() => [...vocabs].sort(() => 0.5 - Math.random()));
   const [selectedWord, setSelectedWord] = useState<string | null>(null);
@@ -1836,6 +1746,7 @@ function MatchingGame({ vocabs, onCompleteGame, playSound }: { vocabs: Vocabular
       if (correctAnswer === selectedMeaning) {
         setMatches(prev => [...prev, selectedWord]);
         playSound('correct');
+        handleSpeak(selectedWord, language); // Phát âm ĐỒNG THỜI
         setSelectedWord(null);
         setSelectedMeaning(null);
         if (matches.length + 1 === vocabs.length) {
@@ -1846,11 +1757,7 @@ function MatchingGame({ vocabs, onCompleteGame, playSound }: { vocabs: Vocabular
         playSound('wrong');
         setErrorCount(e => e + 1);
         setMistakesLog(prev => [...prev, { word: selectedWord, userAnswer: selectedMeaning, correctAnswer: correctAnswer }]);
-        setTimeout(() => {
-          setWrong(null);
-          setSelectedWord(null);
-          setSelectedMeaning(null);
-        }, 1000);
+        setTimeout(() => { setWrong(null); setSelectedWord(null); setSelectedMeaning(null); }, 1000);
       }
     }
   }, [selectedWord, selectedMeaning]);
@@ -1859,36 +1766,14 @@ function MatchingGame({ vocabs, onCompleteGame, playSound }: { vocabs: Vocabular
     <div className="grid grid-cols-2 gap-8">
       <div className="space-y-4">
         {words.map(v => (
-          <button 
-            key={v.word}
-            disabled={matches.includes(v.word)}
-            onClick={() => setSelectedWord(v.word)}
-            className={cn(
-              "w-full p-6 rounded-2xl font-bold text-lg border-2 transition-all",
-              matches.includes(v.word) ? "bg-[#009900] text-white border-[#009900] opacity-50" :
-              selectedWord === v.word ? "bg-indigo-600 text-white border-indigo-600" :
-              wrong?.[0] === v.word ? "bg-red-500 text-white border-red-500" :
-              "bg-white border-slate-100 hover:border-indigo-300 hover:shadow-md"
-            )}
-          >
+          <button key={v.word} disabled={matches.includes(v.word)} onClick={() => setSelectedWord(v.word)} className={cn("w-full p-6 rounded-2xl font-bold text-lg border-2 transition-all", matches.includes(v.word) ? "bg-[#009900] text-white border-[#009900]" : selectedWord === v.word ? "bg-indigo-600 text-white border-indigo-600" : wrong?.[0] === v.word ? "bg-red-500 text-white border-red-500" : "bg-white border-slate-100 hover:border-indigo-300 hover:shadow-md")}>
             {v.word}
           </button>
         ))}
       </div>
       <div className="space-y-4">
         {meanings.map(v => (
-          <button 
-            key={v.meaning}
-            disabled={matches.some(m => vocabs.find(voc => voc.word === m)?.meaning === v.meaning || vocabs.find(voc => voc.word === m)?.vietnamese_meaning === v.meaning)}
-            onClick={() => setSelectedMeaning(v.vietnamese_meaning || v.meaning)}
-            className={cn(
-              "w-full p-6 rounded-2xl font-bold text-lg border-2 transition-all",
-              matches.some(m => vocabs.find(voc => voc.word === m)?.meaning === (v.vietnamese_meaning || v.meaning) || vocabs.find(voc => voc.word === m)?.vietnamese_meaning === (v.vietnamese_meaning || v.meaning)) ? "bg-[#009900] text-white border-[#009900] opacity-50" :
-              selectedMeaning === (v.vietnamese_meaning || v.meaning) ? "bg-indigo-600 text-white border-indigo-600" :
-              wrong?.[1] === (v.vietnamese_meaning || v.meaning) ? "bg-red-500 text-white border-red-500" :
-              "bg-white border-slate-100 hover:border-indigo-300 hover:shadow-md"
-            )}
-          >
+          <button key={v.meaning} disabled={matches.some(m => vocabs.find(voc => voc.word === m)?.meaning === v.meaning || vocabs.find(voc => voc.word === m)?.vietnamese_meaning === v.meaning)} onClick={() => setSelectedMeaning(v.vietnamese_meaning || v.meaning)} className={cn("w-full p-6 rounded-2xl font-bold text-lg border-2 transition-all", matches.some(m => vocabs.find(voc => voc.word === m)?.meaning === (v.vietnamese_meaning || v.meaning) || vocabs.find(voc => voc.word === m)?.vietnamese_meaning === (v.vietnamese_meaning || v.meaning)) ? "bg-[#009900] text-white border-[#009900]" : selectedMeaning === (v.vietnamese_meaning || v.meaning) ? "bg-indigo-600 text-white border-indigo-600" : wrong?.[1] === (v.vietnamese_meaning || v.meaning) ? "bg-red-500 text-white border-red-500" : "bg-white border-slate-100 hover:border-indigo-300 hover:shadow-md")}>
             {v.vietnamese_meaning || v.meaning}
           </button>
         ))}
@@ -1902,44 +1787,25 @@ function WritingGame({ vocab, onAnswer, onNextStep, language }: { vocab: Vocabul
   const [submitted, setSubmitted] = useState(false);
   const [isCorrectVal, setIsCorrectVal] = useState(false);
 
-  useEffect(() => {
-    handleSpeak(vocab.word, language);
-  }, [vocab]);
+  useEffect(() => { handleSpeak(vocab.word, language); }, [vocab]);
 
   const check = () => {
     setSubmitted(true);
     const isCorrect = input.toLowerCase().trim() === vocab.word.toLowerCase().trim();
     setIsCorrectVal(isCorrect);
     onAnswer(isCorrect, input || 'Không gõ gì');
-    
-    // Nếu ĐÚNG thì chờ 0.8s đi tiếp. Nếu SAI thì đợi 2.5s để xem kết quả.
-    setTimeout(onNextStep, isCorrect ? 800 : 2500);
+    setTimeout(onNextStep, isCorrect ? 800 : 2500); // Đợi 2.5s nếu sai
   };
 
   return (
     <div className="space-y-8">
       <div className="bg-white p-12 rounded-[3rem] shadow-xl text-center border border-slate-100">
-        <button onClick={() => handleSpeak(vocab.word, language)} className="w-24 h-24 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-6 hover:scale-110 transition-transform shadow-md">
-          <Volume2 size={40} />
-        </button>
+        <button onClick={() => handleSpeak(vocab.word, language)} className="w-24 h-24 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-6 hover:scale-110 transition-transform shadow-md"><Volume2 size={40} /></button>
         <p className="text-slate-500 font-bold uppercase tracking-widest">Nghe và viết lại từ này</p>
         <p className="text-lg text-slate-700 font-medium mt-4">Nghĩa: {vocab.vietnamese_meaning || vocab.meaning}</p>
       </div>
-
       <div className="space-y-4">
-        <input 
-          autoFocus
-          type="text" 
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && !submitted && check()}
-          disabled={submitted}
-          className={cn(
-            "w-full bg-white border-4 rounded-3xl px-8 py-6 text-3xl font-black text-center focus:outline-none transition-all shadow-sm",
-            submitted ? (isCorrectVal ? "border-[#009900] text-[#009900] bg-green-50" : "border-red-500 text-red-600 bg-red-50") : "border-slate-100 focus:border-indigo-500"
-          )}
-          placeholder="..."
-        />
+        <input autoFocus type="text" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && !submitted && check()} disabled={submitted} className={cn("w-full bg-white border-4 rounded-3xl px-8 py-6 text-3xl font-black text-center focus:outline-none transition-all shadow-sm", submitted ? (isCorrectVal ? "border-[#009900] text-[#009900] bg-green-50" : "border-red-500 text-red-600 bg-red-50") : "border-slate-100 focus:border-indigo-500")} placeholder="..." />
         {submitted && !isCorrectVal && (
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="text-center font-medium text-slate-600 text-lg bg-red-50 py-3 rounded-2xl border border-red-100">
             Đáp án đúng là: <span className="font-bold text-emerald-600">{vocab.word}</span>
@@ -1959,13 +1825,9 @@ function FillGame({ vocab, onAnswer, onNextStep, language }: { vocab: Vocabulary
   const exampleText = language === 'en' ? (vocab.example_english || vocab.example) : (vocab.example_german || vocab.example);
 
   useEffect(() => {
-    if (exampleText) {
-        setSentence(exampleText);
-    } else {
-        const load = async () => {
-          const s = await generateExampleSentence(vocab.word, language);
-          setSentence(s);
-        };
+    if (exampleText) setSentence(exampleText);
+    else {
+        const load = async () => { const s = await generateExampleSentence(vocab.word, language); setSentence(s); };
         load();
     }
   }, [vocab, exampleText, language]);
@@ -1976,26 +1838,20 @@ function FillGame({ vocab, onAnswer, onNextStep, language }: { vocab: Vocabulary
     setSubmitted(true);
     const isCorrect = input.toLowerCase().trim() === vocab.word.toLowerCase().trim();
     setIsCorrectVal(isCorrect);
-    
-    // Gửi báo cáo lỗi tuỳ chỉnh cho màn hình Report
     onAnswer(isCorrect, input || 'Không gõ gì', vocab.vietnamese_meaning || vocab.meaning, vocab.word);
-    
     if (isCorrect) handleSpeak(vocab.word, language);
-    // Nếu đúng: 0.8s, nếu sai: 2.5s
     setTimeout(onNextStep, isCorrect ? 800 : 2500);
   };
 
   return (
     <div className="space-y-8">
       <div className="bg-white p-10 md:p-12 rounded-[3rem] shadow-xl border border-slate-100 relative">
-        <button onClick={() => handleSpeak(sentence, language)} className="absolute top-6 right-6 p-4 bg-indigo-50 text-indigo-600 rounded-2xl hover:bg-indigo-100 transition-colors shadow-sm" title="Nghe cả câu">
-            <Volume2 size={24} />
-        </button>
+        <button onClick={() => handleSpeak(sentence, language)} className="absolute top-6 right-6 p-4 bg-indigo-50 text-indigo-600 rounded-2xl hover:bg-indigo-100 transition-colors shadow-sm" title="Nghe cả câu"><Volume2 size={24} /></button>
         <h3 className="text-2xl md:text-3xl font-medium leading-loose text-slate-700 text-center mt-8">
           {parts.map((p, i) => 
             p.toLowerCase() === vocab.word.toLowerCase() ? (
-              <span key={i} className="inline-block min-w-[120px] border-b-4 border-indigo-300 mx-2 text-indigo-600 font-bold bg-indigo-50/50 px-2 rounded-t-lg">
-                {submitted ? p : (input || '...')}
+              <span key={i} className={cn("inline-block min-w-[120px] border-b-4 mx-2 font-bold px-2 rounded-t-lg transition-colors", submitted ? (isCorrectVal ? "border-[#009900] text-[#009900]" : "border-red-500 text-red-600") : "border-indigo-300 text-indigo-600 bg-indigo-50/50")}>
+                {submitted ? (isCorrectVal ? p : (input || '...')) : (input || '...')}
               </span>
             ) : p
           )}
@@ -2004,19 +1860,7 @@ function FillGame({ vocab, onAnswer, onNextStep, language }: { vocab: Vocabulary
       </div>
 
       <div className="space-y-4">
-        <input 
-          autoFocus
-          type="text" 
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && !submitted && check()}
-          disabled={submitted}
-          className={cn(
-            "w-full bg-white border-4 rounded-3xl px-8 py-6 text-2xl font-bold text-center focus:outline-none transition-all shadow-sm",
-            submitted ? (isCorrectVal ? "border-[#009900] text-[#009900] bg-green-50" : "border-red-500 text-red-600 bg-red-50") : "border-slate-100 focus:border-indigo-500"
-          )}
-          placeholder="Nhập từ còn thiếu bằng tiếng gốc..."
-        />
+        <input autoFocus type="text" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && !submitted && check()} disabled={submitted} className={cn("w-full bg-white border-4 rounded-3xl px-8 py-6 text-2xl font-bold text-center focus:outline-none transition-all shadow-sm", submitted ? (isCorrectVal ? "border-[#009900] text-[#009900] bg-green-50" : "border-red-500 text-red-600 bg-red-50") : "border-slate-100 focus:border-indigo-500")} placeholder="Nhập từ còn thiếu bằng tiếng gốc..." />
         {submitted && !isCorrectVal && (
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="text-center font-medium text-slate-600 text-lg bg-red-50 py-3 rounded-2xl border border-red-100">
             Đáp án đúng là: <span className="font-bold text-emerald-600">{vocab.word}</span>
@@ -2030,7 +1874,6 @@ function FillGame({ vocab, onAnswer, onNextStep, language }: { vocab: Vocabulary
 // --- REPORT VIEW ---
 
 function ReportView({ results, language, activeLessonId }: { results: GameResult[], language: Language, activeLessonId: string }) {
-  // Lọc kết quả của bài học HIỆN TẠI đang chơi
   const currentSessionResults = results.filter(r => r.lessonId === activeLessonId && r.language === language);
   
   const chartData = currentSessionResults.map((r, i) => ({
@@ -2043,12 +1886,12 @@ function ReportView({ results, language, activeLessonId }: { results: GameResult
   const totalPossible = currentSessionResults.reduce((acc, r) => acc + r.total, 0);
   const accuracy = totalPossible > 0 ? Math.round((totalScore / totalPossible) * 100) : 0;
 
-  // Render nhận xét tĩnh dựa trên điểm số (Tránh API 403 gây giật màn hình)
+  // Render nhận xét tĩnh (Bỏ hoàn toàn API của AI để chống giật nháy)
   const getStaticFeedback = (acc: number) => {
       if (acc >= 90) return "AIBTeM nhận thấy bạn đã nắm vững gần như toàn bộ từ vựng trong bài học này! Phản xạ xuất sắc. Bạn hoàn toàn có thể chuyển sang bài học mới khó hơn.";
       if (acc >= 70) return "Kết quả rất khả quan! Bạn đã nhớ được phần lớn từ vựng. Hãy thử chơi lại game 'Nối từ' hoặc 'Luyện viết' một lần nữa để đạt điểm tuyệt đối nhé.";
-      if (acc >= 50) return "Bạn đang ở mức trung bình. Có vẻ một số từ vựng vẫn chưa thực sự in sâu vào trí nhớ. AIBTeM khuyên bạn nên sử dụng tính năng 'Flashcard' lướt qua lại 2-3 vòng trước khi làm trắc nghiệm.";
-      return "Đừng nản chí! Việc học ngôn ngữ cần sự lặp lại liên tục. Hãy quay lại học kỹ từng thẻ Flashcard, nghe phát âm và tự nhẩm lại theo trước khi bắt đầu chơi game.";
+      if (acc >= 50) return "Bạn đang ở mức trung bình. Có vẻ một số từ vựng vẫn chưa thực sự in sâu vào trí nhớ. AIBTeM khuyên bạn nên lướt qua thẻ Flashcard thêm 2-3 vòng trước khi làm trắc nghiệm.";
+      return "Đừng nản chí! Việc học ngôn ngữ cần sự lặp lại. Hãy quay lại học kỹ từng thẻ Flashcard, nghe phát âm và tự nhẩm lại theo trước khi bắt đầu chơi game.";
   };
 
   return (
@@ -2069,10 +1912,7 @@ function ReportView({ results, language, activeLessonId }: { results: GameResult
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10 }} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} domain={[0, 'dataMax']} />
-                <Tooltip 
-                  contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                  cursor={{ fill: '#f8fafc' }}
-                />
+                <Tooltip contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} cursor={{ fill: '#f8fafc' }} />
                 <Bar dataKey="score" fill="#4f46e5" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -2096,7 +1936,7 @@ function ReportView({ results, language, activeLessonId }: { results: GameResult
         </h3>
         <div className="prose prose-slate max-w-none bg-slate-50 p-6 rounded-3xl border border-slate-100">
             <p className="text-slate-700 text-lg leading-relaxed font-medium">
-                {currentSessionResults.length === 0 ? "Bắt đầu chơi các trò chơi để nhận phân tích từ AIBTeM!" : getStaticFeedback(accuracy)}
+                {currentSessionResults.length === 0 ? "Bạn chưa hoàn thành trò chơi nào để AIBTeM có thể đánh giá." : getStaticFeedback(accuracy)}
             </p>
         </div>
       </div>
@@ -2109,24 +1949,12 @@ function Footer() {
     <footer className="bg-slate-900 text-white py-4 mt-auto border-t border-slate-800">
       <div className="max-w-7xl mx-auto px-4 md:px-8 flex flex-wrap items-center gap-x-6 gap-y-2 text-slate-400 text-xs md:text-sm">
         <div className="flex items-center gap-2">
-          <img 
-            src="/chan_trang.PNG" 
-            alt="AIBTeM Logo" 
-            className="h-6 object-contain"
-            onError={(e) => {
-              e.currentTarget.style.display = 'none';
-            }}
-          />
+          <img src="/chan_trang.PNG" alt="AIBTeM Logo" className="h-6 object-contain" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
           <span className="font-bold text-white tracking-wider">AIBTeM</span>
         </div>
-        
-        <p>
-          © 2026 Vũ Xuân Hùng | Vocab AIBTeM. All Rights Reserved.
-        </p>
-        
+        <p>© 2026 Vũ Xuân Hùng | Vocab AIBTeM. All Rights Reserved.</p>
         <div className="flex items-center gap-2 hover:text-white transition-colors">
-          <Mail size={14} className="text-indigo-400" />
-          <span>hungvdtnai@gmail.com</span>
+          <Mail size={14} className="text-indigo-400" /><span>hungvdtnai@gmail.com</span>
         </div>
       </div>
     </footer>

@@ -195,9 +195,6 @@ const isDefSentence = (text?: string) => {
   return t.endsWith('.') || t.endsWith('!') || t.endsWith('?');
 };
 
-// ------------------------------------------------------------------------------------
-// THUẬT TOÁN SIÊU LỌC CHỦ ĐỀ CHO TIẾNG ĐỨC VÀ TIẾNG ANH MỞ RỘNG
-// ------------------------------------------------------------------------------------
 const KNOWN_TOPIC_IDS = [
   'education_and_learning', 'work_and_business', 'daily_life', 
   'health_and_body', 'science_and_technology', 'society_and_culture', 
@@ -808,10 +805,19 @@ function TopicLibraryView({ language, lessons, onOpenInInput }: { language: Lang
       word: w.word,
       meaning: w.vietnamese_meaning || w.meaning,
       type: w.part_of_speech,
+      part_of_speech: w.part_of_speech,
       phonetic: w.phonetic,
+      definition: language === 'en' ? w.english_definition : w.german_definition,
+      english_definition: w.english_definition,
+      german_definition: w.german_definition,
       example: language === 'en' ? w.example_english : w.example_german,
+      example_english: w.example_english,
+      example_german: w.example_german,
+      example_vietnamese: w.example_vietnamese,
       article: w.article,
       plural: w.plural,
+      synonyms: w.synonyms || w.synonym,
+      topic: w.topic,
       language: language,
       userId: 'system',
       createdAt: Date.now()
@@ -1563,7 +1569,7 @@ function LibraryView({ lessons, language, onEdit, onPlay, onDelete }: { lessons:
 }
 
 function InputView({ language, user, onSaved, initialLesson }: { language: Language, user: User, onSaved: () => void, initialLesson?: Lesson }) {
-  const [rows, setRows] = useState<{ word: string, meaning: string, loading: boolean, suggestions: string[] }[]>(
+  const [rows, setRows] = useState<any[]>(
     initialLesson ? initialLesson.vocabularies.map(v => ({ ...v, loading: false, suggestions: v.suggestions || [] })) : 
     [{ word: '', meaning: '', loading: false, suggestions: [] }]
   );
@@ -1736,18 +1742,30 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
         meaning: cleanInputData(r.meaning, false, true)
       }));
 
-      const validRows = finalRows.filter(r => r.word && r.meaning);
+      const finalValidRows = finalRows.filter(r => r.word && r.meaning);
       
       const lessonData: Omit<Lesson, 'id'> = {
         title: lessonTitle.trim(),
-        wordCount: validRows.length,
+        wordCount: finalValidRows.length,
         userId: user.uid,
         userName: user.displayName || 'Người dùng',
         language,
         createdAt: Date.now(),
-        vocabularies: validRows.map(r => ({
+        vocabularies: finalValidRows.map(r => ({
           word: r.word,
           meaning: r.meaning,
+          part_of_speech: r.part_of_speech || r.type || '',
+          phonetic: r.phonetic || '',
+          english_definition: r.english_definition || r.definition || '',
+          german_definition: r.german_definition || '',
+          example: r.example || '',
+          example_english: r.example_english || '',
+          example_german: r.example_german || '',
+          example_vietnamese: r.example_vietnamese || '',
+          article: r.article || '',
+          plural: r.plural || '',
+          synonyms: r.synonyms || r.synonym || '',
+          topic: r.topic || '',
           language,
           userId: user.uid,
           createdAt: Date.now()
@@ -1772,7 +1790,7 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
 
   const parseText = (text: string) => {
     const rawLines = text.split('\n').map(l => l.trim()).filter(l => l !== '');
-    const newRows: { word: string, meaning: string, loading: boolean, suggestions: string[] }[] = [];
+    const newRows: any[] = [];
     const separatorRegex = /[\t,:\-–—=]/;
     const hasAnySeparator = rawLines.some(line => separatorRegex.test(line));
 
@@ -1910,7 +1928,7 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
                   
                   {(() => {
                     const shouldShowSuggestions = row.meaning === '' || row.meaning.endsWith(', ');
-                    const availableSuggestions = (row.suggestions || []).filter(s => !row.meaning.includes(s));
+                    const availableSuggestions = (row.suggestions || []).filter((s: string) => !row.meaning.includes(s));
 
                     return shouldShowSuggestions && availableSuggestions.length > 0 && (
                       <motion.div 
@@ -1918,7 +1936,7 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
                         animate={{ opacity: 1, y: 0 }}
                         className="mt-2 p-2 bg-slate-50 rounded-2xl border border-slate-100 flex flex-wrap gap-2"
                       >
-                        {availableSuggestions.map((s, i) => (
+                        {availableSuggestions.map((s: string, i: number) => (
                           <button 
                             key={i}
                             type="button"
@@ -2160,7 +2178,7 @@ function GameContainer({ type, vocabList, language, onBack, onFinish, playSound 
   const [step, setStep] = useState(0);
   const [score, setScore] = useState(0);
   
-  // Trò chơi Flashcard không giới hạn 5 từ mà hiển thị toàn bộ vocabList
+  // Trò chơi Flashcard lặp toàn bộ, các trò khác ngẫu nhiên 5 từ
   const gameVocabs = type === 'flashcards' ? vocabList : [...vocabList].sort(() => 0.5 - Math.random()).slice(0, 5);
   const currentVocab = gameVocabs[step];
 
@@ -2178,7 +2196,7 @@ function GameContainer({ type, vocabList, language, onBack, onFinish, playSound 
       onFinish(correct ? score + 1 : score);
     }
   };
-  
+
   const prev = () => {
     if (step > 0) {
       setStep(s => s - 1);
@@ -2245,18 +2263,19 @@ function FlashcardGame({ vocab, onNext, onPrev, language, step, totalSteps }: { 
   }, [vocab]);
 
   useEffect(() => {
+    // Khi lật sang mặt 3, tự động phát âm thanh
     if (side === 2) {
        handleSpeak(vocab.word, language);
     }
   }, [side, vocab.word, language]);
 
-  const definition = language === 'en' ? vocab.english_definition : vocab.german_definition;
-  const exampleText = language === 'en' ? vocab.example_english : vocab.example_german;
+  const definition = language === 'en' ? (vocab.english_definition || vocab.definition) : (vocab.german_definition || vocab.definition);
+  const exampleText = language === 'en' ? (vocab.example_english || vocab.example) : (vocab.example_german || vocab.example);
 
   return (
     <div className="space-y-8 w-full max-w-4xl mx-auto">
-      {/* Khung thẻ cố định chiều cao, hiệu ứng nhào lộn xoay X 3D */}
-      <div className="perspective-[1000px] w-full min-h-[400px]">
+      {/* Khung thẻ cố định chiều cao 280px, tràn viền w-full */}
+      <div className="perspective-[1000px] w-full min-h-[280px]">
         <AnimatePresence mode="wait">
           <motion.div 
             key={side}
@@ -2265,69 +2284,73 @@ function FlashcardGame({ vocab, onNext, onPrev, language, step, totalSteps }: { 
             exit={{ rotateX: -90, opacity: 0 }}
             transition={{ duration: 0.3, ease: "easeInOut" }}
             onClick={() => setSide((side + 1) % 3)}
-            className="w-full min-h-[400px] bg-white rounded-[3rem] shadow-xl border border-slate-100 flex flex-col items-center justify-center p-8 md:p-12 text-center cursor-pointer relative overflow-hidden group"
+            className="w-full min-h-[280px] bg-white rounded-[2rem] shadow-xl border border-slate-100 flex flex-col p-6 md:p-10 cursor-pointer relative overflow-hidden group"
           >
-            {side === 0 && (
-              <div className="text-center w-full max-w-3xl mx-auto px-4 md:px-8">
-                 <div className="text-2xl md:text-3xl font-medium text-slate-800 leading-relaxed">
-                   {vocab.part_of_speech && <span className="font-bold text-indigo-600 mr-3">({vocab.part_of_speech})</span>}
-                   {definition || "Chưa có định nghĩa ngôn ngữ gốc cho từ này."}
-                 </div>
-              </div>
-            )}
-            
-            {side === 1 && (
-              <div className="text-center space-y-8 w-full">
-                 <h3 className="text-4xl md:text-5xl font-bold text-emerald-600">{vocab.vietnamese_meaning || vocab.meaning}</h3>
-                 {vocab.phonetic && (
-                   <div className="flex items-center justify-center gap-4 text-slate-500">
-                     <button onClick={(e) => {e.stopPropagation(); handleSpeak(vocab.word, language)}} className="hover:text-indigo-600 transition-colors p-3 bg-slate-50 rounded-full hover:bg-indigo-50 border border-slate-100 shadow-sm">
-                       <Volume2 size={28} />
-                     </button>
-                     <span className="text-2xl md:text-3xl font-mono">{renderPhonetic(vocab.phonetic)}</span>
+            <div className="flex-grow flex flex-col justify-center w-full">
+              {side === 0 && (
+                <div className="text-left w-full">
+                   <div className="text-lg md:text-xl font-medium text-slate-800 leading-relaxed">
+                     {vocab.part_of_speech && <span className="font-bold text-indigo-600 mr-2">({vocab.part_of_speech})</span>}
+                     {definition || "Chưa có định nghĩa ngôn ngữ gốc cho từ này."}
                    </div>
-                 )}
-              </div>
-            )}
-
-            {side === 2 && (
-              <div className="text-left w-full max-w-3xl mx-auto space-y-6">
-                 <div className="flex items-baseline gap-3 mb-2 border-b border-slate-100 pb-4">
-                    <h3 className="text-4xl md:text-5xl font-bold text-indigo-600">{vocab.word}</h3>
-                    {vocab.part_of_speech && <span className="text-xl md:text-2xl text-slate-400 font-medium">({vocab.part_of_speech})</span>}
-                 </div>
-
-                 {vocab.phonetic && (
-                   <div className="flex items-center gap-4 text-slate-500 mb-8">
-                       <button onClick={(e) => {e.stopPropagation(); handleSpeak(vocab.word, language)}} className="hover:text-indigo-600 transition-colors p-3 bg-slate-50 rounded-full hover:bg-indigo-50 border border-slate-100 shadow-sm">
-                         <Volume2 size={24} />
+                </div>
+              )}
+              
+              {side === 1 && (
+                <div className="text-left space-y-2 w-full">
+                   <h3 className="text-xl md:text-2xl font-bold text-emerald-600">{vocab.vietnamese_meaning || vocab.meaning}</h3>
+                   {vocab.phonetic && (
+                     <div className="flex items-center gap-3 text-slate-500">
+                       <button onClick={(e) => {e.stopPropagation(); handleSpeak(vocab.word, language)}} className="hover:text-indigo-600 transition-colors p-2 bg-slate-50 rounded-full hover:bg-indigo-50 border border-slate-100 shadow-sm">
+                         <Volume2 size={20} />
                        </button>
-                       <span className="text-2xl md:text-3xl font-mono">{renderPhonetic(vocab.phonetic)}</span>
-                   </div>
-                 )}
-
-                 {(exampleText || vocab.example) && (
-                   <div className="bg-slate-50 p-6 md:p-8 rounded-3xl border border-slate-100 shadow-inner">
-                     <div className="flex items-start gap-4 mb-4">
-                        <button onClick={(e) => {e.stopPropagation(); handleSpeak(exampleText || vocab.example || '', language)}} className="hover:text-indigo-600 transition-colors text-slate-400 mt-1 shrink-0 p-2 bg-white rounded-full shadow-sm">
-                          <Volume2 size={24} />
-                        </button>
-                        <div className="text-xl md:text-2xl text-slate-700 leading-relaxed italic">
-                           {highlightWordInSentence(exampleText || vocab.example || '', vocab.word)}
-                        </div>
+                       <span className="text-lg font-mono">{renderPhonetic(vocab.phonetic)}</span>
                      </div>
-                     {vocab.example_vietnamese && (
-                        <div className="text-lg md:text-xl text-emerald-700 font-medium ml-14">
-                           {vocab.example_vietnamese}
-                        </div>
-                     )}
+                   )}
+                </div>
+              )}
+
+              {side === 2 && (
+                <div className="text-left w-full space-y-4">
+                   <div className="flex items-baseline gap-2">
+                      <h3 className="text-xl md:text-2xl font-bold text-indigo-600">{vocab.word}</h3>
+                      {vocab.part_of_speech && <span className="text-base text-slate-500 font-medium">({vocab.part_of_speech})</span>}
                    </div>
-                 )}
-              </div>
-            )}
+
+                   {vocab.phonetic && (
+                     <div className="flex items-center gap-3 text-slate-500">
+                         <button onClick={(e) => {e.stopPropagation(); handleSpeak(vocab.word, language)}} className="hover:text-indigo-600 transition-colors p-2 bg-slate-50 rounded-full hover:bg-indigo-50 border border-slate-100 shadow-sm">
+                           <Volume2 size={20} />
+                         </button>
+                         <span className="text-lg font-mono">{renderPhonetic(vocab.phonetic)}</span>
+                     </div>
+                   )}
+
+                   {(exampleText) && (
+                     <div className="pt-4 border-t border-slate-100">
+                       <div className="flex items-start gap-3">
+                          <button onClick={(e) => {e.stopPropagation(); handleSpeak(exampleText || '', language)}} className="hover:text-indigo-600 transition-colors text-slate-400 mt-1 shrink-0 p-1.5 bg-white rounded-full shadow-sm border border-slate-100">
+                            <Volume2 size={18} />
+                          </button>
+                          <div className="space-y-1">
+                             <div className="text-lg text-slate-700 leading-relaxed italic">
+                                {highlightWordInSentence(exampleText || '', vocab.word)}
+                             </div>
+                             {vocab.example_vietnamese && (
+                                <div className="text-base text-slate-500">
+                                   {vocab.example_vietnamese}
+                                </div>
+                             )}
+                          </div>
+                       </div>
+                     </div>
+                   )}
+                </div>
+              )}
+            </div>
             
-            <div className="absolute bottom-6 text-slate-300 font-bold text-xs uppercase tracking-widest flex items-center gap-2 group-hover:text-indigo-300 transition-colors">
-               <RefreshCw size={14} className="group-hover:rotate-180 transition-transform duration-500" /> Nhấn để lật thẻ
+            <div className="absolute bottom-4 right-6 text-slate-300 font-bold text-xs uppercase tracking-widest flex items-center gap-2 group-hover:text-indigo-300 transition-colors">
+               <RefreshCw size={14} className="group-hover:rotate-180 transition-transform duration-500" /> Nhấn lật thẻ
             </div>
           </motion.div>
         </AnimatePresence>

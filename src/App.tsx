@@ -195,20 +195,49 @@ const isDefSentence = (text?: string) => {
   return t.endsWith('.') || t.endsWith('!') || t.endsWith('?');
 };
 
-// THUẬT TOÁN MAP CHỦ ĐỀ CHO TIẾNG ĐỨC
+// ------------------------------------------------------------------------------------
+// THUẬT TOÁN SIÊU LỌC CHỦ ĐỀ CHO TIẾNG ĐỨC VÀ TIẾNG ANH MỞ RỘNG
+// ------------------------------------------------------------------------------------
 const mapSubTopicToMainTopic = (rawTopic?: string) => {
   if (!rawTopic) return 'other';
   const t = rawTopic.toLowerCase();
-  if (/(trường|giáo dục|học|bằng cấp|nghiên cứu|thầy|cô|sinh viên|môn|education|school)/i.test(t)) return 'education_and_learning';
-  if (/(công việc|nghề|công sở|kinh doanh|tài chính|tiền|công ty|văn phòng|work|business)/i.test(t)) return 'work_and_business';
-  if (/(sức khỏe|cơ thể|y tế|bệnh|dinh dưỡng|thuốc|bác sĩ|health|body)/i.test(t)) return 'health_and_body';
-  if (/(khoa học|công nghệ|máy tính|internet|phát minh|science|tech)/i.test(t)) return 'science_and_technology';
-  if (/(xã hội|văn hóa|nghệ thuật|thể thao|giải trí|luật|chính trị|tôn giáo|society|culture)/i.test(t)) return 'society_and_culture';
-  if (/(thiên nhiên|môi trường|động vật|thực vật|khí hậu|thời tiết|địa lý|nature|environment)/i.test(t)) return 'nature_and_environment';
-  if (/(du lịch|giao thông|phương tiện|kỳ nghỉ|xe|đường|travel|transport)/i.test(t)) return 'travel_and_transport';
-  if (/(đời sống|hàng ngày|gia đình|thời gian|đồ ăn|thức|mua sắm|nhà|cảm xúc|màu|vật|daily)/i.test(t)) return 'daily_life';
-  return 'other';
+  
+  // 1. Giáo dục & Học tập
+  if (/(trường|giáo dục|học|bằng cấp|nghiên cứu|thầy|cô|sinh viên|môn|ngôn ngữ|education|school|bildung|studium|schule|sprache|lernen|unterricht)/i.test(t)) return 'education_and_learning';
+  
+  // 2. Công sở & Kinh doanh
+  if (/(công việc|nghề|công sở|kinh doanh|tài chính|tiền|công ty|văn phòng|bưu chính|work|business|beruf|arbeit|büro|wirtschaft|geld|post|firma)/i.test(t)) return 'work_and_business';
+  
+  // 3. Sức khỏe & Cơ thể
+  if (/(sức khỏe|cơ thể|y tế|bệnh|dinh dưỡng|thuốc|bác sĩ|health|body|gesundheit|körper|krankheit|medizin|arzt)/i.test(t)) return 'health_and_body';
+  
+  // 4. Khoa học & Công nghệ
+  if (/(khoa học|công nghệ|máy tính|internet|phát minh|science|tech|wissenschaft|technik|computer|medien)/i.test(t)) return 'science_and_technology';
+  
+  // 5. Xã hội & Văn hóa
+  if (/(xã hội|văn hóa|nghệ thuật|thể thao|giải trí|luật|chính trị|tôn giáo|society|culture|kunst|politik|gesellschaft|recht|religion|sport)/i.test(t)) return 'society_and_culture';
+  
+  // 6. Thiên nhiên & Môi trường
+  if (/(thiên nhiên|môi trường|động vật|thực vật|khí hậu|thời tiết|địa lý|nature|environment|umwelt|tier|pflanze|wetter|klima|natur|geografie)/i.test(t)) return 'nature_and_environment';
+  
+  // 7. Du lịch & Giao thông
+  if (/(du lịch|giao thông|phương tiện|kỳ nghỉ|xe|đường|travel|transport|verkehr|reise|tourismus|urlaub)/i.test(t)) return 'travel_and_transport';
+  
+  // 8. Đời sống hàng ngày (Quét toàn bộ các từ vựng chung chung, con người, thức ăn)
+  if (/(đời sống|hàng ngày|gia đình|thời gian|đồ ăn|thức|mua sắm|nhà|cảm xúc|màu|vật|quần áo|daily|alltag|mensch|familie|essen|trinken|zeit|allgemein|wohnen|einkaufen|kleidung|gefühl|farbe)/i.test(t)) return 'daily_life';
+  
+  // Nếu không khớp cái nào, mặc định đưa vào "Đời sống hàng ngày" để người dùng dễ học các từ vựng cơ bản, thay vì bỏ vào rổ "Khác"
+  return 'daily_life'; 
 };
+
+// Hàm tính toán trạng thái ôn tập của Bài học
+const getLessonStatus = (lesson: Lesson) => {
+  const lastTime = lesson.lastPracticed || lesson.createdAt;
+  const daysPassed = (Date.now() - lastTime) / (1000 * 60 * 60 * 24);
+  if (daysPassed >= 5) return 'red'; // Quá hạn
+  if (daysPassed >= 3) return 'amber'; // Tới hạn
+  return 'emerald'; // Đang nhớ tốt (Trong hạn)
+}
 
 // Components
 const RobotAnimation = ({ type }: { type: 'happy' | 'thinking' | 'sad' }) => {
@@ -217,6 +246,7 @@ const RobotAnimation = ({ type }: { type: 'happy' | 'thinking' | 'sad' }) => {
     thinking: 'https://assets10.lottiefiles.com/packages/lf20_i9mxcD.json',
     sad: 'https://assets10.lottiefiles.com/packages/lf20_96bovdur.json'
   };
+  
   return (
     <div className="w-48 h-48 mx-auto">
       <Lottie animationData={null} path={lottiePaths[type]} loop={true} />
@@ -410,7 +440,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans flex flex-col">
-      {/* Navigation */}
       <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 md:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => { setView('home'); setActiveGame(null); }}>
@@ -575,6 +604,9 @@ export default function App() {
                 activeGame={activeGame}
                 setActiveGame={setActiveGame}
                 onGoToLibrary={() => setView('library')}
+                onGoToTopics={() => setView('topics')}
+                onGoToInput={() => setView('input')}
+                hasLessons={lessons.some(l => l.language === language)}
               />
             </motion.div>
           )}
@@ -650,10 +682,11 @@ function MobileNavButton({ active, onClick, icon }: { active: boolean, onClick: 
 // --- VIEWS ---
 
 function HomeView({ setView, language, user, lessons }: { setView: (v: View) => void, language: Language, user: User, lessons: Lesson[] }) {
-  const needsReview = lessons.filter(l => 
-    l.language === language && 
-    (!l.lastPracticed || (Date.now() - l.lastPracticed > 3 * 24 * 60 * 60 * 1000))
-  );
+  const needsReview = lessons.filter(l => {
+    if (l.language !== language) return false;
+    const status = getLessonStatus(l);
+    return status === 'red' || status === 'amber';
+  });
 
   return (
     <div className="space-y-8 w-full">
@@ -668,7 +701,7 @@ function HomeView({ setView, language, user, lessons }: { setView: (v: View) => 
             </div>
             <div>
               <h3 className="font-bold text-orange-800 text-lg">AIBTeM nhắc nhở ôn tập!</h3>
-              <p className="text-orange-600/80">Anh có <strong className="text-orange-700">{needsReview.length} bài học</strong> đã lâu chưa được luyện tập lại.</p>
+              <p className="text-orange-600/80">Anh có <strong className="text-orange-700">{needsReview.length} bài học</strong> đã tới hạn luyện tập lại.</p>
             </div>
           </div>
           <button 
@@ -730,28 +763,19 @@ function StatCard({ title, value, color }: { title: string, value: string, color
 // --- TOPIC LIBRARY VIEW ---
 function TopicLibraryView({ language, lessons, onOpenInInput }: { language: Language, lessons: Lesson[], onOpenInInput: (vocab: Vocabulary[], title: string) => void }) {
   
-  // Tối ưu hóa Database: Áp dụng thuật toán gom nhóm cho Tiếng Đức nếu cần
+  // Áp dụng thuật toán gom nhóm toàn bộ dữ liệu 1 cách tự động
   const currentDict = useMemo(() => {
     const rawDict = language === 'en' ? enDictDataRaw : deDictDataRaw;
-    if (language === 'de') {
-      return rawDict.map(w => ({
-        ...w,
-        topic: w.topic && !['education_and_learning','work_and_business','daily_life','health_and_body','science_and_technology','society_and_culture','nature_and_environment','travel_and_transport'].includes(w.topic) 
-          ? mapSubTopicToMainTopic(w.topic) 
-          : (w.topic || 'other')
-      }));
-    }
-    // Đối với tiếng Anh, nếu thiếu topic thì gom vào 'other'
     return rawDict.map(w => ({
       ...w,
-      topic: w.topic || 'other'
+      topic: mapSubTopicToMainTopic(w.topic)
     }));
   }, [language]);
 
   const [selectedTopic, setSelectedTopic] = useState<any | null>(null);
   const [selectedWords, setSelectedWords] = useState<Set<string>>(new Set());
 
-  // Thuật toán theo dõi từ đã học trong Thư viện
+  // Thuật toán theo dõi từ đã học
   const learnedWordsMap = useMemo(() => {
     const map = new Map<string, string>();
     lessons.filter(l => l.language === language).forEach(lesson => {
@@ -762,16 +786,10 @@ function TopicLibraryView({ language, lessons, onOpenInInput }: { language: Lang
     return map;
   }, [lessons, language]);
 
-  const KNOWN_TOPIC_IDS = [
-    'education_and_learning', 'work_and_business', 'daily_life', 
-    'health_and_body', 'science_and_technology', 'society_and_culture', 
-    'nature_and_environment', 'travel_and_transport', 'other'
-  ];
-
   const topics = [
     { id: 'education_and_learning', name: 'Giáo dục & Học tập', desc: 'Trường học, bằng cấp, nghiên cứu...', icon: GraduationCap, color: 'bg-blue-500', textCol: 'text-blue-500', bgSoft: 'bg-blue-50' },
     { id: 'work_and_business', name: 'Công sở & Kinh doanh', desc: 'Quản trị, tài chính, cuộc họp...', icon: Briefcase, color: 'bg-indigo-500', textCol: 'text-indigo-500', bgSoft: 'bg-indigo-50' },
-    { id: 'daily_life', name: 'Đời sống hàng ngày', desc: 'Gia đình, mua sắm, thời gian...', icon: Coffee, color: 'bg-orange-500', textCol: 'text-orange-500', bgSoft: 'bg-orange-50' },
+    { id: 'daily_life', name: 'Đời sống hàng ngày', desc: 'Gia đình, mua sắm, thời gian, cảm xúc...', icon: Coffee, color: 'bg-orange-500', textCol: 'text-orange-500', bgSoft: 'bg-orange-50' },
     { id: 'health_and_body', name: 'Sức khỏe & Cơ thể', desc: 'Y tế, bệnh lý, dinh dưỡng...', icon: HeartPulse, color: 'bg-rose-500', textCol: 'text-rose-500', bgSoft: 'bg-rose-50' },
     { id: 'science_and_technology', name: 'Khoa học & Công nghệ', desc: 'AI, máy tính, phát minh...', icon: Rocket, color: 'bg-cyan-500', textCol: 'text-cyan-500', bgSoft: 'bg-cyan-50' },
     { id: 'society_and_culture', name: 'Xã hội & Văn hóa', desc: 'Nghệ thuật, luật pháp, chính trị...', icon: Globe, color: 'bg-purple-500', textCol: 'text-purple-500', bgSoft: 'bg-purple-50' },
@@ -781,9 +799,6 @@ function TopicLibraryView({ language, lessons, onOpenInInput }: { language: Lang
   ];
 
   const getTopicWords = (topicId: string) => {
-    if (topicId === 'other') {
-      return currentDict.filter(w => !KNOWN_TOPIC_IDS.includes(w.topic) || w.topic === 'other');
-    }
     return currentDict.filter(w => w.topic === topicId);
   };
 
@@ -809,7 +824,6 @@ function TopicLibraryView({ language, lessons, onOpenInInput }: { language: Lang
     }));
   };
 
-  // Thuật toán tự động đặt tên bài học
   const generateLessonTitle = (topicName: string, prefix: 'NN' | 'TC') => {
     const baseName = `${topicName} - ${prefix}`;
     const matchingLessons = lessons.filter(l => l.language === language && l.title.startsWith(baseName));
@@ -827,18 +841,12 @@ function TopicLibraryView({ language, lessons, onOpenInInput }: { language: Lang
 
   const handleLearnRandom = (topicId: string, topicName: string) => {
     const wordsInTopic = getTopicWords(topicId);
-    if (wordsInTopic.length === 0) {
-      alert("Chủ đề này hiện chưa có từ vựng trong cơ sở dữ liệu!");
-      return;
-    }
-    // Lọc bỏ những từ đã học
-    let unlearnedWords = wordsInTopic.filter(w => !learnedWordsMap.has(w.word));
+    if (wordsInTopic.length === 0) return;
     
-    // Nếu từ mới còn quá ít (< 15), lấy nốt những từ mới đó, và có thể lấy bù từ cũ (nếu muốn)
-    // Ở đây ta cứ ưu tiên lấy hết từ mới trước. Nếu < 15 thì lấy tất cả những từ chưa học còn lại.
+    let unlearnedWords = wordsInTopic.filter(w => !learnedWordsMap.has(w.word));
     if (unlearnedWords.length === 0) {
       alert("Chúc mừng! Bạn đã lưu/học toàn bộ từ vựng trong chủ đề này. Hệ thống sẽ bốc lại các từ cũ nhé.");
-      unlearnedWords = wordsInTopic; // Lấy lại toàn bộ nếu đã học hết
+      unlearnedWords = wordsInTopic; 
     }
 
     const shuffled = [...unlearnedWords].sort(() => 0.5 - Math.random()).slice(0, 15);
@@ -848,6 +856,17 @@ function TopicLibraryView({ language, lessons, onOpenInInput }: { language: Lang
 
   const handleLearnSelected = (topicName: string) => {
     if (selectedWords.size < 5) return;
+    
+    // Kiểm tra xem có chọn nhầm từ đã học không
+    const selectedLearned = Array.from(selectedWords).filter(w => learnedWordsMap.has(w));
+    if (selectedLearned.length > 0) {
+      const msg = selectedLearned.slice(0, 3).join(', ') + (selectedLearned.length > 3 ? '...' : '');
+      const lessonName = learnedWordsMap.get(selectedLearned[0]);
+      if(!window.confirm(`Một số từ bạn chọn (${msg}) đã có trong bài "${lessonName}". Bạn vẫn muốn tiếp tục đưa vào bài học mới?`)) {
+        return;
+      }
+    }
+
     const wordsToLearn = currentDict.filter(w => selectedWords.has(w.word));
     const title = generateLessonTitle(topicName, 'TC');
     onOpenInInput(formatToVocab(wordsToLearn), title);
@@ -875,7 +894,7 @@ function TopicLibraryView({ language, lessons, onOpenInInput }: { language: Lang
               <span className="bg-black/20 px-6 py-3 rounded-xl font-bold backdrop-blur-md">
                 Tổng cộng: {words.length} từ
               </span>
-              <span className="bg-white/20 px-6 py-3 rounded-xl font-bold backdrop-blur-md">
+              <span className="bg-white/20 px-6 py-3 rounded-xl font-bold backdrop-blur-md text-emerald-100">
                 Đã lưu: {words.filter(w => learnedWordsMap.has(w.word)).length} từ
               </span>
               <button 
@@ -946,7 +965,6 @@ function TopicLibraryView({ language, lessons, onOpenInInput }: { language: Lang
                       <div className={cn("mb-1", isLearned ? "text-emerald-600/80" : "text-slate-600")}>
                         {vocab.vietnamese_meaning || vocab.meaning}
                       </div>
-                      {/* Cảnh báo từ đã lưu */}
                       {isLearned && (
                         <div className="text-xs font-bold text-emerald-500 flex items-center gap-1 mt-1">
                           <CheckCircle2 size={12} /> Đã lưu trong bài: {lessonName}
@@ -983,7 +1001,6 @@ function TopicLibraryView({ language, lessons, onOpenInInput }: { language: Lang
       <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {topics.map((topic) => {
           const count = getTopicWords(topic.id).length;
-          // Chỉ hiển thị các thẻ có từ vựng (Trừ thẻ "Chủ đề khác" nếu = 0 thì ẩn luôn cho đẹp)
           if (topic.id === 'other' && count === 0) return null;
 
           return (
@@ -1407,67 +1424,93 @@ function LibraryView({ lessons, language, onEdit, onPlay, onDelete }: { lessons:
 
       <div className="grid gap-4">
         {filteredLessons.length > 0 ? (
-          filteredLessons.map((lesson) => (
-            <motion.div 
-              key={lesson.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-all flex flex-col md:flex-row md:items-center justify-between gap-6 group"
-            >
-              <div className="flex items-center gap-6">
-                <div className="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600">
-                  <FileText size={32} />
-                </div>
-                <div className="space-y-1">
-                  <h3 className="text-xl font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{lesson.title}</h3>
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-500">
-                    <div className="flex items-center gap-1">
-                      <Gamepad2 size={14} />
-                      <span>{lesson.wordCount} thuật ngữ</span>
+          filteredLessons.map((lesson) => {
+            const status = getLessonStatus(lesson);
+            const cardClass = cn(
+              "p-6 rounded-3xl border shadow-sm hover:shadow-md transition-all flex flex-col md:flex-row md:items-center justify-between gap-6 group",
+              status === 'red' ? "bg-red-50/30 border-red-200" :
+              status === 'amber' ? "bg-amber-50/30 border-amber-200" :
+              "bg-emerald-50/30 border-emerald-200"
+            );
+            const iconClass = cn(
+              "w-16 h-16 rounded-2xl flex items-center justify-center shrink-0",
+              status === 'red' ? "bg-red-100 text-red-600" :
+              status === 'amber' ? "bg-amber-100 text-amber-600" :
+              "bg-emerald-100 text-emerald-600"
+            );
+
+            return (
+              <motion.div 
+                key={lesson.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={cardClass}
+              >
+                <div className="flex items-center gap-6">
+                  <div className={iconClass}>
+                    <FileText size={32} />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <h3 className={cn("text-xl font-bold transition-colors", status === 'red' ? "text-red-900 group-hover:text-red-600" : status === 'amber' ? "text-amber-900 group-hover:text-amber-600" : "text-slate-900 group-hover:text-emerald-600")}>
+                        {lesson.title}
+                      </h3>
+                      {status === 'red' ? <span className="text-[10px] font-bold uppercase tracking-wider bg-red-100 text-red-600 px-2 py-1 rounded-lg">Cần ôn ngay</span> :
+                       status === 'amber' ? <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-600 px-2 py-1 rounded-lg">Đã tới hạn ôn</span> :
+                       <span className="text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-600 px-2 py-1 rounded-lg">Đang nhớ tốt</span>}
                     </div>
-                    {lesson.practiceCount !== undefined && lesson.practiceCount > 0 && (
-                      <div className="flex items-center gap-1 text-emerald-600 font-medium">
-                        <Trophy size={14} />
-                        <span>Đã học {lesson.practiceCount} lần</span>
+                    
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-500">
+                      <div className="flex items-center gap-1">
+                        <Gamepad2 size={14} />
+                        <span>{lesson.wordCount} thuật ngữ</span>
                       </div>
-                    )}
-                    <div className="flex items-center gap-1">
-                      <Calendar size={14} />
-                      <span>{new Date(lesson.createdAt).toLocaleDateString('vi-VN')}</span>
+                      {lesson.practiceCount !== undefined && lesson.practiceCount > 0 && (
+                        <div className="flex items-center gap-1 text-indigo-600 font-medium">
+                          <Trophy size={14} />
+                          <span>Đã học {lesson.practiceCount} lần</span>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-1">
+                        <Calendar size={14} />
+                        <span>{new Date(lesson.createdAt).toLocaleDateString('vi-VN')}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="flex items-center gap-3">
-                <button 
-                  onClick={() => onPlay(lesson)}
-                  className="flex-1 md:flex-none bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-indigo-700 transition-all flex items-center justify-center gap-2"
-                >
-                  <Play size={18} fill="currentColor" /> Chơi
-                </button>
-                <button 
-                  onClick={() => handleDownloadLesson(lesson)}
-                  className="flex-1 md:flex-none bg-indigo-50 text-indigo-600 px-6 py-3 rounded-xl font-bold hover:bg-indigo-100 transition-all flex items-center justify-center gap-2"
-                  title="Tải xuống bài học (.txt)"
-                >
-                  <Download size={18} /> Tải
-                </button>
-                <button 
-                  onClick={() => onEdit(lesson)}
-                  className="flex-1 md:flex-none bg-slate-100 text-slate-700 px-6 py-3 rounded-xl font-bold hover:bg-slate-200 transition-all flex items-center justify-center gap-2"
-                >
-                  <Edit2 size={18} /> Sửa
-                </button>
-                <button 
-                  onClick={() => setDeletingId(lesson.id || null)}
-                  className="flex-1 md:flex-none bg-red-50 text-red-600 px-6 py-3 rounded-xl font-bold hover:bg-red-100 transition-all flex items-center justify-center gap-2"
-                >
-                  <Trash2 size={18} /> Xóa
-                </button>
-              </div>
-            </motion.div>
-          ))
+                <div className="flex items-center gap-3">
+                  <button 
+                    onClick={() => onPlay(lesson)}
+                    className="flex-1 md:flex-none bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 shadow-sm"
+                  >
+                    <Play size={18} fill="currentColor" /> Chơi
+                  </button>
+                  <button 
+                    onClick={() => handleDownloadLesson(lesson)}
+                    className="flex-1 md:flex-none bg-white border border-slate-200 text-slate-600 px-4 py-3 rounded-xl font-bold hover:bg-slate-50 transition-all flex items-center justify-center gap-2"
+                    title="Tải xuống (.txt)"
+                  >
+                    <Download size={18} />
+                  </button>
+                  <button 
+                    onClick={() => onEdit(lesson)}
+                    className="flex-1 md:flex-none bg-white border border-slate-200 text-slate-600 px-4 py-3 rounded-xl font-bold hover:bg-slate-50 transition-all flex items-center justify-center gap-2"
+                    title="Sửa"
+                  >
+                    <Edit2 size={18} />
+                  </button>
+                  <button 
+                    onClick={() => setDeletingId(lesson.id || null)}
+                    className="flex-1 md:flex-none bg-red-50 text-red-600 px-4 py-3 rounded-xl font-bold hover:bg-red-100 transition-all flex items-center justify-center gap-2"
+                    title="Xóa"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                </div>
+              </motion.div>
+            );
+          })
         ) : (
           <div className="text-center py-20 bg-white rounded-[2.5rem] border border-dashed border-slate-200">
             <div className="bg-slate-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300">
@@ -2027,20 +2070,34 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
   );
 }
 
-function GamesView({ vocabList, language, onComplete, playSound, activeGame, setActiveGame, onGoToLibrary }: { vocabList: Vocabulary[], language: Language, onComplete: (res: GameResult) => void, playSound: (t: 'correct' | 'wrong') => void, activeGame: GameType | null, setActiveGame: (g: GameType | null) => void, onGoToLibrary: () => void }) {
-  const filteredVocab = vocabList.filter(v => v.language === language);
+function GamesView({ vocabList, language, onComplete, playSound, activeGame, setActiveGame, onGoToLibrary, onGoToTopics, onGoToInput, hasLessons }: { vocabList: Vocabulary[], language: Language, onComplete: (res: GameResult) => void, playSound: (t: 'correct' | 'wrong') => void, activeGame: GameType | null, setActiveGame: (g: GameType | null) => void, onGoToLibrary: () => void, onGoToTopics: () => void, onGoToInput: () => void, hasLessons: boolean }) {
+  
+  if (vocabList.length < 5) {
+    if (!hasLessons) {
+      return (
+        <div className="text-center py-20 bg-white rounded-[3rem] shadow-xl border border-slate-100 w-full">
+          <RobotAnimation type="thinking" />
+          <h3 className="text-2xl font-bold mt-6">Chưa có bài học nào được tạo</h3>
+          <p className="text-slate-500 mt-2 mb-8">Vui lòng tạo bài học từ Chủ đề hoặc Nhập liệu trực tiếp.</p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 px-4">
+            <button onClick={onGoToTopics} className="w-full sm:w-auto bg-indigo-50 text-indigo-600 px-8 py-4 rounded-2xl font-bold hover:bg-indigo-100 transition-all flex items-center justify-center gap-2">
+              <LayoutGrid size={20} /> Đến Chủ đề
+            </button>
+            <button onClick={onGoToInput} className="w-full sm:w-auto bg-indigo-600 text-white px-8 py-4 rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg flex items-center justify-center gap-2">
+              <PlusCircle size={20} /> Đến Nhập liệu
+            </button>
+          </div>
+        </div>
+      );
+    }
 
-  if (filteredVocab.length < 5) {
     return (
       <div className="text-center py-20 bg-white rounded-[3rem] shadow-xl border border-slate-100 w-full">
         <RobotAnimation type="sad" />
-        <h3 className="text-2xl font-bold mt-6">Chưa có dữ liệu từ vựng!</h3>
-        <p className="text-slate-500 mt-2 mb-8">Vui lòng chọn một Bài học từ Thư viện để bắt đầu chơi.</p>
-        <button 
-          onClick={onGoToLibrary}
-          className="bg-indigo-600 text-white px-8 py-4 rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg"
-        >
-          Đến Thư viện ngay
+        <h3 className="text-2xl font-bold mt-6">Chưa có bài học nào được chọn</h3>
+        <p className="text-slate-500 mt-2 mb-8">Vui lòng chọn Bài học để bắt đầu chơi.</p>
+        <button onClick={onGoToLibrary} className="bg-indigo-600 text-white px-8 py-4 rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg flex items-center gap-2 mx-auto">
+          <BookOpen size={20} /> Đến Thư viện ngay
         </button>
       </div>
     );
@@ -2050,7 +2107,7 @@ function GamesView({ vocabList, language, onComplete, playSound, activeGame, set
     return (
       <GameContainer 
         type={activeGame} 
-        vocabList={filteredVocab} 
+        vocabList={vocabList} 
         language={language} 
         onBack={() => setActiveGame(null)} 
         onFinish={(score) => {
@@ -2064,45 +2121,15 @@ function GamesView({ vocabList, language, onComplete, playSound, activeGame, set
   return (
     <div className="w-full">
       <div className="mb-8 bg-indigo-50 border border-indigo-100 p-4 rounded-2xl flex items-center justify-between">
-        <span className="text-indigo-800 font-medium">Đang sử dụng gói từ vựng: <strong className="text-indigo-600">{filteredVocab.length} từ</strong></span>
+        <span className="text-indigo-800 font-medium">Đang sử dụng gói từ vựng: <strong className="text-indigo-600">{vocabList.length} từ</strong></span>
         <button onClick={onGoToLibrary} className="text-sm font-bold text-indigo-600 bg-white px-4 py-2 rounded-xl shadow-sm hover:shadow-md transition-all">Đổi gói khác</button>
       </div>
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-        <GameCard 
-          title="Flashcards" 
-          desc="Thẻ lật 3 mặt giúp ghi nhớ sâu." 
-          icon={<BrainCircuit />} 
-          colorClass="bg-blue-500"
-          onClick={() => setActiveGame('flashcards')} 
-        />
-        <GameCard 
-          title="Trắc nghiệm" 
-          desc="AIBTeM tạo từ nhiễu thông minh." 
-          icon={<CheckCircle2 />} 
-          colorClass="bg-indigo-500"
-          onClick={() => setActiveGame('quiz')} 
-        />
-        <GameCard 
-          title="Nối từ" 
-          desc="Thử thách phản xạ nhanh." 
-          icon={<RefreshCw />} 
-          colorClass="bg-orange-500"
-          onClick={() => setActiveGame('matching')} 
-        />
-        <GameCard 
-          title="Luyện viết" 
-          desc="Nghe và viết lại chính xác." 
-          icon={<Volume2 />} 
-          colorClass="bg-emerald-500"
-          onClick={() => setActiveGame('writing')} 
-        />
-        <GameCard 
-          title="Điền từ" 
-          desc="Sử dụng từ trong ngữ cảnh AIBTeM." 
-          icon={<ChevronRight />} 
-          colorClass="bg-pink-500"
-          onClick={() => setActiveGame('fill')} 
-        />
+        <GameCard title="Flashcards" desc="Thẻ lật 3 mặt giúp ghi nhớ sâu." icon={<BrainCircuit />} colorClass="bg-blue-500" onClick={() => setActiveGame('flashcards')} />
+        <GameCard title="Trắc nghiệm" desc="AIBTeM tạo từ nhiễu thông minh." icon={<CheckCircle2 />} colorClass="bg-indigo-500" onClick={() => setActiveGame('quiz')} />
+        <GameCard title="Nối từ" desc="Thử thách phản xạ nhanh." icon={<RefreshCw />} colorClass="bg-orange-500" onClick={() => setActiveGame('matching')} />
+        <GameCard title="Luyện viết" desc="Nghe và viết lại chính xác." icon={<Volume2 />} colorClass="bg-emerald-500" onClick={() => setActiveGame('writing')} />
+        <GameCard title="Điền từ" desc="Sử dụng từ trong ngữ cảnh AIBTeM." icon={<ChevronRight />} colorClass="bg-pink-500" onClick={() => setActiveGame('fill')} />
       </div>
     </div>
   );

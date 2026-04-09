@@ -1342,7 +1342,7 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
   );
 }
 
-function GamesView({ vocabList, language, onComplete, playSound, activeGame, setActiveGame, onGoToLibrary, onGoToTopics, onGoToInput, hasLessons, activeLessonId }: { vocabList: Vocabulary[], language: Language, onComplete: (res: GameResult) => void, playSound: (t: 'correct' | 'wrong' | 'success') => void, activeGame: GameType | null, setActiveGame: (g: GameType | null) => void, onGoToLibrary: () => void, onGoToTopics: () => void, onGoToInput: () => void, hasLessons: boolean, activeLessonId: string }) {
+function GamesView({ vocabList, language, onComplete, activeGame, setActiveGame, onGoToLibrary, onGoToTopics, onGoToInput, hasLessons, activeLessonId, playSound }: { vocabList: Vocabulary[], language: Language, onComplete: (res: GameResult) => void, activeGame: GameType | null, setActiveGame: (g: GameType | null) => void, onGoToLibrary: () => void, onGoToTopics: () => void, onGoToInput: () => void, hasLessons: boolean, activeLessonId: string, playSound: (t: 'correct'|'wrong'|'success')=>void }) {
   
   if (vocabList.length < 5) {
     if (!hasLessons) {
@@ -1370,7 +1370,7 @@ function GamesView({ vocabList, language, onComplete, playSound, activeGame, set
 
   if (activeGame) {
     return (
-      <GameContainer type={activeGame} vocabList={vocabList} language={language} activeLessonId={activeLessonId} onBack={() => setActiveGame(null)} onFinish={(score) => { onComplete({ lessonId: activeLessonId, gameType: activeGame, score, total: type === 'flashcards' ? vocabList.length : 5, timestamp: Date.now(), language }); }} playSound={playSound} />
+      <GameContainer type={activeGame} vocabList={vocabList} language={language} activeLessonId={activeLessonId} onBack={() => setActiveGame(null)} onFinish={(score) => { onComplete({ lessonId: activeLessonId, gameType: activeGame, score, total: activeGame === 'flashcards' ? vocabList.length : 5, timestamp: Date.now(), language }); }} playSound={playSound} />
     );
   }
 
@@ -1405,11 +1405,10 @@ function GameCard({ title, desc, icon, onClick, colorClass }: { title: string, d
   );
 }
 
-// --- GAME LOGIC (CHỐNG NHẢY TỪ) ---
+// --- GAME LOGIC (CHỐNG NHẢY TỪ TUYỆT ĐỐI) ---
 
 function GameContainer({ type, vocabList, language, onBack, onFinish, playSound, activeLessonId }: { type: GameType, vocabList: Vocabulary[], language: Language, onBack: () => void, onFinish: (score: number) => void, playSound: (t: 'correct' | 'wrong' | 'success') => void, activeLessonId: string }) {
   
-  // 1. Chỉ bồi đắp dữ liệu 1 LẦN DUY NHẤT khi vào game (chống nhảy từ)
   const [gameVocabs] = useState(() => {
     const currentDict = language === 'en' ? enDictDataRaw : deDictDataRaw;
     const enriched = vocabList.map(v => {
@@ -1426,10 +1425,27 @@ function GameContainer({ type, vocabList, language, onBack, onFinish, playSound,
   const [score, setScore] = useState(0);
   const [isFinished, setIsFinished] = useState(false);
   const [mistakes, setMistakes] = useState<{word: string, userAnswer: string, correctAnswer: string}[]>([]);
-  
   const currentVocab = gameVocabs[step];
   
   const [answerHistory, setAnswerHistory] = useState<('correct'|'wrong'|null)[]>(new Array(gameVocabs.length).fill(null));
+
+  useEffect(() => {
+     if (type === 'flashcards') {
+         const newHistory = [...answerHistory];
+         newHistory[step] = 'correct'; 
+         setAnswerHistory(newHistory);
+     }
+  }, [step, type]);
+
+  // Hook âm thanh chiến thắng (đặt ở top-level component, không bao giờ vi phạm rules of hook)
+  useEffect(() => {
+      if (isFinished && type !== 'flashcards') {
+          const percentage = Math.round((score / gameVocabs.length) * 100);
+          if (percentage >= 80) {
+              playSound('success');
+          }
+      }
+  }, [isFinished, score, gameVocabs.length, type, playSound]);
 
   const handleAnswer = (correct: boolean, userAnswer: string, customMistakeWord?: string, customCorrectAns?: string) => {
       const newHistory = [...answerHistory];
@@ -1456,23 +1472,18 @@ function GameContainer({ type, vocabList, language, onBack, onFinish, playSound,
           setStep(s => s + 1);
       } else {
           if (type === 'flashcards') {
-              onFinish(score);
+              onFinish(score); // Flashcard xong thì về thẳng Lib/Games View
           } else {
-              setIsFinished(true); 
+              setIsFinished(true); // Các game khác vào trang tổng kết riêng
           }
       }
   };
 
-  // MÀN HÌNH TỔNG KẾT CHUẨN UX
+  // MÀN HÌNH TỔNG KẾT TỪNG GAME
   if (isFinished) {
       const percentage = Math.round((score / gameVocabs.length) * 100);
-      const isGood = percentage >= 80; // Đạt 4/5 câu trở lên thì tung pháo hoa
+      const isGood = percentage >= 80; 
 
-      // Bật âm thanh chúc mừng 1 lần duy nhất khi vừa vào màn hình này
-      useEffect(() => {
-          if (isGood) playSound('success');
-      }, [isGood, playSound]);
-      
       return (
           <div className="w-full max-w-3xl mx-auto">
               {isGood && <Confetti />}
@@ -1517,10 +1528,10 @@ function GameContainer({ type, vocabList, language, onBack, onFinish, playSound,
           <div className="flex gap-2 flex-1 max-w-sm mx-4">
             {gameVocabs.map((_, i) => {
                let bgColor = "bg-slate-200";
-               if (i < step) {
-                   bgColor = (answerHistory[i] === 'correct' || type === 'flashcards') ? "bg-[#009900]" : "bg-red-500";
+               if (i < step || (type === 'flashcards' && i === step)) {
+                   bgColor = answerHistory[i] === 'correct' ? "bg-[#009900]" : "bg-red-500";
                } else if (i === step) {
-                   bgColor = type === 'flashcards' ? "bg-[#009900]" : "bg-indigo-400 animate-pulse";
+                   bgColor = "bg-indigo-400 animate-pulse";
                }
                return <div key={i} className={cn("h-2 rounded-full transition-all flex-1", bgColor)} />
             })}
@@ -1532,7 +1543,7 @@ function GameContainer({ type, vocabList, language, onBack, onFinish, playSound,
       <AnimatePresence mode="wait">
         {type === 'flashcards' && (
           <motion.div key={step} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-            <FlashcardGame vocab={currentVocab} onNext={() => { handleAnswer(true, ''); handleNextStep(); }} onPrev={() => setStep(s => s > 0 ? s - 1 : s)} language={language} step={step} totalSteps={gameVocabs.length} />
+            <FlashcardGame vocab={currentVocab} onNext={() => { handleNextStep(); }} onPrev={() => setStep(s => s > 0 ? s - 1 : s)} language={language} step={step} totalSteps={gameVocabs.length} />
           </motion.div>
         )}
         {type === 'quiz' && (
@@ -1881,7 +1892,6 @@ function ReportView({ results, language, activeLessonId }: { results: GameResult
   const totalPossible = currentSessionResults.reduce((acc, r) => acc + r.total, 0);
   const accuracy = totalPossible > 0 ? Math.round((totalScore / totalPossible) * 100) : 0;
 
-  // Nhận xét tĩnh không phụ thuộc vào Gemini API
   const getStaticFeedback = (acc: number) => {
       if (acc >= 90) return "AIBTeM nhận thấy bạn đã nắm vững gần như toàn bộ từ vựng trong bài học này! Phản xạ xuất sắc. Bạn hoàn toàn có thể chuyển sang bài học mới khó hơn.";
       if (acc >= 70) return "Kết quả rất khả quan! Bạn đã nhớ được phần lớn từ vựng. Hãy thử chơi lại game 'Nối từ' hoặc 'Luyện viết' một lần nữa để đạt điểm tuyệt đối nhé.";

@@ -212,40 +212,24 @@ const mapSubTopicToMainTopic = (rawTopic?: string) => {
   if (!rawTopic) return 'other';
   const t = removeAccents(rawTopic.toLowerCase());
   
-  // 1. Giáo dục & Học tập
   if (/(truong|giao duc|hoc|bang cap|nghien cuu|thay|co|sinh vien|mon|ngon ngu|education|school|learn|study|college|university|student|teacher|language|bildung|studium|schule|sprache|unterricht)/i.test(t)) return 'education_and_learning';
-  
-  // 2. Công sở & Kinh doanh
   if (/(cong viec|nghe|cong so|kinh doanh|tai chinh|tien|cong ty|van phong|buu chinh|work|business|job|office|finance|money|company|career|beruf|arbeit|buro|wirtschaft|geld|post|firma)/i.test(t)) return 'work_and_business';
-  
-  // 3. Sức khỏe & Cơ thể
   if (/(suc khoe|co the|y te|benh|dinh duong|thuoc|bac si|health|body|medical|medicine|doctor|disease|nutrition|gesundheit|korper|krankheit|arzt)/i.test(t)) return 'health_and_body';
-  
-  // 4. Khoa học & Công nghệ
   if (/(khoa hoc|cong nghe|may tinh|internet|phat minh|science|tech|computer|machine|engine|invention|wissenschaft|technik|medien)/i.test(t)) return 'science_and_technology';
-  
-  // 5. Xã hội & Văn hóa
   if (/(xa hoi|van hoa|nghe thuat|the thao|giai tri|luat|chinh tri|ton giao|society|culture|art|sport|entertain|law|politic|religion|kunst|politik|gesellschaft|recht)/i.test(t)) return 'society_and_culture';
-  
-  // 6. Thiên nhiên & Môi trường
   if (/(thien nhien|moi truong|dong vat|thuc vat|khi hau|thoi tiet|dia ly|nature|environment|animal|plant|climate|weather|geography|earth|umwelt|tier|pflanze|wetter|klima|natur|geografie)/i.test(t)) return 'nature_and_environment';
-  
-  // 7. Du lịch & Giao thông
   if (/(du lich|giao thong|phuong tien|ky nghi|xe|duong|travel|transport|traffic|tourism|vacation|trip|vehicle|flight|verkehr|reise|tourismus|urlaub)/i.test(t)) return 'travel_and_transport';
-  
-  // 8. Đời sống hàng ngày
   if (/(doi song|hang ngay|gia dinh|thoi gian|do an|thuc|mua sam|nha|cam xuc|mau|vat|quan ao|daily|life|family|time|food|eat|drink|shop|home|house|emotion|color|cloth|general|alltag|mensch|familie|essen|trinken|zeit|allgemein|wohnen|einkaufen|kleidung|gefuhl|farbe)/i.test(t)) return 'daily_life';
   
-  // Trả về Other thay vì lùa vào Daily Life để dễ soát lỗi
   return 'other'; 
 };
 
 const getLessonStatus = (lesson: Lesson) => {
   const lastTime = lesson.lastPracticed || lesson.createdAt;
   const daysPassed = (Date.now() - lastTime) / (1000 * 60 * 60 * 24);
-  if (daysPassed >= 5) return 'red'; // Quá hạn
-  if (daysPassed >= 3) return 'amber'; // Tới hạn
-  return 'emerald'; // Đang nhớ tốt (Trong hạn)
+  if (daysPassed >= 5) return 'red'; 
+  if (daysPassed >= 3) return 'amber'; 
+  return 'emerald'; 
 }
 
 // Components
@@ -773,11 +757,9 @@ function TopicLibraryView({ language, lessons, onOpenInInput }: { language: Lang
     const rawDict = language === 'en' ? enDictDataRaw : deDictDataRaw;
     
     return rawDict.map(w => {
-      // 1. Nếu từ vựng có sẵn ID chuẩn thì tuyệt đối giữ nguyên
       if (w.topic && KNOWN_TOPIC_IDS.includes(w.topic)) {
           return w;
       }
-      // 2. Nếu từ vựng ghi tự do (sai chính tả, tiếng Đức, tiếng Việt...) thì gọi AI lùa vào nhóm
       return {
           ...w,
           topic: mapSubTopicToMainTopic(w.topic)
@@ -2177,8 +2159,9 @@ function GameCard({ title, desc, icon, onClick, colorClass }: { title: string, d
 function GameContainer({ type, vocabList, language, onBack, onFinish, playSound }: { type: GameType, vocabList: Vocabulary[], language: Language, onBack: () => void, onFinish: (score: number) => void, playSound: (t: 'correct' | 'wrong') => void }) {
   const [step, setStep] = useState(0);
   const [score, setScore] = useState(0);
-  const [gameVocabs] = useState(() => [...vocabList].sort(() => 0.5 - Math.random()).slice(0, 5));
   
+  // Trò chơi Flashcard không giới hạn 5 từ mà hiển thị toàn bộ vocabList
+  const gameVocabs = type === 'flashcards' ? vocabList : [...vocabList].sort(() => 0.5 - Math.random()).slice(0, 5);
   const currentVocab = gameVocabs[step];
 
   const next = (correct: boolean) => {
@@ -2189,31 +2172,44 @@ function GameContainer({ type, vocabList, language, onBack, onFinish, playSound 
       playSound('wrong');
     }
     
-    if (step < 4) {
+    if (step < gameVocabs.length - 1) {
       setStep(s => s + 1);
     } else {
       onFinish(correct ? score + 1 : score);
     }
   };
+  
+  const prev = () => {
+    if (step > 0) {
+      setStep(s => s - 1);
+    }
+  };
 
   return (
-    <div className="w-full max-w-3xl mx-auto">
+    <div className="w-full mx-auto">
       <div className="flex items-center justify-between mb-8">
         <button onClick={onBack} className="flex items-center gap-2 text-slate-500 hover:text-indigo-600 font-bold">
           <ChevronLeft size={20} /> Quay lại
         </button>
-        <div className="flex gap-2">
-          {[0, 1, 2, 3, 4].map(i => (
-            <div key={i} className={cn("w-12 h-2 rounded-full transition-all", i <= step ? "bg-indigo-600" : "bg-slate-200")} />
+        <div className="flex gap-2 flex-1 max-w-sm mx-4">
+          {gameVocabs.map((_, i) => (
+            <div key={i} className={cn("h-2 rounded-full transition-all flex-1", i <= step ? "bg-indigo-600" : "bg-slate-200")} />
           ))}
         </div>
-        <div className="font-bold text-indigo-600">Điểm: {score}</div>
+        <div className="font-bold text-indigo-600">Từ {step + 1}/{gameVocabs.length}</div>
       </div>
 
       <AnimatePresence mode="wait">
         {type === 'flashcards' && (
-          <motion.div key={step} initial={{ opacity: 0, rotateY: 90 }} animate={{ opacity: 1, rotateY: 0 }} exit={{ opacity: 0, rotateY: -90 }}>
-            <FlashcardGame vocab={currentVocab} onNext={() => next(true)} language={language} />
+          <motion.div key={step} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+            <FlashcardGame 
+              vocab={currentVocab} 
+              onNext={() => next(false)} 
+              onPrev={prev} 
+              language={language} 
+              step={step} 
+              totalSteps={gameVocabs.length} 
+            />
           </motion.div>
         )}
         {type === 'quiz' && (
@@ -2241,51 +2237,117 @@ function GameContainer({ type, vocabList, language, onBack, onFinish, playSound 
   );
 }
 
-function FlashcardGame({ vocab, onNext, language }: { vocab: Vocabulary, onNext: () => void, language: Language }) {
+function FlashcardGame({ vocab, onNext, onPrev, language, step, totalSteps }: { vocab: Vocabulary, onNext: () => void, onPrev: () => void, language: Language, step: number, totalSteps: number }) {
   const [side, setSide] = useState(0); 
 
-  return (
-    <div className="space-y-8">
-      <div 
-        onClick={() => setSide((side + 1) % 3)}
-        className="aspect-[4/3] bg-white rounded-[3rem] shadow-2xl flex flex-col items-center justify-center p-12 text-center cursor-pointer relative overflow-hidden group"
-      >
-        <div className="absolute top-6 right-6">
-          <button onClick={(e) => { e.stopPropagation(); handleSpeak(vocab.word, language); }} className="p-4 bg-indigo-50 text-indigo-600 rounded-2xl hover:bg-indigo-100 transition-all">
-            <Volume2 size={24} />
-          </button>
-        </div>
+  useEffect(() => {
+    setSide(0);
+  }, [vocab]);
 
+  useEffect(() => {
+    if (side === 2) {
+       handleSpeak(vocab.word, language);
+    }
+  }, [side, vocab.word, language]);
+
+  const definition = language === 'en' ? vocab.english_definition : vocab.german_definition;
+  const exampleText = language === 'en' ? vocab.example_english : vocab.example_german;
+
+  return (
+    <div className="space-y-8 w-full max-w-4xl mx-auto">
+      {/* Khung thẻ cố định chiều cao, hiệu ứng nhào lộn xoay X 3D */}
+      <div className="perspective-[1000px] w-full min-h-[400px]">
         <AnimatePresence mode="wait">
-          {side === 0 && (
-            <motion.div key="0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-              <span className="text-slate-400 font-bold uppercase tracking-widest text-sm">Từ vựng</span>
-              <h3 className="text-5xl font-black text-indigo-600">
-                {vocab.article && <span className="text-indigo-400 font-normal mr-2">{vocab.article}</span>}
-                {vocab.word}
-              </h3>
-            </motion.div>
-          )}
-          {side === 1 && (
-            <motion.div key="1" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-              <span className="text-slate-400 font-bold uppercase tracking-widest text-sm">Nghĩa Tiếng Việt</span>
-              <h3 className="text-5xl font-black text-emerald-600">{vocab.meaning}</h3>
-            </motion.div>
-          )}
-          {side === 2 && (
-            <motion.div key="2" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4 max-w-md">
-              <span className="text-slate-400 font-bold uppercase tracking-widest text-sm">Ví dụ</span>
-              <p className="text-2xl font-medium text-slate-700 italic">"{vocab.example || vocab.example_english || vocab.example_german || 'Đang tải ví dụ...'}"</p>
-            </motion.div>
-          )}
+          <motion.div 
+            key={side}
+            initial={{ rotateX: 90, opacity: 0 }}
+            animate={{ rotateX: 0, opacity: 1 }}
+            exit={{ rotateX: -90, opacity: 0 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            onClick={() => setSide((side + 1) % 3)}
+            className="w-full min-h-[400px] bg-white rounded-[3rem] shadow-xl border border-slate-100 flex flex-col items-center justify-center p-8 md:p-12 text-center cursor-pointer relative overflow-hidden group"
+          >
+            {side === 0 && (
+              <div className="text-center w-full max-w-3xl mx-auto px-4 md:px-8">
+                 <div className="text-2xl md:text-3xl font-medium text-slate-800 leading-relaxed">
+                   {vocab.part_of_speech && <span className="font-bold text-indigo-600 mr-3">({vocab.part_of_speech})</span>}
+                   {definition || "Chưa có định nghĩa ngôn ngữ gốc cho từ này."}
+                 </div>
+              </div>
+            )}
+            
+            {side === 1 && (
+              <div className="text-center space-y-8 w-full">
+                 <h3 className="text-4xl md:text-5xl font-bold text-emerald-600">{vocab.vietnamese_meaning || vocab.meaning}</h3>
+                 {vocab.phonetic && (
+                   <div className="flex items-center justify-center gap-4 text-slate-500">
+                     <button onClick={(e) => {e.stopPropagation(); handleSpeak(vocab.word, language)}} className="hover:text-indigo-600 transition-colors p-3 bg-slate-50 rounded-full hover:bg-indigo-50 border border-slate-100 shadow-sm">
+                       <Volume2 size={28} />
+                     </button>
+                     <span className="text-2xl md:text-3xl font-mono">{renderPhonetic(vocab.phonetic)}</span>
+                   </div>
+                 )}
+              </div>
+            )}
+
+            {side === 2 && (
+              <div className="text-left w-full max-w-3xl mx-auto space-y-6">
+                 <div className="flex items-baseline gap-3 mb-2 border-b border-slate-100 pb-4">
+                    <h3 className="text-4xl md:text-5xl font-bold text-indigo-600">{vocab.word}</h3>
+                    {vocab.part_of_speech && <span className="text-xl md:text-2xl text-slate-400 font-medium">({vocab.part_of_speech})</span>}
+                 </div>
+
+                 {vocab.phonetic && (
+                   <div className="flex items-center gap-4 text-slate-500 mb-8">
+                       <button onClick={(e) => {e.stopPropagation(); handleSpeak(vocab.word, language)}} className="hover:text-indigo-600 transition-colors p-3 bg-slate-50 rounded-full hover:bg-indigo-50 border border-slate-100 shadow-sm">
+                         <Volume2 size={24} />
+                       </button>
+                       <span className="text-2xl md:text-3xl font-mono">{renderPhonetic(vocab.phonetic)}</span>
+                   </div>
+                 )}
+
+                 {(exampleText || vocab.example) && (
+                   <div className="bg-slate-50 p-6 md:p-8 rounded-3xl border border-slate-100 shadow-inner">
+                     <div className="flex items-start gap-4 mb-4">
+                        <button onClick={(e) => {e.stopPropagation(); handleSpeak(exampleText || vocab.example || '', language)}} className="hover:text-indigo-600 transition-colors text-slate-400 mt-1 shrink-0 p-2 bg-white rounded-full shadow-sm">
+                          <Volume2 size={24} />
+                        </button>
+                        <div className="text-xl md:text-2xl text-slate-700 leading-relaxed italic">
+                           {highlightWordInSentence(exampleText || vocab.example || '', vocab.word)}
+                        </div>
+                     </div>
+                     {vocab.example_vietnamese && (
+                        <div className="text-lg md:text-xl text-emerald-700 font-medium ml-14">
+                           {vocab.example_vietnamese}
+                        </div>
+                     )}
+                   </div>
+                 )}
+              </div>
+            )}
+            
+            <div className="absolute bottom-6 text-slate-300 font-bold text-xs uppercase tracking-widest flex items-center gap-2 group-hover:text-indigo-300 transition-colors">
+               <RefreshCw size={14} className="group-hover:rotate-180 transition-transform duration-500" /> Nhấn để lật thẻ
+            </div>
+          </motion.div>
         </AnimatePresence>
-        
-        <div className="absolute bottom-8 text-slate-300 font-bold text-xs uppercase tracking-widest">Nhấn để lật mặt</div>
       </div>
 
-      <button onClick={onNext} className="w-full bg-indigo-600 text-white py-5 rounded-3xl font-bold text-xl shadow-xl hover:bg-indigo-700 transition-all">
-        Tiếp theo
-      </button>
+      <div className="flex gap-4 w-full">
+         <button 
+           onClick={onPrev} 
+           disabled={step === 0} 
+           className="flex-1 py-4 rounded-2xl font-bold text-lg bg-white border-2 border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+         >
+           <ChevronLeft size={20} /> Lùi lại
+         </button>
+         <button 
+           onClick={onNext} 
+           className="flex-1 py-4 rounded-2xl font-bold text-lg bg-indigo-600 text-white hover:bg-indigo-700 hover:scale-[1.02] active:scale-95 shadow-xl shadow-indigo-200 transition-all flex items-center justify-center gap-2"
+         >
+           {step === totalSteps - 1 ? 'Hoàn thành' : 'Tiếp theo'} {step !== totalSteps - 1 && <ChevronRight size={20} />}
+         </button>
+      </div>
     </div>
   );
 }

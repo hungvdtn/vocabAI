@@ -1,0 +1,3002 @@
+[
+    {
+        "word": "distinguish",
+        "part_of_speech": "v.",
+        "phonetic": "/dis´tiηgwiʃ/",
+        "vietnamese_meaning": "phân biệt, nhận ra, làm nổi bật, nghe ra",
+        "example_english": "It is important to distinguish between short-term goals and long-term objectives.",
+        "example_vietnamese": "Việc phân biệt giữa các mục tiêu ngắn hạn và các tôn chỉ dài hạn là rất quan trọng.",
+        "topic": "education_and_learning",
+        "level": "B2"
+    },
+    {
+        "word": "distribute",
+        "part_of_speech": "v.",
+        "phonetic": "/dis'tribju:t/",
+        "vietnamese_meaning": "phân phối, phân phát, phân bổ, rắc",
+        "example_english": "The aid organization will distribute food and medical supplies to the affected areas.",
+        "example_vietnamese": "Tổ chức cứu trợ sẽ phân phối thực phẩm và vật tư y tế đến các khu vực bị ảnh hưởng.",
+        "topic": "work_and_business",
+        "level": "B2"
+    },
+    {
+        "word": "distribution",
+        "part_of_speech": "n.",
+        "phonetic": "/,distri'bju:ʃn/",
+        "vietnamese_meaning": "sự phân phối, sự phân bổ, sự phân phát, sự phân loại",
+        "example_english": "The logistics department is responsible for the distribution of goods nationwide.",
+        "example_vietnamese": "Phòng hậu cần chịu trách nhiệm phân phối hàng hóa trên toàn quốc.",
+        "topic": "work_and_business",
+        "level": "B2"
+    },
+    {
+        "word": "district",
+        "part_of_speech": "n.",
+        "phonetic": "/'distrikt/",
+        "vietnamese_meaning": "quận, huyện, khu vực, vùng",
+        "example_english": "The new administrative headquarters is located in the central business district.",
+        "example_vietnamese": "Trụ sở hành chính mới nằm ở khu trung tâm thương mại.",
+        "topic": "travel_and_transport",
+        "level": "B1"
+    },
+    {
+        "word": "disturb",
+        "part_of_speech": "v.",
+        "phonetic": "/dis´tə:b/",
+        "vietnamese_meaning": "quấy rầy, làm mất yên tĩnh, làm xáo trộn, làm lo âu",
+        "example_english": "Please do not disturb the staff while the training session is in progress.",
+        "example_vietnamese": "Vui lòng không quấy rầy nhân viên khi buổi đào tạo đang diễn ra.",
+        "topic": "daily_life",
+        "level": "B1"
+    },
+    {
+        "word": "disturbing",
+        "part_of_speech": "adj.",
+        "phonetic": "/dis´tə:biη/",
+        "vietnamese_meaning": "đáng lo ngại, xáo trộn, gây bối rối",
+        "example_english": "The report revealed some disturbing facts about the factory's safety records.",
+        "example_vietnamese": "Bản báo cáo đã tiết lộ một số sự thật đáng lo ngại về hồ sơ an toàn của nhà máy.",
+        "topic": "society_and_culture",
+        "level": "B2"
+    },
+    {
+        "word": "divide",
+        "part_of_speech": "v.",
+        "phonetic": "/di'vaid/",
+        "vietnamese_meaning": "chia, phân ra, tách rời, sự phân chia",
+        "example_english": "The project will be divided into several phases to ensure better management.",
+        "example_vietnamese": "Dự án sẽ được chia thành nhiều giai đoạn để đảm bảo quản lý tốt hơn.",
+        "topic": "education_and_learning",
+        "level": "B1"
+    },
+    {
+        "word": "division",
+        "part_of_speech": "n.",
+        "phonetic": "/dɪ'vɪʒn/",
+        "vietnamese_meaning": "sự phân chia, bộ phận, sư đoàn, phép chia",
+        "example_english": "The company created a new division to focus on renewable energy technologies.",
+        "example_vietnamese": "Công ty đã thành lập một bộ phận mới nhằm tập trung vào các công nghệ năng lượng tái tạo.",
+        "topic": "work_and_business",
+        "level": "B2"
+    },
+    {
+        "word": "divorce",
+        "part_of_speech": "n., v.",
+        "phonetic": "/di´vɔ:s/",
+        "vietnamese_meaning": "sự ly dị, ly hôn, sự tách rời",
+        "example_english": "The legal process for divorce should be handled with professional legal counsel.",
+        "example_vietnamese": "Quy trình pháp lý cho việc ly hôn nên được thực hiện với sự tư vấn của luật sư chuyên nghiệp.",
+        "topic": "society_and_culture",
+        "level": "B2"
+    },
+    {
+        "word": "divorced",
+        "part_of_speech": "adj.",
+        "phonetic": "/di'vo:sd/",
+        "vietnamese_meaning": "đã ly dị, đã ly hôn, tách biệt",
+        "example_english": "The policy provides social support services for divorced individuals and their children.",
+        "example_vietnamese": "Chính sách này cung cấp các dịch vụ hỗ trợ xã hội cho những người đã ly hôn và con cái của họ.",
+        "topic": "daily_life",
+        "level": "B2"
+    },
+    {
+        "word": "do",
+        "part_of_speech": "v.",
+        "phonetic": "/du:, du/",
+        "vietnamese_meaning": "làm, thực hiện, hành động, làm xong",
+        "example_english": "Employees are expected to do their best to maintain high professional standards.",
+        "example_vietnamese": "Nhân viên được kỳ vọng sẽ làm hết sức mình để duy trì các tiêu chuẩn chuyên môn cao.",
+        "topic": "daily_life",
+        "level": "A1"
+    },
+    {
+        "word": "doctor",
+        "part_of_speech": "n.",
+        "phonetic": "/'dɔktə/",
+        "vietnamese_meaning": "bác sĩ, tiến sĩ, học giả, sửa chữa",
+        "example_english": "The doctor specialized in infectious diseases provided the final diagnosis.",
+        "example_vietnamese": "Bắc sĩ chuyên khoa bệnh truyền nhiễm đã đưa ra chẩn đoán cuối cùng.",
+        "topic": "health_and_body",
+        "level": "A1"
+    },
+    {
+        "word": "document",
+        "part_of_speech": "n.",
+        "phonetic": "/'dɒkjʊmənt/",
+        "vietnamese_meaning": "tài liệu, văn kiện, chứng cứ, ghi chép lại",
+        "example_english": "Please ensure that all legal documents are signed and officially stamped.",
+        "example_vietnamese": "Vui lòng đảm bảo rằng tất cả các văn bản pháp lý đều được ký và đóng dấu chính thức.",
+        "topic": "work_and_business",
+        "level": "B1"
+    },
+    {
+        "word": "dog",
+        "part_of_speech": "n.",
+        "phonetic": "/dɔg/",
+        "vietnamese_meaning": "con chó, kẻ hèn hạ, theo dõi, đeo bám",
+        "example_english": "The security team uses trained dogs to monitor the perimeter of the facility.",
+        "example_vietnamese": "Đội an ninh sử dụng chó nghiệp vụ để giám sát chu vi của cơ sở.",
+        "topic": "nature_and_environment",
+        "level": "A1"
+    },
+    {
+        "word": "dollar",
+        "part_of_speech": "n.",
+        "phonetic": "/´dɔlə/",
+        "vietnamese_meaning": "đô la, đồng đô la",
+        "example_english": "The initial investment for the infrastructure project was several million dollars.",
+        "example_vietnamese": "Khoản đầu tư ban đầu cho dự án cơ sở hạ tầng là vài triệu đô la.",
+        "topic": "work_and_business",
+        "level": "A1"
+    },
+    {
+        "word": "domestic",
+        "part_of_speech": "adj.",
+        "phonetic": "/də'mestik/",
+        "vietnamese_meaning": "nội địa, trong nước, gia đình, nội trợ",
+        "example_english": "The government announced new policies to support the growth of domestic industries.",
+        "example_vietnamese": "Chính phủ đã công bố các chính sách mới nhằm hỗ trợ sự phát triển của các ngành công nghiệp trong nước.",
+        "topic": "society_and_culture",
+        "level": "B2"
+    },
+    {
+        "word": "dominate",
+        "part_of_speech": "v.",
+        "phonetic": "/ˈdɒmənˌneɪt/",
+        "vietnamese_meaning": "thống trị, chi phối, chiếm ưu thế, chế ngự",
+        "example_english": "A few large corporations tend to dominate the international technology market.",
+        "example_vietnamese": "Một vài tập đoàn lớn có xu hướng chi phối thị trường công nghệ quốc tế.",
+        "topic": "society_and_culture",
+        "level": "B2"
+    },
+    {
+        "word": "door",
+        "part_of_speech": "n.",
+        "phonetic": "/dɔ:/",
+        "vietnamese_meaning": "cửa, cửa ra vào, lối đi, cánh cửa",
+        "example_english": "The main entrance door of the office building is equipped with an electronic security system.",
+        "example_vietnamese": "Cửa vào chính của tòa nhà văn phòng được trang bị hệ thống an ninh điện tử.",
+        "topic": "daily_life",
+        "level": "A1"
+    },
+    {
+        "word": "dot",
+        "part_of_speech": "n.",
+        "phonetic": "/dɔt/",
+        "vietnamese_meaning": "dấu chấm, điểm nhỏ, chấm nhỏ, của hồi môn",
+        "example_english": "The locations of all international branches are marked with red dots on the map.",
+        "example_vietnamese": "Vui lòng ghi rõ ngày và giờ của cuộc họp trên mẫu đơn chính thức.",
+        "topic": "travel_and_transport",
+        "level": "B1"
+    },
+    {
+        "word": "double",
+        "part_of_speech": "adj., n., v.",
+        "phonetic": "/'dʌbl/",
+        "vietnamese_meaning": "gấp đôi, đôi, hai lần, đóng hai vai",
+        "example_english": "The company hopes to double its annual revenue within the next five years.",
+        "example_vietnamese": "Công ty hy vọng sẽ tăng gấp đôi doanh thu hàng năm trong vòng năm năm tới.",
+        "topic": "daily_life",
+        "level": "A2"
+    },
+    {
+        "word": "doubt",
+        "part_of_speech": "n., v.",
+        "phonetic": "/daut/",
+        "vietnamese_meaning": "sự nghi ngờ, ngờ vực, không tin, sự do dự",
+        "example_english": "There is no doubt that the implementation of new technology will benefit the organization.",
+        "example_vietnamese": "Không có gì nghi ngờ rằng việc áp dụng công nghệ mới sẽ mang lại lợi ích cho tổ chức.",
+        "topic": "daily_life",
+        "level": "B1"
+    },
+    {
+        "word": "down",
+        "part_of_speech": "adv., prep.",
+        "phonetic": "/daun/",
+        "vietnamese_meaning": "xuống, đi xuống, ở dưới, thất vọng",
+        "example_english": "Stock prices went down significantly following the announcement of the economic crisis.",
+        "example_vietnamese": "Giá cổ phiếu đã giảm đáng kể sau thông báo về cuộc khủng hoảng kinh tế.",
+        "topic": "daily_life",
+        "level": "A1"
+    },
+    {
+        "word": "downstairs",
+        "part_of_speech": "adv., adj., n.",
+        "phonetic": "/'daun'steзz/",
+        "vietnamese_meaning": "ở tầng dưới, phía dưới cầu thang",
+        "example_english": "The human resources office is located downstairs on the ground floor.",
+        "example_vietnamese": "Văn phòng nhân sự nằm ở phía dưới tại tầng trệt.",
+        "topic": "daily_life",
+        "level": "A1"
+    },
+    {
+        "word": "downward",
+        "part_of_speech": "adj.",
+        "phonetic": "/´daun¸wəd/",
+        "vietnamese_meaning": "đi xuống, hướng xuống, giảm sút",
+        "example_english": "Many economists predicted a downward trend in consumer spending for the next quarter.",
+        "example_vietnamese": "Nhiều nhà kinh tế học dự báo xu hướng sụt giảm trong chi tiêu tiêu dùng trong quý tới.",
+        "topic": "work_and_business",
+        "level": "B2"
+    },
+    {
+        "word": "downwards",
+        "part_of_speech": "adv.",
+        "phonetic": "/´daun¸wədz/",
+        "vietnamese_meaning": "đi xuống, hướng xuống phía dưới",
+        "example_english": "The graph shows that the unemployment rate has been trending downwards recently.",
+        "example_vietnamese": "Biểu đồ cho thấy tỷ lệ thất nghiệp đã có xu hướng đi xuống trong thời gian gần đây.",
+        "topic": "science_and_technology",
+        "level": "B2"
+    },
+    {
+        "word": "dozen",
+        "part_of_speech": "n., det.",
+        "phonetic": "/dʌzn/",
+        "vietnamese_meaning": "tá, nhóm mười hai, rất nhiều",
+        "example_english": "The administration ordered several dozen boxes of office stationery for the new department.",
+        "example_vietnamese": "Ban quản lý đã đặt vài tá hộp văn phòng phẩm cho phòng ban mới.",
+        "topic": "daily_life",
+        "level": "B1"
+    },
+    {
+        "word": "draft",
+        "part_of_speech": "n., adj., v.",
+        "phonetic": "/dra:ft/",
+        "vietnamese_meaning": "bản phác thảo, dự thảo, hối phiếu, sự tòng quân",
+        "example_english": "The legal department is currently preparing the first draft of the contract.",
+        "example_vietnamese": "Phòng pháp chế hiện đang chuẩn bị bản phác thảo đầu tiên của hợp đồng.",
+        "topic": "work_and_business",
+        "level": "B2"
+    },
+    {
+        "word": "drag",
+        "part_of_speech": "v.",
+        "phonetic": "/drӕg/",
+        "vietnamese_meaning": "lôi kéo, kéo lê, sự cản trở, làm chậm chạp",
+        "example_english": "You can drag and drop files into the folder to organize your digital documents.",
+        "example_vietnamese": "Bạn có thể kéo và thả các tệp vào thư mục để sắp xếp tài liệu kỹ thuật số của mình.",
+        "topic": "science_and_technology",
+        "level": "B2"
+    },
+    {
+        "word": "drama",
+        "part_of_speech": "n.",
+        "phonetic": "/drɑː.mə/",
+        "vietnamese_meaning": "kịch, kịch tính, sự việc gây cấn, tuồng",
+        "example_english": "The national academy offers various courses in classical and modern drama.",
+        "example_vietnamese": "Học viện quốc gia cung cấp các khóa học đa dạng về kịch cổ điển và hiện đại.",
+        "topic": "society_and_culture",
+        "level": "A2"
+    },
+    {
+        "word": "dramatic",
+        "part_of_speech": "adj.",
+        "phonetic": "/drə´mætik/",
+        "vietnamese_meaning": "kịch tính, gây ấn tượng, mạnh mẽ, đột ngột",
+        "example_english": "The industry experienced a dramatic shift in consumer preferences last year.",
+        "example_vietnamese": "Ngành công nghiệp này đã trải qua một sự thay đổi mạnh mẽ trong sở thích của người tiêu dùng vào năm ngoái.",
+        "topic": "daily_life",
+        "level": "B2"
+    },
+    {
+        "word": "dramatically",
+        "part_of_speech": "adv.",
+        "phonetic": "/drə'mætikəli/",
+        "vietnamese_meaning": "đột ngột, đáng kể, mạnh mẽ, một cách kịch tính",
+        "example_english": "Global temperatures have risen dramatically over the past few decades.",
+        "example_vietnamese": "Nhiệt độ toàn cầu đã tăng lên một cách đột ngột trong vài thập kỷ qua.",
+        "topic": "nature_and_environment",
+        "level": "B2"
+    },
+    {
+        "word": "draw",
+        "part_of_speech": "v.",
+        "phonetic": "/dro:/",
+        "vietnamese_meaning": "vẽ, kéo, thu hút, kết thúc hòa, rút ra",
+        "example_english": "The research team will draw conclusions based on the final data analysis.",
+        "example_vietnamese": "Đội nghiên cứu sẽ đưa ra các kết luận dựa trên bản phân tích dữ liệu cuối cùng.",
+        "topic": "education_and_learning",
+        "level": "A1"
+    },
+    {
+        "word": "drawer",
+        "part_of_speech": "n.",
+        "phonetic": "/´drɔ:ə/",
+        "vietnamese_meaning": "ngăn kéo, người vẽ, người ký phát",
+        "example_english": "Please keep the confidential files in the locked desk drawer.",
+        "example_vietnamese": "Vui lòng giữ các tài liệu bảo mật trong ngăn kéo bàn có khóa.",
+        "topic": "daily_life",
+        "level": "A2"
+    },
+    {
+        "word": "drawing",
+        "part_of_speech": "n.",
+        "phonetic": "/'dro:iŋ/",
+        "vietnamese_meaning": "bản vẽ, bức vẽ, sự kéo, sự rút thăm",
+        "example_english": "The technical drawing provides a detailed plan for the construction of the bridge.",
+        "example_vietnamese": "Bản vẽ kỹ thuật cung cấp kế hoạch chi tiết cho việc xây dựng cây cầu.",
+        "topic": "science_and_technology",
+        "level": "A2"
+    },
+    {
+        "word": "dream",
+        "part_of_speech": "n., v.",
+        "phonetic": "/dri:m/",
+        "vietnamese_meaning": "giấc mơ, mơ mộng, khao khát, điều tưởng tượng",
+        "example_english": "Many aspiring entrepreneurs dream of establishing their own international firms.",
+        "example_vietnamese": "Nhiều doanh nhân tham vọng mơ ước thành lập công ty quốc tế của riêng mình.",
+        "topic": "daily_life",
+        "level": "A2"
+    },
+    {
+        "word": "dress",
+        "part_of_speech": "n., v.",
+        "phonetic": "/dres/",
+        "vietnamese_meaning": "váy, trang phục, mặc quần áo, băng bó",
+        "example_english": "The company has a formal dress code for all employees during business hours.",
+        "example_vietnamese": "Công ty có quy định về trang phục trang trọng cho tất cả nhân viên trong giờ làm việc.",
+        "topic": "daily_life",
+        "level": "A1"
+    },
+    {
+        "word": "dressed",
+        "part_of_speech": "adj.",
+        "phonetic": "n/a",
+        "vietnamese_meaning": "ăn mặc, được mặc trang phục, chỉnh tề",
+        "example_english": "The representatives were well-dressed for the international trade summit.",
+        "example_vietnamese": "Các đại diện đã ăn mặc rất chỉnh tề cho hội nghị thượng đỉnh thương mại quốc tế.",
+        "topic": "daily_life",
+        "level": "A1"
+    },
+    {
+        "word": "drink",
+        "part_of_speech": "n., v.",
+        "phonetic": "/driɳk/",
+        "vietnamese_meaning": "đồ uống, uống, nhậu nhẹt, sự uống",
+        "example_english": "Complimentary drinks will be served during the networking session.",
+        "example_vietnamese": "Đồ uống miễn phí sẽ được phục vụ trong buổi gặp gỡ giao lưu.",
+        "topic": "daily_life",
+        "level": "A1"
+    },
+    {
+        "word": "drive",
+        "part_of_speech": "v., n.",
+        "phonetic": "/draiv/",
+        "vietnamese_meaning": "lái xe, điều khiển, thúc đẩy, nghị lực, chiến dịch",
+        "example_english": "Innovation is a primary force that continues to drive corporate growth.",
+        "example_vietnamese": "Đổi mới sáng tạo là lực lượng chính yếu tiếp tục thúc đẩy sự tăng trưởng của doanh nghiệp.",
+        "topic": "travel_and_transport",
+        "level": "A1"
+    },
+    {
+        "word": "driver",
+        "part_of_speech": "n.",
+        "phonetic": "/draivə(r)/",
+        "vietnamese_meaning": "người lái xe, tài xế, chương trình điều khiển, gậy đánh gôn",
+        "example_english": "The company provides a professional driver for the visiting international experts.",
+        "example_vietnamese": "Công ty cung cấp một tài xế chuyên nghiệp cho các chuyên gia quốc tế đến thăm.",
+        "topic": "travel_and_transport",
+        "level": "A1"
+    },
+    {
+        "word": "driving",
+        "part_of_speech": "n.",
+        "phonetic": "/'draiviɳ/",
+        "vietnamese_meaning": "sự lái xe, việc lái xe, truyền động",
+        "example_english": "A valid driving license is required for this particular job position.",
+        "example_vietnamese": "Vị trí công việc cụ thể này yêu cầu phải có bằng lái xe hợp lệ.",
+        "topic": "travel_and_transport",
+        "level": "A1"
+    },
+    {
+        "word": "drop",
+        "part_of_speech": "v., n.",
+        "phonetic": "/drɒp/",
+        "vietnamese_meaning": "rơi, rớt, sụt giảm, giọt nước, bỏ rơi",
+        "example_english": "There has been a significant drop in production costs over the last six months.",
+        "example_vietnamese": "Đã có sự sụt giảm đáng kể về chi phí sản xuất trong sáu tháng qua.",
+        "topic": "work_and_business",
+        "level": "A2"
+    },
+    {
+        "word": "drug",
+        "part_of_speech": "n.",
+        "phonetic": "/drʌg/",
+        "vietnamese_meaning": "thuốc, dược phẩm, ma túy, thuốc kích thích",
+        "example_english": "The pharmaceutical agency must approve all new drugs before they are sold to the public.",
+        "example_vietnamese": "Cơ quan dược phẩm phải phê duyệt tất cả các loại thuốc mới trước khi chúng được bán cho công chúng.",
+        "topic": "health_and_body",
+        "level": "B1"
+    },
+    {
+        "word": "drugstore",
+        "part_of_speech": "n. (NAmE)",
+        "phonetic": "/'drʌgstɔ:/",
+        "vietnamese_meaning": "hiệu thuốc, cửa hàng dược phẩm",
+        "example_english": "The nearest drugstore is located within the central shopping complex.",
+        "example_vietnamese": "Hiệu thuốc gần nhất nằm trong khu phức hợp mua sắm trung tâm.",
+        "topic": "health_and_body",
+        "level": "A2"
+    },
+    {
+        "word": "drum",
+        "part_of_speech": "n.",
+        "phonetic": "/drʌm/",
+        "vietnamese_meaning": "cái trống, tiếng trống, thùng hình trụ, lỗ tai",
+        "example_english": "Hazardous waste must be stored in specialized chemical drums for safe transport.",
+        "example_vietnamese": "Chất thải nguy hại phải được lưu giữ trong các thùng hóa chất chuyên dụng để vận chuyển an toàn.",
+        "topic": "science_and_technology",
+        "level": "B1"
+    },
+    {
+        "word": "drunk",
+        "part_of_speech": "adj.",
+        "phonetic": "/drʌŋk/",
+        "vietnamese_meaning": "say rượu, người say, choáng váng",
+        "example_english": "Operating industrial machinery while drunk is strictly prohibited by law.",
+        "example_vietnamese": "Vận hành máy móc công nghiệp khi đang trong tình trạng say xỉn là hành vi bị pháp luật nghiêm cấm.",
+        "topic": "health_and_body",
+        "level": "B1"
+    },
+    {
+        "word": "dry",
+        "part_of_speech": "adj., v.",
+        "phonetic": "/drai/",
+        "vietnamese_meaning": "khô, cạn, làm khô, khô khan, khát",
+        "example_english": "The region is experiencing a long period of dry weather, affecting crop production.",
+        "example_vietnamese": "Khu vực này đang trải qua một thời kỳ khô hạn kéo dài, gây ảnh hưởng đến sản lượng cây trồng.",
+        "topic": "nature_and_environment",
+        "level": "A2"
+    },
+    {
+        "word": "due",
+        "part_of_speech": "adj.",
+        "phonetic": "/du, dyu/",
+        "vietnamese_meaning": "đến hạn, xứng đáng, phải trả, thích đáng",
+        "example_english": "The final report is due on Friday afternoon for administrative review.",
+        "example_vietnamese": "Bản báo cáo cuối cùng đến hạn vào chiều thứ Sáu để xem xét hành chính.",
+        "topic": "work_and_business",
+        "level": "B1"
+    },
+    {
+        "word": "due to",
+        "part_of_speech": "phrase",
+        "phonetic": "n/a",
+        "vietnamese_meaning": "do, vì, bởi vì, nhờ có",
+        "example_english": "The meeting was rescheduled due to an unexpected power outage.",
+        "example_vietnamese": "Cuộc họp đã được dời lịch do tình trạng mất điện không mong muốn.",
+        "topic": "daily_life",
+        "level": "B1"
+    },
+    {
+        "word": "dull",
+        "part_of_speech": "adj.",
+        "phonetic": "/dʌl/",
+        "vietnamese_meaning": "chậm hiểu, mờ nhạt, ngu đần, buồn tẻ, xám xịt",
+        "example_english": "Economic growth in the region remained dull during the last fiscal year.",
+        "example_vietnamese": "Tăng trưởng kinh tế trong khu vực vẫn mờ nhạt trong năm tài chính vừa qua.",
+        "topic": "daily_life",
+        "level": "B2"
+    },
+    {
+        "word": "dump",
+        "part_of_speech": "v., n.",
+        "phonetic": "/dʌmp/",
+        "vietnamese_meaning": "đổ rác, bãi rác, vứt bỏ, bán tống bán tháo",
+        "example_english": "It is illegal to dump industrial waste into the local river system.",
+        "example_vietnamese": "Việc đổ chất thải công nghiệp xuống hệ thống sông địa phương là bất hợp pháp.",
+        "topic": "nature_and_environment",
+        "level": "B2"
+    },
+    {
+        "word": "during",
+        "part_of_speech": "prep.",
+        "phonetic": "/'djuəriɳ/",
+        "vietnamese_meaning": "trong lúc, trong suốt thời gian, trong khoảng",
+        "example_english": "Significant administrative changes were implemented during the summer months.",
+        "example_vietnamese": "Những thay đổi hành chính quan trọng đã được triển khai trong các tháng mùa hè.",
+        "topic": "daily_life",
+        "level": "A1"
+    },
+    {
+        "word": "dust",
+        "part_of_speech": "n., v.",
+        "phonetic": "/dʌst/",
+        "vietnamese_meaning": "bụi, rác, phủ bụi, quét bụi, sự hỗn loạn",
+        "example_english": "The maintenance team worked to remove all the dust from the laboratory vents.",
+        "example_vietnamese": "Đội bảo trì đã làm việc để loại bỏ toàn bộ bụi khỏi các lỗ thông hơi của phòng thí nghiệm.",
+        "topic": "daily_life",
+        "level": "B1"
+    },
+    {
+        "word": "duty",
+        "part_of_speech": "n.",
+        "phonetic": "/'dju:ti/",
+        "vietnamese_meaning": "bổn phận, trách nhiệm, thuế quan, nghĩa vụ",
+        "example_english": "It is the duty of every employee to maintain a safe working environment.",
+        "example_vietnamese": "Trách nhiệm của mỗi nhân viên là duy trì một môi trường làm việc an toàn.",
+        "topic": "work_and_business",
+        "level": "B1"
+    },
+    {
+        "word": "DVD",
+        "part_of_speech": "n.",
+        "phonetic": "n/a",
+        "vietnamese_meaning": "đĩa DVD, đĩa hình kỹ thuật số",
+        "example_english": "The archives store several historical recordings on digital DVD format.",
+        "example_vietnamese": "Kho lưu trữ cất giữ một số bản ghi hình lịch sử dưới định dạng đĩa DVD.",
+        "topic": "science_and_technology",
+        "level": "A1"
+    },
+    {
+        "word": "dying",
+        "part_of_speech": "adj.",
+        "phonetic": "/ˈdaɪɪŋ/",
+        "vietnamese_meaning": "hấp hối, sự chết, giai đoạn cuối, sắp tàn",
+        "example_english": "The hospital provides palliative care for patients who are in their dying stages.",
+        "example_vietnamese": "Bệnh viện cung cấp dịch vụ chăm sóc giảm nhẹ cho những bệnh nhân đang trong giai đoạn cuối đời.",
+        "topic": "health_and_body",
+        "level": "B2"
+    },
+    {
+        "word": "each",
+        "part_of_speech": "det., pron.",
+        "phonetic": "/i:tʃ/",
+        "vietnamese_meaning": "mỗi, mọi, từng",
+        "example_english": "Each participant is required to sign a formal non-disclosure agreement.",
+        "example_vietnamese": "Mỗi người tham gia đều được yêu cầu ký một bản thỏa thuận không tiết lộ thông tin chính thức.",
+        "topic": "education_and_learning",
+        "level": "A1"
+    },
+    {
+        "word": "each other",
+        "part_of_speech": "pron.",
+        "phonetic": "n/a",
+        "vietnamese_meaning": "nhau, lẫn nhau",
+        "example_english": "The two departments must collaborate with each other to complete the project.",
+        "example_vietnamese": "Hai bộ phận phải cộng tác với nhau để hoàn thành dự án.",
+        "topic": "daily_life",
+        "level": "A1"
+    },
+    {
+        "word": "ear",
+        "part_of_speech": "n.",
+        "phonetic": "/iə/",
+        "vietnamese_meaning": "tai, thính giác, sự lắng nghe, bông lúa",
+        "example_english": "Factory workers must wear protective gear to prevent damage to their inner ears.",
+        "example_vietnamese": "Công nhân nhà máy phải đeo đồ bảo hộ để ngăn ngừa tổn thương tai trong.",
+        "topic": "health_and_body",
+        "level": "A1"
+    },
+    {
+        "word": "early",
+        "part_of_speech": "adj., adv.",
+        "phonetic": "/´ə:li/",
+        "vietnamese_meaning": "sớm, từ đầu, ban đầu, sớm sủa",
+        "example_english": "The committee reached a decision early in the morning session.",
+        "example_vietnamese": "Ủy ban đã đưa ra quyết định ngay từ đầu buổi họp sáng.",
+        "topic": "daily_life",
+        "level": "A1"
+    },
+    {
+        "word": "earn",
+        "part_of_speech": "v.",
+        "phonetic": "/ə:n/",
+        "vietnamese_meaning": "kiếm tiền, giành được, mang lại, xứng đáng với",
+        "example_english": "Employees earn additional income through the company's performance-based bonus scheme.",
+        "example_vietnamese": "Nhân viên kiếm thêm thu nhập thông qua chương trình thưởng dựa trên hiệu suất của công ty.",
+        "topic": "work_and_business",
+        "level": "A2"
+    },
+    {
+        "word": "earth",
+        "part_of_speech": "n.",
+        "phonetic": "/ə:θ/",
+        "vietnamese_meaning": "trái đất, đất, mặt đất, hang thú",
+        "example_english": "International organizations are working to protect the Earth's natural resources.",
+        "example_vietnamese": "Các tổ chức quốc tế đang nỗ lực bảo vệ tài nguyên thiên nhiên của Trái Đất.",
+        "topic": "nature_and_environment",
+        "level": "A2"
+    },
+    {
+        "word": "ease",
+        "part_of_speech": "n., v.",
+        "phonetic": "/i:z/",
+        "vietnamese_meaning": "sự dễ dàng, thanh thản, làm dịu, làm dễ chịu",
+        "example_english": "The new software was designed to improve the ease of data management.",
+        "example_vietnamese": "Phần mềm mới được thiết kế nhằm cải thiện sự dễ dàng trong quản lý dữ liệu.",
+        "topic": "daily_life",
+        "level": "B2"
+    },
+    {
+        "word": "easily",
+        "part_of_speech": "adv.",
+        "phonetic": "/'i:zili/",
+        "vietnamese_meaning": "dễ dàng, trôi chảy, không khó khăn",
+        "example_english": "The project goals can be easily achieved if all members collaborate effectively.",
+        "example_vietnamese": "Các mục tiêu của dự án có thể dễ dàng đạt được nếu tất cả thành viên cộng tác hiệu quả.",
+        "topic": "daily_life",
+        "level": "A2"
+    },
+    {
+        "word": "east",
+        "part_of_speech": "n., adj., adv.",
+        "phonetic": "/i:st/",
+        "vietnamese_meaning": "hướng đông, phía đông, phương đông",
+        "example_english": "The main entrance of the building faces the east to receive natural sunlight.",
+        "example_vietnamese": "Lối vào chính của tòa nhà hướng về phía Đông để đón ánh sáng tự nhiên.",
+        "topic": "travel_and_transport",
+        "level": "A1"
+    },
+    {
+        "word": "eastern",
+        "part_of_speech": "adj.",
+        "phonetic": "/'i:stən/",
+        "vietnamese_meaning": "thuộc về phương đông, ở phía đông",
+        "example_english": "The economic development in the eastern regions has been very significant recently.",
+        "example_vietnamese": "Sự phát triển kinh tế ở các khu vực phía Đông rất đáng kể trong thời gian gần đây.",
+        "topic": "travel_and_transport",
+        "level": "B1"
+    },
+    {
+        "word": "easy",
+        "part_of_speech": "adj.",
+        "phonetic": "/'i:zi/",
+        "vietnamese_meaning": "dễ dàng, thoải mái, dễ tính, thong thả",
+        "example_english": "The new online system provides an easy way for students to register for courses.",
+        "example_vietnamese": "Hệ thống trực tuyến mới cung cấp một cách thức dễ dàng cho sinh viên đăng ký khóa học.",
+        "topic": "daily_life",
+        "level": "A1"
+    },
+    {
+        "word": "eat",
+        "part_of_speech": "v.",
+        "phonetic": "/i:t/",
+        "vietnamese_meaning": "ăn, dùng bữa, tiêu thụ, lo lắng",
+        "example_english": "Staff are encouraged to eat in the designated cafeteria area during their lunch break.",
+        "example_vietnamese": "Nhân viên được khuyến khích ăn uống tại khu vực căng tin được chỉ định trong giờ nghỉ trưa.",
+        "topic": "daily_life",
+        "level": "A1"
+    },
+    {
+        "word": "economic",
+        "part_of_speech": "adj.",
+        "phonetic": "/¸i:kə´nɔmik/",
+        "vietnamese_meaning": "thuộc kinh tế, mang tính kinh tế, có lãi",
+        "example_english": "The government is developing new economic policies to encourage sustainable growth.",
+        "example_vietnamese": "Chính phủ đang phát triển các chính sách kinh tế mới nhằm khuyến khích tăng trưởng bền vững.",
+        "topic": "work_and_business",
+        "level": "B1"
+    },
+    {
+        "word": "economy",
+        "part_of_speech": "n.",
+        "phonetic": "/ɪˈkɒnəmi/",
+        "vietnamese_meaning": "nền kinh tế, sự tiết kiệm, sự quản lý, rẻ tiền",
+        "example_english": "A stable national economy is essential for attracting foreign direct investment.",
+        "example_vietnamese": "Một nền kinh tế quốc gia ổn định là điều thiết yếu để thu hút vốn đầu tư trực tiếp nước ngoài.",
+        "topic": "work_and_business",
+        "level": "B1"
+    },
+    {
+        "word": "edge",
+        "part_of_speech": "n.",
+        "phonetic": "/edӡ/",
+        "vietnamese_meaning": "cạnh, lưỡi, bờ, mép, lợi thế",
+        "example_english": "The construction team placed safety barriers along the edge of the construction site.",
+        "example_vietnamese": "Đội xây dựng đã đặt các rào chắn an toàn dọc theo mép của công trường xây dựng.",
+        "topic": "nature_and_environment",
+        "level": "B1"
+    },
+    {
+        "word": "edition",
+        "part_of_speech": "n.",
+        "phonetic": "/i'diʃn/",
+        "vietnamese_meaning": "sự xuất bản, phiên bản, lần xuất bản, ấn bản",
+        "example_english": "The latest edition of the textbook includes updated research on climate change.",
+        "example_vietnamese": "Phiên bản mới nhất của cuốn sách giáo khoa bao gồm các nghiên cứu cập nhật về biến đổi khí hậu.",
+        "topic": "education_and_learning",
+        "level": "B1"
+    },
+    {
+        "word": "editor",
+        "part_of_speech": "n.",
+        "phonetic": "/´editə/",
+        "vietnamese_meaning": "biên tập viên, chủ bút, người hiệu đính",
+        "example_english": "The senior editor reviewed the manuscript for technical accuracy before publication.",
+        "example_vietnamese": "Chủ bút cấp cao đã xem xét bản thảo về tính chính xác kỹ thuật trước khi xuất bản.",
+        "topic": "work_and_business",
+        "level": "B1"
+    },
+    {
+        "word": "educate",
+        "part_of_speech": "v.",
+        "phonetic": "/'edju:keit/",
+        "vietnamese_meaning": "giáo dục, rèn luyện, đào tạo, dạy dỗ",
+        "example_english": "The primary goal of the university is to educate future leaders and experts.",
+        "example_vietnamese": "Mục tiêu chính của trường đại học là giáo dục những nhà lãnh đạo và chuyên gia tương lai.",
+        "topic": "education_and_learning",
+        "level": "B1"
+    },
+    {
+        "word": "educated",
+        "part_of_speech": "adj.",
+        "phonetic": "/'edju:keitid/",
+        "vietnamese_meaning": "được giáo dục, có học thức, được đào tạo",
+        "example_english": "A highly educated workforce is a key competitive advantage in the global market.",
+        "example_vietnamese": "Lực lượng lao động có trình độ học vấn cao là một lợi thế cạnh tranh then chốt trên thị trường toàn cầu.",
+        "topic": "education_and_learning",
+        "level": "B1"
+    },
+    {
+        "word": "education",
+        "part_of_speech": "n.",
+        "phonetic": "/,edju:'keiʃn/",
+        "vietnamese_meaning": "nền giáo dục, sự rèn luyện, sự dạy dỗ, học vấn",
+        "example_english": "The ministry of education announced new reforms to improve the quality of teaching.",
+        "example_vietnamese": "Bộ giáo dục đã công bố các cải cách mới nhằm nâng cao chất lượng giảng dạy.",
+        "topic": "education_and_learning",
+        "level": "A1"
+    },
+    {
+        "word": "effect",
+        "part_of_speech": "n.",
+        "phonetic": "/i'fekt/",
+        "vietnamese_meaning": "hiệu quả, tác động, kết quả, hiệu lực",
+        "example_english": "The positive effect of the new policy was visible within several months.",
+        "example_vietnamese": "Kết quả tích cực của chính sách mới đã được nhận thấy rõ trong vài tháng.",
+        "topic": "science_and_technology",
+        "level": "A2"
+    },
+    {
+        "word": "effective",
+        "part_of_speech": "adj.",
+        "phonetic": "/'ifektiv/",
+        "vietnamese_meaning": "hiệu quả, có hiệu lực, thiết thực, ấn tượng",
+        "example_english": "The management team implemented an effective strategy for risk mitigation.",
+        "example_vietnamese": "Đội ngũ quản lý đã thực hiện một chiến lược hiệu quả để giảm thiểu rủi ro.",
+        "topic": "work_and_business",
+        "level": "B1"
+    },
+    {
+        "word": "effectively",
+        "part_of_speech": "adv.",
+        "phonetic": "/i'fektivli/",
+        "vietnamese_meaning": "hiệu quả, có kết quả, thực tế",
+        "example_english": "The new system allows employees to manage their tasks more effectively.",
+        "example_vietnamese": "Hệ thống mới cho phép nhân viên quản lý các nhiệm vụ của mình một cách hiệu quả hơn.",
+        "topic": "work_and_business",
+        "level": "B1"
+    },
+    {
+        "word": "efficient",
+        "part_of_speech": "adj.",
+        "phonetic": "/i'fiʃənt/",
+        "vietnamese_meaning": "hiệu suất cao, hiệu quả, thạo việc, có năng lực",
+        "example_english": "The factory replaced its old machinery with more efficient and energy-saving models.",
+        "example_vietnamese": "Nhà máy đã thay thế máy móc cũ bằng những mẫu mã hiệu quả và tiết kiệm năng lượng hơn.",
+        "topic": "science_and_technology",
+        "level": "B2"
+    },
+    {
+        "word": "efficiently",
+        "part_of_speech": "adv.",
+        "phonetic": "/i'fiʃəntli/",
+        "vietnamese_meaning": "hiệu quả, một cách hiệu suất, thạo việc",
+        "example_english": "The department worked efficiently to complete the project before the deadline.",
+        "example_vietnamese": "Phòng ban đã làm việc hiệu quả để hoàn thành dự án trước thời hạn.",
+        "topic": "work_and_business",
+        "level": "B2"
+    },
+    {
+        "word": "effort",
+        "part_of_speech": "n.",
+        "phonetic": "/´efə:t/",
+        "vietnamese_meaning": "nỗ lực, sự cố gắng, công sức, thành tựu",
+        "example_english": "The success of the research project was the result of a collaborative effort.",
+        "example_vietnamese": "Sự thành công của dự án nghiên cứu là kết quả của một nỗ lực cộng tác.",
+        "topic": "daily_life",
+        "level": "B1"
+    },
+    {
+        "word": "egg",
+        "part_of_speech": "n.",
+        "phonetic": "/eg/",
+        "vietnamese_meaning": "trứng, quả trứng, tế bào trứng",
+        "example_english": "The agricultural board promoted the consumption of fresh organic eggs.",
+        "example_vietnamese": "Ban nông nghiệp đã thúc đẩy việc tiêu thụ trứng hữu cơ tươi.",
+        "topic": "daily_life",
+        "level": "A1"
+    },
+    {
+        "word": "either",
+        "part_of_speech": "det., pron., adv.",
+        "phonetic": "/´aiðə/",
+        "vietnamese_meaning": "hoặc, một trong hai, cũng vậy",
+        "example_english": "You may submit the application either in person or via the official online portal.",
+        "example_vietnamese": "Bạn có thể nộp đơn ứng tuyển trực tiếp hoặc thông qua cổng trực tuyến chính thức.",
+        "topic": "education_and_learning",
+        "level": "A2"
+    },
+    {
+        "word": "elbow",
+        "part_of_speech": "n.",
+        "phonetic": "/elbou/",
+        "vietnamese_meaning": "khuỷu tay, chỗ ngoặt, khuỷu ống, hích bằng khuỷu tay",
+        "example_english": "Ergonomic chairs are designed to provide support for the user's elbows and back.",
+        "example_vietnamese": "Ghế công thái học được thiết kế để hỗ trợ khuỷu tay và lưng của người sử dụng.",
+        "topic": "health_and_body",
+        "level": "B1"
+    },
+    {
+        "word": "elderly",
+        "part_of_speech": "adj.",
+        "phonetic": "/´eldəli/",
+        "vietnamese_meaning": "lớn tuổi, cao tuổi, người già",
+        "example_english": "The municipal council provides specialized healthcare services for elderly citizens.",
+        "example_vietnamese": "Hội đồng thành phố cung cấp các dịch vụ chăm sóc sức khỏe chuyên biệt cho công dân cao tuổi.",
+        "topic": "daily_life",
+        "level": "B1"
+    },
+    {
+        "word": "elect",
+        "part_of_speech": "v.",
+        "phonetic": "/i´lekt/",
+        "vietnamese_meaning": "bầu cử, quyết định, lựa chọn, được chọn",
+        "example_english": "The committee members will meet next week to elect a new chairperson.",
+        "example_vietnamese": "Các thành viên ủy ban sẽ họp vào tuần tới để bầu ra chủ tịch mới.",
+        "topic": "society_and_culture",
+        "level": "B1"
+    },
+    {
+        "word": "election",
+        "part_of_speech": "n.",
+        "phonetic": "/i´lekʃən/",
+        "vietnamese_meaning": "cuộc bầu cử, sự tuyển cử, sự lựa chọn",
+        "example_english": "The results of the national election will be announced by the end of today.",
+        "example_vietnamese": "Kết quả của cuộc tổng tuyển cử quốc gia sẽ được công bố vào cuối ngày hôm nay.",
+        "topic": "society_and_culture",
+        "level": "B1"
+    },
+    {
+        "word": "electric",
+        "part_of_speech": "adj.",
+        "phonetic": "/ɪˈlɛktrɪk/",
+        "vietnamese_meaning": "thuộc về điện, phát điện, sôi nổi",
+        "example_english": "The company is transitioning its fleet to electric vehicles to reduce carbon emissions.",
+        "example_vietnamese": "Công ty đang chuyển đổi đội xe của mình sang xe điện để giảm thiểu lượng khí thải carbon.",
+        "topic": "science_and_technology",
+        "level": "A2"
+    },
+    {
+        "word": "electrical",
+        "part_of_speech": "adj.",
+        "phonetic": "/i'lektrikəl/",
+        "vietnamese_meaning": "thuộc về điện, liên quan đến điện",
+        "example_english": "All electrical installations in the office must comply with safety regulations.",
+        "example_vietnamese": "Tất cả các hệ thống lắp đặt điện trong văn phòng phải tuân thủ các quy định về an toàn.",
+        "topic": "science_and_technology",
+        "level": "A2"
+    },
+    {
+        "word": "electricity",
+        "part_of_speech": "n.",
+        "phonetic": "/ilek'trisiti/",
+        "vietnamese_meaning": "điện năng, điện lực, sự phấn khích",
+        "example_english": "The manufacturing plant uses solar panels to generate a portion of its electricity.",
+        "example_vietnamese": "Nhà máy sản xuất sử dụng các tấm pin mặt trời để tạo ra một phần lượng điện năng tiêu thụ.",
+        "topic": "science_and_technology",
+        "level": "A2"
+    },
+    {
+        "word": "electronic",
+        "part_of_speech": "adj.",
+        "phonetic": "/ɪlɛkˈtrɒnɪk/",
+        "vietnamese_meaning": "thuộc điện tử, sử dụng linh kiện điện tử",
+        "example_english": "The university provides students with access to various electronic library resources.",
+        "example_vietnamese": "Trường đại học cung cấp cho sinh viên quyền truy cập vào các nguồn tài nguyên thư viện điện tử đa dạng.",
+        "topic": "science_and_technology",
+        "level": "A2"
+    },
+    {
+        "word": "elegant",
+        "part_of_speech": "adj.",
+        "phonetic": "/´eligənt/",
+        "vietnamese_meaning": "thanh lịch, tao nhã, sang trọng, khéo léo",
+        "example_english": "The lobby of the new corporate headquarters features an elegant interior design.",
+        "example_vietnamese": "Sảnh của trụ sở tập đoàn mới có thiết kế nội thất rất thanh lịch.",
+        "topic": "society_and_culture",
+        "level": "B1"
+    },
+    {
+        "word": "element",
+        "part_of_speech": "n.",
+        "phonetic": "/ˈɛləmənt/",
+        "vietnamese_meaning": "yếu tố, thành phần, nguyên tố, môi trường",
+        "example_english": "Consistency is a key element in maintaining a high-quality brand image.",
+        "example_vietnamese": "Sự nhất quán là một yếu tố then chốt trong việc duy trì hình ảnh thương hiệu chất lượng cao.",
+        "topic": "education_and_learning",
+        "level": "B1"
+    },
+    {
+        "word": "elevator",
+        "part_of_speech": "n. (NAmE)",
+        "phonetic": "/ˈɛləˌveɪtər/",
+        "vietnamese_meaning": "thang máy, máy nâng, kho chứa thóc",
+        "example_english": "Please use the elevators located on the left side of the main hall.",
+        "example_vietnamese": "Vui lòng sử dụng các thang máy nằm ở phía bên trái của sảnh chính.",
+        "topic": "travel_and_transport",
+        "level": "A2"
+    },
+    {
+        "word": "else",
+        "part_of_speech": "adv.",
+        "phonetic": "/els/",
+        "vietnamese_meaning": "khác, nữa, nếu không, ngoài ra",
+        "example_english": "If you have any questions, please contact our support team; or else, you can visit our FAQ section.",
+        "example_vietnamese": "Nếu bạn có bất kỳ câu hỏi nào, vui lòng liên hệ với đội ngũ hỗ trợ; nếu không, bạn có thể truy cập phần câu hỏi thường gặp.",
+        "topic": "daily_life",
+        "level": "A1"
+    },
+    {
+        "word": "elsewhere",
+        "part_of_speech": "adv.",
+        "phonetic": "/¸els´wɛə/",
+        "vietnamese_meaning": "ở một nơi khác, nơi nào khác",
+        "example_english": "The board decided to seek alternative funding elsewhere after the first application was rejected.",
+        "example_vietnamese": "Hội đồng quản trị quyết định tìm kiếm nguồn tài trợ thay thế ở một nơi khác sau khi đơn xin đầu tiên bị bác bỏ.",
+        "topic": "travel_and_transport",
+        "level": "B2"
+    },
+    {
+        "word": "email",
+        "part_of_speech": "n., v.",
+        "phonetic": "/'imeil/",
+        "vietnamese_meaning": "thư điện tử, hòm thư, gửi email",
+        "example_english": "All official communications will be sent via corporate email.",
+        "example_vietnamese": "Tất cả các thông tin liên lạc chính thức sẽ được gửi qua thư điện tử của công ty.",
+        "topic": "science_and_technology",
+        "level": "A1"
+    },
+    {
+        "word": "embarrass",
+        "part_of_speech": "v.",
+        "phonetic": "/im´bærəs/",
+        "vietnamese_meaning": "làm lúng túng, gây bối rối, làm ngượng nghịu, gây khó khăn",
+        "example_english": "Technical difficulties during a presentation can embarrass even the most experienced speakers.",
+        "example_vietnamese": "Sự cố kỹ thuật trong bài thuyết trình có thể làm bối rối ngay cả những diễn giả giàu kinh nghiệm nhất.",
+        "topic": "daily_life",
+        "level": "B1"
+    },
+    {
+        "word": "embarrassed",
+        "part_of_speech": "adj.",
+        "phonetic": "/im´bærəst/",
+        "vietnamese_meaning": "lúng túng, bối rối, ngượng nghịu, hổ thẹn",
+        "example_english": "The manager was embarrassed by the significant errors found in the final report.",
+        "example_vietnamese": "Quản lý đã cảm thấy bối rối bởi những sai sót đáng kể được tìm thấy trong báo cáo cuối cùng.",
+        "topic": "daily_life",
+        "level": "B1"
+    },
+    {
+        "word": "embarrassing",
+        "part_of_speech": "adj.",
+        "phonetic": "/im´bærəsiη/",
+        "vietnamese_meaning": "gây lúng túng, bối rối, ngượng ngùng, phiền phức",
+        "example_english": "The leak of confidential data was an embarrassing incident for the organization.",
+        "example_vietnamese": "Việc rò rỉ dữ liệu bảo mật là một sự cố đáng xấu hổ đối với tổ chức.",
+        "topic": "daily_life",
+        "level": "B1"
+    },
+    {
+        "word": "embarrassment",
+        "part_of_speech": "n.",
+        "phonetic": "/im´bærəsmənt/",
+        "vietnamese_meaning": "sự lúng túng, sự bối rối, điều gây ngượng, sự túng quẫn",
+        "example_english": "The project delay caused a great deal of embarrassment to the planning committee.",
+        "example_vietnamese": "Sự chậm trễ của dự án đã gây ra sự bối rối rất lớn cho ủy ban kế hoạch.",
+        "topic": "daily_life",
+        "level": "B2"
+    },
+    {
+        "word": "emerge",
+        "part_of_speech": "v.",
+        "phonetic": "/i´mə:dʒ/",
+        "vietnamese_meaning": "nổi lên, hiện ra, xuất hiện, nảy ra",
+        "example_english": "New market trends began to emerge following the implementation of the trade agreement.",
+        "example_vietnamese": "Những xu hướng thị trường mới bắt đầu xuất hiện sau khi thực hiện hiệp định thương mại.",
+        "topic": "science_and_technology",
+        "level": "B2"
+    },
+    {
+        "word": "emergency",
+        "part_of_speech": "n.",
+        "phonetic": "/i'mз:dЗensi/",
+        "vietnamese_meaning": "tình trạng khẩn cấp, trường hợp khẩn thiết, cấp cứu",
+        "example_english": "The government established an emergency response plan to manage natural disasters.",
+        "example_vietnamese": "Chính phủ đã thiết lập một kế hoạch ứng phó khẩn cấp để quản lý thiên tai.",
+        "topic": "health_and_body",
+        "level": "B1"
+    },
+    {
+        "word": "emotion",
+        "part_of_speech": "n.",
+        "phonetic": "/i'moƱʃ(ə)n/",
+        "vietnamese_meaning": "cảm xúc, sự xúc động, tình cảm",
+        "example_english": "Emotional intelligence is considered an important quality for effective leadership.",
+        "example_vietnamese": "Trí tuệ cảm xúc được coi là một phẩm chất quan trọng để lãnh đạo hiệu quả.",
+        "topic": "daily_life",
+        "level": "B1"
+    },
+    {
+        "word": "emotional",
+        "part_of_speech": "adj.",
+        "phonetic": "/i´mouʃənəl/",
+        "vietnamese_meaning": "thuộc cảm xúc, dễ cảm động, xúc động",
+        "example_english": "The retirement of the founding CEO was a very emotional event for all employees.",
+        "example_vietnamese": "Việc nghỉ hưu của vị CEO sáng lập là một sự kiện đầy cảm xúc đối với toàn thể nhân viên.",
+        "topic": "daily_life",
+        "level": "B2"
+    },
+    {
+        "word": "emotionally",
+        "part_of_speech": "adv.",
+        "phonetic": "/i´mouʃənəli/",
+        "vietnamese_meaning": "về mặt cảm xúc, một cách cảm động",
+        "example_english": "The loss of the contract affected the team members both financially and emotionally.",
+        "example_vietnamese": "Việc mất hợp đồng đã ảnh hưởng đến các thành viên trong đội cả về mặt tài chính lẫn tinh thần.",
+        "topic": "daily_life",
+        "level": "B2"
+    },
+    {
+        "word": "emphasis",
+        "part_of_speech": "n.",
+        "phonetic": "/´emfəsis/",
+        "vietnamese_meaning": "sự nhấn mạnh, tầm quan trọng, trọng tâm",
+        "example_english": "The new curriculum places a strong emphasis on practical scientific skills.",
+        "example_vietnamese": "Chương trình học mới đặt trọng tâm mạnh mẽ vào các kỹ năng khoa học thực hành.",
+        "topic": "education_and_learning",
+        "level": "B2"
+    },
+    {
+        "word": "emphasize",
+        "part_of_speech": "v.",
+        "phonetic": "/ˈɛmfəˌsaɪz/",
+        "vietnamese_meaning": "nhấn mạnh, làm nổi bật, đề cao",
+        "example_english": "The director decided to emphasize the importance of workplace safety during the meeting.",
+        "example_vietnamese": "Giám đốc đã quyết định nhấn mạnh tầm quan trọng của an toàn tại nơi làm việc trong cuộc họp.",
+        "topic": "work_and_business",
+        "level": "B2"
+    },
+    {
+        "word": "empire",
+        "part_of_speech": "n.",
+        "phonetic": "/'empaiə/",
+        "vietnamese_meaning": "đế chế, đế quốc, tập đoàn lớn",
+        "example_english": "The historical exhibition explores the rise and fall of ancient empires.",
+        "example_vietnamese": "Cuộc triển lãm lịch sử khám phá sự trỗi dậy và sụp đổ của các đế chế cổ đại.",
+        "topic": "society_and_culture",
+        "level": "B1"
+    },
+    {
+        "word": "employ",
+        "part_of_speech": "v.",
+        "phonetic": "/im'plɔi/",
+        "vietnamese_meaning": "thuê mướn, sử dụng, dùng, làm thuê",
+        "example_english": "The manufacturing company decided to employ several new engineers for the project.",
+        "example_vietnamese": "Công ty sản xuất đã quyết định thuê một vài kỹ sư mới cho dự án.",
+        "topic": "work_and_business",
+        "level": "B1"
+    },
+    {
+        "word": "employee",
+        "part_of_speech": "n.",
+        "phonetic": "/¸emplɔi´i:/",
+        "vietnamese_meaning": "nhân viên, người làm công, người lao động",
+        "example_english": "The organization values every employee and provides opportunities for career growth.",
+        "example_vietnamese": "Tổ chức coi trọng mọi nhân viên và cung cấp các cơ hội để phát triển sự nghiệp.",
+        "topic": "work_and_business",
+        "level": "A2"
+    },
+    {
+        "word": "employer",
+        "part_of_speech": "n.",
+        "phonetic": "/em´plɔiə/",
+        "vietnamese_meaning": "chủ, người sử dụng lao động, cơ quan tuyển dụng",
+        "example_english": "Employers are legally required to provide a safe and healthy work environment.",
+        "example_vietnamese": "Người sử dụng lao động theo luật định phải cung cấp một môi trường làm việc an toàn và lành mạnh.",
+        "topic": "work_and_business",
+        "level": "A2"
+    },
+    {
+        "word": "employment",
+        "part_of_speech": "n.",
+        "phonetic": "/im'plɔimənt/",
+        "vietnamese_meaning": "việc làm, sự thuê mướn, sự sử dụng",
+        "example_english": "The employment contract clearly states the terms and conditions of work.",
+        "example_vietnamese": "Hợp đồng lao động nêu rõ các điều khoản và điều kiện làm việc.",
+        "topic": "work_and_business",
+        "level": "B1"
+    },
+    {
+        "word": "empty",
+        "part_of_speech": "adj., v.",
+        "phonetic": "/'empti/",
+        "vietnamese_meaning": "trống rỗng, vô nghĩa, bỏ không, làm cạn",
+        "example_english": "The administrative office was empty when the inspectors arrived for the audit.",
+        "example_vietnamese": "Văn phòng hành chính trống không khi các thanh tra viên đến để kiểm toán.",
+        "topic": "daily_life",
+        "level": "A2"
+    },
+    {
+        "word": "enable",
+        "part_of_speech": "v.",
+        "phonetic": "/i'neibl/",
+        "vietnamese_meaning": "làm cho có thể, cho phép, kích hoạt",
+        "example_english": "Modern technology enables employees to collaborate effectively from different locations.",
+        "example_vietnamese": "Công nghệ hiện đại cho phép nhân viên cộng tác hiệu quả từ những địa điểm khác nhau.",
+        "topic": "science_and_technology",
+        "level": "B2"
+    },
+    {
+        "word": "encounter",
+        "part_of_speech": "v., n.",
+        "phonetic": "/in'kautə/",
+        "vietnamese_meaning": "chạm trán, bắt gặp, sự đối đầu, cuộc gặp gỡ",
+        "example_english": "The research team may encounter several technical challenges during the implementation.",
+        "example_vietnamese": "Đội nghiên cứu có thể gặp phải một vài thách thức kỹ thuật trong quá trình triển khai.",
+        "topic": "daily_life",
+        "level": "B2"
+    },
+    {
+        "word": "encourage",
+        "part_of_speech": "v.",
+        "phonetic": "/in'kΔridЗ/",
+        "vietnamese_meaning": "khuyến khích, cổ vũ, động viên, thúc đẩy",
+        "example_english": "Managers should encourage their team members to participate in professional development courses.",
+        "example_vietnamese": "Quản lý nên khuyến khích các thành viên trong đội tham gia các khóa học phát triển chuyên môn.",
+        "topic": "daily_life",
+        "level": "B1"
+    },
+    {
+        "word": "encouragement",
+        "part_of_speech": "n.",
+        "phonetic": "/in´kʌridʒmənt/",
+        "vietnamese_meaning": "sự khuyến khích, niềm cổ vũ, lời động viên",
+        "example_english": "The support and encouragement from senior management were vital for the project's success.",
+        "example_vietnamese": "Sự hỗ trợ và động viên từ ban quản lý cấp cao là yếu tố quan trọng đối với thành công của dự án.",
+        "topic": "daily_life",
+        "level": "B1"
+    },
+    {
+        "word": "end",
+        "part_of_speech": "n., v.",
+        "phonetic": "/end/",
+        "vietnamese_meaning": "kết thúc, sự chấm dứt, giới hạn, mục đích",
+        "example_english": "The fiscal year will end on the last day of December.",
+        "example_vietnamese": "Năm tài chính sẽ kết thúc vào ngày cuối cùng của tháng Mười Hai.",
+        "topic": "daily_life",
+        "level": "A1"
+    },
+    {
+        "word": "ending",
+        "part_of_speech": "n.",
+        "phonetic": "/´endiη/",
+        "vietnamese_meaning": "sự kết thúc, phần cuối, kết cục",
+        "example_english": "The dramatic ending of the speech left a lasting impression on the audience.",
+        "example_vietnamese": "Phần kết thúc đầy ấn tượng của bài phát biểu đã để lại dấu ấn sâu đậm cho khán giả.",
+        "topic": "daily_life",
+        "level": "A2"
+    },
+    {
+        "word": "enemy",
+        "part_of_speech": "n.",
+        "phonetic": "/'enəmi/",
+        "vietnamese_meaning": "kẻ thù, quân địch, kẻ nghịch",
+        "example_english": "Pollution is considered a major enemy to the sustainable development of the region.",
+        "example_vietnamese": "Ô nhiễm được coi là kẻ thù chính đối với sự phát triển bền vững của khu vực.",
+        "topic": "society_and_culture",
+        "level": "B1"
+    },
+    {
+        "word": "energy",
+        "part_of_speech": "n.",
+        "phonetic": "/ˈɛnərdʒi/",
+        "vietnamese_meaning": "năng lượng, nghị lực, sinh lực, sức mạnh",
+        "example_english": "The government is investing heavily in clean energy sources such as wind and solar.",
+        "example_vietnamese": "Chính phủ đang đầu tư mạnh mẽ vào các nguồn năng lượng sạch như gió và mặt trời.",
+        "topic": "science_and_technology",
+        "level": "A2"
+    },
+    {
+        "word": "engage",
+        "part_of_speech": "v.",
+        "phonetic": "/in'geidʤ/",
+        "vietnamese_meaning": "thu hút, cam kết, tham gia, thuê, giao chiến",
+        "example_english": "The university aims to engage students in active research and practical learning.",
+        "example_vietnamese": "Trường đại học đặt mục tiêu thu hút sinh viên vào nghiên cứu tích cực và học tập thực tiễn.",
+        "topic": "work_and_business",
+        "level": "B2"
+    },
+    {
+        "word": "engaged",
+        "part_of_speech": "adj.",
+        "phonetic": "/in´geidʒd/",
+        "vietnamese_meaning": "đã đính hôn, bận rộn, tham gia vào, đang được sử dụng",
+        "example_english": "The staff were fully engaged in the strategic planning process.",
+        "example_vietnamese": "Toàn thể nhân viên đã tham gia đầy đủ vào quy trình lập kế hoạch chiến lược.",
+        "topic": "work_and_business",
+        "level": "B1"
+    },
+    {
+        "word": "engine",
+        "part_of_speech": "n.",
+        "phonetic": "/en'ʤin/",
+        "vietnamese_meaning": "động cơ, máy móc, đầu máy xe lửa, dụng cụ",
+        "example_english": "The engineers are testing a new engine designed to be more fuel-efficient.",
+        "example_vietnamese": "Các kỹ sư đang thử nghiệm một loại động cơ mới được thiết kế để tiết kiệm nhiên liệu hơn.",
+        "topic": "science_and_technology",
+        "level": "A2"
+    },
+    {
+        "word": "engineer",
+        "part_of_speech": "n.",
+        "phonetic": "/endʒi'niər/",
+        "vietnamese_meaning": "kỹ sư, người quản lý máy, thiết kế, dàn xếp",
+        "example_english": "The structural engineer reviewed the architectural plans for the new bridge.",
+        "example_vietnamese": "Kỹ sư kết cấu đã xem xét các bản vẽ kiến trúc cho cây cầu mới.",
+        "topic": "work_and_business",
+        "level": "A2"
+    },
+    {
+        "word": "engineering",
+        "part_of_speech": "n.",
+        "phonetic": "/,enʤɪ'nɪərɪŋ/",
+        "vietnamese_meaning": "ngành kỹ thuật, nghề kỹ sư, công việc xây dựng",
+        "example_english": "Advanced engineering techniques were used to construct the high-speed railway.",
+        "example_vietnamese": "Các kỹ thuật công trình tiên tiến đã được sử dụng để xây dựng đường sắt cao tốc.",
+        "topic": "science_and_technology",
+        "level": "B1"
+    },
+    {
+        "word": "enjoy",
+        "part_of_speech": "v.",
+        "phonetic": "/in'dЗoi/",
+        "vietnamese_meaning": "thưởng thức, thích thú, được hưởng, tận hưởng",
+        "example_english": "The organization continues to enjoy a strong reputation for professional integrity.",
+        "example_vietnamese": "Tổ chức tiếp tục được hưởng một danh tiếng vững chắc về sự liêm chính chuyên môn.",
+        "topic": "daily_life",
+        "level": "A1"
+    },
+    {
+        "word": "enjoyable",
+        "part_of_speech": "adj.",
+        "phonetic": "/in´dʒɔiəbl/",
+        "vietnamese_meaning": "thú vị, dễ chịu, đáng thưởng thức",
+        "example_english": "The annual corporate retreat was an enjoyable experience for all participants.",
+        "example_vietnamese": "Kỳ nghỉ hàng năm của công ty là một trải nghiệm thú vị đối với tất cả những người tham gia.",
+        "topic": "daily_life",
+        "level": "B1"
+    },
+    {
+        "word": "enjoyment",
+        "part_of_speech": "n.",
+        "phonetic": "/in´dʒɔimənt/",
+        "vietnamese_meaning": "sự thích thú, sự hưởng thụ, niềm vui",
+        "example_english": "The preservation of national parks is vital for the public's enjoyment of nature.",
+        "example_vietnamese": "Việc bảo tồn các vườn quốc gia là điều quan trọng để công chúng có thể tận hưởng thiên nhiên.",
+        "topic": "daily_life",
+        "level": "B1"
+    },
+    {
+        "word": "enormous",
+        "part_of_speech": "adj.",
+        "phonetic": "/i'nɔ:məs/",
+        "vietnamese_meaning": "khổng lồ, to lớn, cực kỳ, vô cùng",
+        "example_english": "The construction project required an enormous amount of investment and resources.",
+        "example_vietnamese": "Dự án xây dựng đã yêu cầu một lượng đầu tư và nguồn lực khổng lồ.",
+        "topic": "nature_and_environment",
+        "level": "B1"
+    },
+    {
+        "word": "enough",
+        "part_of_speech": "det., pron., adv.",
+        "phonetic": "/i'nʌf/",
+        "vietnamese_meaning": "đủ, thỏa đáng, vừa mức",
+        "example_english": "There is enough financial data to support the proposal for a budget increase.",
+        "example_vietnamese": "Có đủ dữ liệu tài chính để hỗ trợ cho đề xuất tăng ngân sách.",
+        "topic": "daily_life",
+        "level": "A1"
+    },
+    {
+        "word": "enquiry",
+        "part_of_speech": "n.",
+        "phonetic": "/in'kwaiəri/",
+        "vietnamese_meaning": "sự điều tra, sự thẩm vấn, câu hỏi, yêu cầu thông tin",
+        "example_english": "The government launched a formal enquiry into the causes of the administrative failure.",
+        "example_vietnamese": "Chính phủ đã khởi xướng một cuộc điều tra chính thức về nguyên nhân của sự thất bại hành chính.",
+        "topic": "work_and_business",
+        "level": "B2"
+    },
+    {
+        "word": "ensure",
+        "part_of_speech": "v.",
+        "phonetic": "/ɛnˈʃʊər/",
+        "vietnamese_meaning": "bảo đảm, chắc chắn, cam đoan",
+        "example_english": "Managers must ensure that all staff comply with the new safety regulations.",
+        "example_vietnamese": "Quản lý phải đảm bảo rằng tất cả nhân viên tuân thủ các quy định an toàn mới.",
+        "topic": "work_and_business",
+        "level": "B2"
+    },
+    {
+        "word": "enter",
+        "part_of_speech": "v.",
+        "phonetic": "/´entə/",
+        "vietnamese_meaning": "đi vào, gia nhập, nhập dữ liệu, đăng ký",
+        "example_english": "The company plans to enter the Asian market early next year.",
+        "example_vietnamese": "Công ty có kế hoạch gia nhập thị trường châu Á vào đầu năm tới.",
+        "topic": "work_and_business",
+        "level": "A2"
+    },
+    {
+        "word": "entertain",
+        "part_of_speech": "v.",
+        "phonetic": "/,entə'tein/",
+        "vietnamese_meaning": "giải trí, tiếp đón, chiêu đãi, ấp ủ",
+        "example_english": "The director will entertain several international delegates during their visit.",
+        "example_vietnamese": "Giám đốc sẽ tiếp đãi một số đại biểu quốc tế trong chuyến thăm của họ.",
+        "topic": "society_and_culture",
+        "level": "B1"
+    },
+    {
+        "word": "entertainer",
+        "part_of_speech": "n.",
+        "phonetic": "/¸entə´teinə/",
+        "vietnamese_meaning": "người biểu diễn, nghệ sĩ, người quản trò",
+        "example_english": "The professional entertainer was hired for the corporate year-end gala.",
+        "example_vietnamese": "Nghệ sĩ biểu diễn chuyên nghiệp đã được thuê cho buổi gala cuối năm của công ty.",
+        "topic": "society_and_culture",
+        "level": "B1"
+    },
+    {
+        "word": "entertaining",
+        "part_of_speech": "adj.",
+        "phonetic": "/,entə'teiniɳ/",
+        "vietnamese_meaning": "mang tính giải trí, thú vị, vui nhộn",
+        "example_english": "The keynote speech was both informative and entertaining for the audience.",
+        "example_vietnamese": "Bài phát biểu chính vừa cung cấp nhiều thông tin vừa mang tính giải trí cho khán giả.",
+        "topic": "society_and_culture",
+        "level": "B1"
+    },
+    {
+        "word": "entertainment",
+        "part_of_speech": "n.",
+        "phonetic": "/entə'teinm(ə)nt/",
+        "vietnamese_meaning": "sự giải trí, sự tiếp đãi, hình thức tiêu khiển",
+        "example_english": "The city offers various forms of entertainment for residents and visitors alike.",
+        "example_vietnamese": "Thành phố cung cấp nhiều hình thức giải trí đa dạng cho cả cư dân và du khách.",
+        "topic": "society_and_culture",
+        "level": "A2"
+    },
+    {
+        "word": "enthusiasm",
+        "part_of_speech": "n.",
+        "phonetic": "/ɛnˈθuziˌæzəm/",
+        "vietnamese_meaning": "sự nhiệt tình, sự hăng hái, niềm say mê",
+        "example_english": "The staff showed great enthusiasm for the new professional development program.",
+        "example_vietnamese": "Nhân viên đã thể hiện sự nhiệt tình rất lớn đối với chương trình phát triển chuyên môn mới.",
+        "topic": "daily_life",
+        "level": "B2"
+    },
+    {
+        "word": "enthusiastic",
+        "part_of_speech": "adj.",
+        "phonetic": "/ɛnˌθuziˈæstɪk/",
+        "vietnamese_meaning": "nhiệt tình, hăng hái, say mê",
+        "example_english": "The director was enthusiastic about the potential for future international collaboration.",
+        "example_vietnamese": "Giám đốc rất hào hứng với tiềm năng hợp tác quốc tế trong tương lai.",
+        "topic": "daily_life",
+        "level": "B2"
+    },
+    {
+        "word": "entire",
+        "part_of_speech": "adj.",
+        "phonetic": "/in'taiə/",
+        "vietnamese_meaning": "toàn bộ, toàn thể, nguyên vẹn, trọn vẹn",
+        "example_english": "The entire administrative staff attended the mandatory training session.",
+        "example_vietnamese": "Toàn thể nhân viên hành chính đã tham dự buổi tập huấn bắt buộc.",
+        "topic": "daily_life",
+        "level": "B1"
+    },
+    {
+        "word": "entirely",
+        "part_of_speech": "adv.",
+        "phonetic": "/in´taiəli/",
+        "vietnamese_meaning": "hoàn toàn, trọn vẹn, duy nhất",
+        "example_english": "The project is entirely funded by a private international foundation.",
+        "example_vietnamese": "Dự án hoàn toàn được tài trợ bởi một quỹ quốc tế tư nhân.",
+        "topic": "daily_life",
+        "level": "B2"
+    },
+    {
+        "word": "entitle",
+        "part_of_speech": "v.",
+        "phonetic": "/in'taitl/",
+        "vietnamese_meaning": "cho phép, cho quyền, đặt tên, ban danh hiệu",
+        "example_english": "This official certificate will entitle you to practice professional accounting.",
+        "example_vietnamese": "Chứng chỉ chính thức này sẽ cho phép bạn hành nghề kế toán chuyên nghiệp.",
+        "topic": "society_and_culture",
+        "level": "B2"
+    },
+    {
+        "word": "entrance",
+        "part_of_speech": "n.",
+        "phonetic": "/'entrəns/",
+        "vietnamese_meaning": "lối vào, cổng, sự nhậm chức, làm mê mẩn",
+        "example_english": "Please present your identification at the main entrance of the building.",
+        "example_vietnamese": "Vui lòng xuất trình giấy tờ tùy thân tại cổng vào chính của tòa nhà.",
+        "topic": "travel_and_transport",
+        "level": "A2"
+    },
+    {
+        "word": "entry",
+        "part_of_speech": "n.",
+        "phonetic": "/ˈɛntri/",
+        "vietnamese_meaning": "sự đi vào, danh sách đăng ký, mục ghi chép, cửa ngõ",
+        "example_english": "Data entry must be performed accurately to ensure the integrity of the records.",
+        "example_vietnamese": "Việc nhập dữ liệu phải được thực hiện chính xác để đảm bảo tính toàn vẹn của hồ sơ.",
+        "topic": "work_and_business",
+        "level": "B1"
+    },
+    {
+        "word": "envelope",
+        "part_of_speech": "n.",
+        "phonetic": "/'enviloup/",
+        "vietnamese_meaning": "phong bì, bao thư, lớp vỏ bao",
+        "example_english": "Please place the signed contract in a sealed envelope before submitting it.",
+        "example_vietnamese": "Vui lòng để hợp đồng đã ký vào trong một phong bì dán kín trước khi nộp.",
+        "topic": "daily_life",
+        "level": "B1"
+    },
+    {
+        "word": "environment",
+        "part_of_speech": "n.",
+        "phonetic": "/in'vaiərənmənt/",
+        "vietnamese_meaning": "môi trường, hoàn cảnh, điều kiện xung quanh",
+        "example_english": "The organization is committed to maintaining a sustainable work environment.",
+        "example_vietnamese": "Tổ chức cam kết duy trì một môi trường làm việc bền vững.",
+        "topic": "nature_and_environment",
+        "level": "A2"
+    },
+    {
+        "word": "environmental",
+        "part_of_speech": "adj.",
+        "phonetic": "/in,vairən'mentl/",
+        "vietnamese_meaning": "thuộc môi trường, mang tính môi trường",
+        "example_english": "The company conducts regular environmental impact assessments for its new projects.",
+        "example_vietnamese": "Công ty thực hiện các đánh giá tác động môi trường thường xuyên cho các dự án mới của mình.",
+        "topic": "nature_and_environment",
+        "level": "B1"
+    },
+    {
+        "word": "equal",
+        "part_of_speech": "adj., n., v.",
+        "phonetic": "/´i:kwəl/",
+        "vietnamese_meaning": "bằng nhau, ngang hàng, bình đẳng, đủ khả năng",
+        "example_english": "All employees are entitled to equal opportunities for professional promotion.",
+        "example_vietnamese": "Tất cả nhân viên đều được hưởng các cơ hội thăng tiến chuyên môn bình đẳng.",
+        "topic": "society_and_culture",
+        "level": "B1"
+    },
+    {
+        "word": "equally",
+        "part_of_speech": "adv.",
+        "phonetic": "/'i:kwзli /",
+        "vietnamese_meaning": "ngang bằng, như nhau, đều nhau, công bằng",
+        "example_english": "The project's success is equally dependent on hard work and strategic planning.",
+        "example_vietnamese": "Sự thành công của dự án phụ thuộc đồng đều vào sự chăm chỉ và lập kế hoạch chiến lược.",
+        "topic": "daily_life",
+        "level": "B1"
+    },
+    {
+        "word": "equipment",
+        "part_of_speech": "n.",
+        "phonetic": "/i'kwipmənt/",
+        "vietnamese_meaning": "thiết bị, trang thiết bị, sự trang bị, đồ dùng",
+        "example_english": "The laboratory was upgraded with modern scientific equipment last year.",
+        "example_vietnamese": "Phòng thí nghiệm đã được nâng cấp với các trang thiết bị khoa học hiện đại vào năm ngoái.",
+        "topic": "science_and_technology",
+        "level": "B1"
+    },
+    {
+        "word": "equivalent",
+        "part_of_speech": "adj., n.",
+        "phonetic": "/i´kwivələnt/",
+        "vietnamese_meaning": "tương đương, vật tương đương, tương đương giá trị",
+        "example_english": "A master's degree or equivalent professional experience is required for this position.",
+        "example_vietnamese": "Yêu cầu bằng thạc sĩ hoặc kinh nghiệm chuyên môn tương đương cho vị trí này.",
+        "topic": "education_and_learning",
+        "level": "B2"
+    },
+    {
+        "word": "error",
+        "part_of_speech": "n.",
+        "phonetic": "/'erə/",
+        "vietnamese_meaning": "lỗi, sai sót, sai lầm, độ lệch",
+        "example_english": "The audit identified several minor errors in the annual financial report.",
+        "example_vietnamese": "Cuộc kiểm toán đã xác định một số sai sót nhỏ trong báo cáo tài chính hàng năm.",
+        "topic": "work_and_business",
+        "level": "B1"
+    },
+    {
+        "word": "escape",
+        "part_of_speech": "v., n.",
+        "phonetic": "/is'keip/",
+        "vietnamese_meaning": "trốn thoát, thoát khỏi, sự giải thoát, rò rỉ",
+        "example_english": "The facility is equipped with several emergency exits to ensure a safe escape.",
+        "example_vietnamese": "Cơ sở được trang bị một số lối thoát hiểm để đảm bảo thoát thân an toàn.",
+        "topic": "daily_life",
+        "level": "B1"
+    },
+    {
+        "word": "especially",
+        "part_of_speech": "adv.",
+        "phonetic": "/is'peʃəli/",
+        "vietnamese_meaning": "đặc biệt là, nhất là, riêng biệt",
+        "example_english": "Sustainable development is a major priority, especially in the agricultural sector.",
+        "example_vietnamese": "Phật triển bền vững là một ưu tiên chính yếu, đặc biệt là trong lĩnh vực nông nghiệp.",
+        "topic": "daily_life",
+        "level": "A2"
+    },
+    {
+        "word": "essay",
+        "part_of_speech": "n.",
+        "phonetic": "/ˈɛseɪ/",
+        "vietnamese_meaning": "bài tiểu luận, bài văn, sự thử nghiệm",
+        "example_english": "Students are required to submit an essay on international trade policies.",
+        "example_vietnamese": "Sinh viên được yêu cầu nộp một bài tiểu luận về các chính sách thương mại quốc tế.",
+        "topic": "education_and_learning",
+        "level": "B1"
+    },
+    {
+        "word": "essential",
+        "part_of_speech": "adj., n.",
+        "phonetic": "/əˈsɛnʃəl/",
+        "vietnamese_meaning": "thiết yếu, cốt yếu, bản chất, cần thiết",
+        "example_english": "Accuracy and attention to detail are essential qualities for an accountant.",
+        "example_vietnamese": "Sự chính xác và chú ý đến chi tiết là những phẩm chất cốt yếu đối với một kế toán viên.",
+        "topic": "daily_life",
+        "level": "B1"
+    },
+    {
+        "word": "essentially",
+        "part_of_speech": "adv.",
+        "phonetic": "/e¸senʃi´əli/",
+        "vietnamese_meaning": "về cơ bản, về bản chất, thực chất là",
+        "example_english": "The new administrative process remains essentially the same as the previous one.",
+        "example_vietnamese": "Quy trình hành chính mới về cơ bản vẫn giữ nguyên như quy trình trước đó.",
+        "topic": "education_and_learning",
+        "level": "B2"
+    },
+    {
+        "word": "establish",
+        "part_of_speech": "v.",
+        "phonetic": "/ɪˈstæblɪʃ/",
+        "vietnamese_meaning": "thiết lập, thành lập, củng cố, chứng minh",
+        "example_english": "The company aims to establish several new regional branches by the end of the year.",
+        "example_vietnamese": "Công ty đặt mục tiêu thành lập một số chi nhánh khu vực mới vào cuối năm nay.",
+        "topic": "work_and_business",
+        "level": "B2"
+    },
+    {
+        "word": "estate",
+        "part_of_speech": "n.",
+        "phonetic": "/ɪˈstɪət/",
+        "vietnamese_meaning": "bất động sản, tài sản, di sản, điền trang",
+        "example_english": "The government is developing new regulations to manage the real estate market.",
+        "example_vietnamese": "Chính phủ đang phát triển các quy định mới nhằm quản lý thị trường bất động sản.",
+        "topic": "work_and_business",
+        "level": "B2"
+    },
+    {
+        "word": "estimate",
+        "part_of_speech": "n., v.",
+        "phonetic": "/'estimit/",
+        "vietnamese_meaning": "ước tính, sự đánh giá, bảng báo giá, dự toán",
+        "example_english": "The initial estimate for the total cost of the project was two million dollars.",
+        "example_vietnamese": "Ước tính ban đầu cho tổng chi phí của dự án là hai triệu đô la.",
+        "topic": "work_and_business",
+        "level": "B2"
+    },
+    {
+        "word": "etc",
+        "part_of_speech": "abbr.",
+        "phonetic": "/et ˈsetərə/",
+        "vietnamese_meaning": "vân vân, những thứ khác tương tự",
+        "example_english": "Please buy some fruit: apples, oranges, etc.",
+        "example_vietnamese": "Làm ơn mua một ít trái cây: táo, cam, vân vân.",
+        "topic": "daily_life",
+        "level": "A1"
+    },
+    {
+        "word": "etc.",
+        "part_of_speech": "phrase",
+        "phonetic": "/et setərə/",
+        "vietnamese_meaning": "vân vân, và các thứ khác",
+        "example_english": "The report includes various financial indicators, such as revenue, profit, tax, etc.",
+        "example_vietnamese": "Bản báo cáo bao gồm nhiều chỉ số tài chính khác nhau, chẳng hạn như doanh thu, lợi nhuận, thuế, vân vân.",
+        "topic": "daily_life",
+        "level": "A1"
+    },
+    {
+        "word": "euro",
+        "part_of_speech": "n.",
+        "phonetic": "/´ju:rou/",
+        "vietnamese_meaning": "đồng euro",
+        "example_english": "The company conducts a significant portion of its international trade in euros.",
+        "example_vietnamese": "Công ty thực hiện một phần đáng kể các giao dịch thương mại quốc tế bằng đồng euro.",
+        "topic": "work_and_business",
+        "level": "A1"
+    },
+    {
+        "word": "even",
+        "part_of_speech": "adv., adj.",
+        "phonetic": "/'i:vn/",
+        "vietnamese_meaning": "ngay cả, thậm chí, bằng phẳng, chẵn, điềm đạm",
+        "example_english": "The organization aims to ensure that even the smallest departments receive adequate funding.",
+        "example_vietnamese": "Tổ chức đặt mục tiêu đảm bảo rằng ngay cả những phòng ban nhỏ nhất cũng nhận được nguồn kinh phí đầy đủ.",
+        "topic": "daily_life",
+        "level": "A2"
+    },
+    {
+        "word": "evening",
+        "part_of_speech": "n.",
+        "phonetic": "/'i:vniɳ/",
+        "vietnamese_meaning": "buổi tối, chiều tối, lúc xế chiều",
+        "example_english": "The official dinner with the international delegation is scheduled for tomorrow evening.",
+        "example_vietnamese": "Bữa tiệc tối chính thức với phái đoàn quốc tế được lên lịch vào tối mai.",
+        "topic": "daily_life",
+        "level": "A1"
+    },
+    {
+        "word": "event",
+        "part_of_speech": "n.",
+        "phonetic": "/i'vent/",
+        "vietnamese_meaning": "sự kiện, sự việc, trường hợp, tiết mục thi đấu",
+        "example_english": "The national conference is a major annual event for professionals in the industry.",
+        "example_vietnamese": "Hội nghị quốc gia là một sự kiện thường niên lớn dành cho các chuyên gia trong ngành.",
+        "topic": "society_and_culture",
+        "level": "A1"
+    },
+    {
+        "word": "eventually",
+        "part_of_speech": "adv.",
+        "phonetic": "/i´ventjuəli/",
+        "vietnamese_meaning": "cuối cùng, rốt cuộc thì, sau cùng",
+        "example_english": "After several months of negotiation, the two companies eventually reached an agreement.",
+        "example_vietnamese": "Sau vài tháng đàm phán, hai công ty cuối cùng đã đạt được thỏa thuận.",
+        "topic": "daily_life",
+        "level": "B1"
+    },
+    {
+        "word": "ever",
+        "part_of_speech": "adv.",
+        "phonetic": "/'evə(r)/",
+        "vietnamese_meaning": "từng, từ trước tới nay, luôn luôn",
+        "example_english": "This is the most successful project that our institution has ever undertaken.",
+        "example_vietnamese": "Đây là dự án thành công nhất mà cơ sở chúng ta từng thực hiện.",
+        "topic": "daily_life",
+        "level": "A2"
+    },
+    {
+        "word": "every",
+        "part_of_speech": "det.",
+        "phonetic": "/'evəri/",
+        "vietnamese_meaning": "mọi, mỗi, từng",
+        "example_english": "Every department is required to submit their quarterly performance evaluation.",
+        "example_vietnamese": "Mọi phòng ban đều được yêu cầu nộp bản đánh giá hiệu suất hàng quý.",
+        "topic": "daily_life",
+        "level": "A1"
+    },
+    {
+        "word": "everyone",
+        "part_of_speech": "pron.",
+        "phonetic": "/´evri¸wʌn/",
+        "vietnamese_meaning": "mọi người",
+        "example_english": "The director addressed everyone in the company regarding the upcoming organizational changes.",
+        "example_vietnamese": "Giám đốc đã phát biểu trước toàn thể mọi người trong công ty về những thay đổi cơ cấu tổ chức sắp tới.",
+        "topic": "daily_life",
+        "level": "A1"
+    },
+    {
+        "word": "everything",
+        "part_of_speech": "pron.",
+        "phonetic": "/'evriθiɳ/",
+        "vietnamese_meaning": "mọi thứ, mọi vật, tất cả, điều quan trọng nhất",
+        "example_english": "The administrator ensured that everything was prepared for the annual conference.",
+        "example_vietnamese": "Quản trị viên đã đảm bảo rằng mọi thứ đã được chuẩn bị sẵn sàng cho hội nghị thường niên.",
+        "topic": "daily_life",
+        "level": "A1"
+    },
+    {
+        "word": "everywhere",
+        "part_of_speech": "adv.",
+        "phonetic": "/´evri¸weə/",
+        "vietnamese_meaning": "mọi nơi, khắp nơi, bất cứ đâu, phổ biến",
+        "example_english": "Digital technology is now integrated everywhere in the modern education system.",
+        "example_vietnamese": "Công nghệ kỹ thuật số hiện nay đã được tích hợp ở mọi nơi trong hệ thống giáo dục hiện đại.",
+        "topic": "daily_life",
+        "level": "A2"
+    },
+    {
+        "word": "evidence",
+        "part_of_speech": "n.",
+        "phonetic": "/'evidəns/",
+        "vietnamese_meaning": "bằng chứng, chứng cứ, điều hiển nhiên, dấu hiệu",
+        "example_english": "The research provides clear evidence of the program's effectiveness.",
+        "example_vietnamese": "Nghiên cứu cung cấp bằng chứng rõ ràng về hiệu quả của chương trình.",
+        "topic": "society_and_culture",
+        "level": "B1"
+    },
+    {
+        "word": "evil",
+        "part_of_speech": "adj., n.",
+        "phonetic": "/'i:vl/",
+        "vietnamese_meaning": "xấu xa, độc ác, tệ hại, điều ác, tai họa",
+        "example_english": "Corruption is considered a social evil that hinders national development.",
+        "example_vietnamese": "Tham nhũng được coi là một tệ nạn xã hội cản trở sự phát triển của quốc gia.",
+        "topic": "society_and_culture",
+        "level": "B2"
+    },
+    {
+        "word": "exact",
+        "part_of_speech": "adj.",
+        "phonetic": "/ig´zækt/",
+        "vietnamese_meaning": "chính xác, đúng đắn, tỉ mỉ, nghiêm ngặt",
+        "example_english": "Please provide the exact coordinates of the proposed construction site.",
+        "example_vietnamese": "Vui lòng cung cấp tọa độ chính xác của địa điểm xây dựng được đề xuất.",
+        "topic": "daily_life",
+        "level": "A2"
+    },
+    {
+        "word": "exactly",
+        "part_of_speech": "adv.",
+        "phonetic": "/ig´zæktli/",
+        "vietnamese_meaning": "chính xác, đúng vậy, hoàn toàn, một cách tỉ mỉ",
+        "example_english": "The new regulations define exactly how funds should be allocated.",
+        "example_vietnamese": "Các quy định mới xác định chính xác cách thức phân bổ ngân sách.",
+        "topic": "daily_life",
+        "level": "A2"
+    },
+    {
+        "word": "exaggerate",
+        "part_of_speech": "v.",
+        "phonetic": "/ig´zædʒə¸reit/",
+        "vietnamese_meaning": "phóng đại, thổi phồng, cường điệu, nói quá",
+        "example_english": "The report does not exaggerate the severity of the economic downturn.",
+        "example_vietnamese": "Bản báo cáo không phóng đại mức độ nghiêm trọng của sự suy thoái kinh tế.",
+        "topic": "daily_life",
+        "level": "B2"
+    },
+    {
+        "word": "exaggerated",
+        "part_of_speech": "adj.",
+        "phonetic": "/ig'zædЗзreit/",
+        "vietnamese_meaning": "bị phóng đại, cường điệu, quá mức, giả tạo",
+        "example_english": "The claims made in the advertisement were found to be exaggerated.",
+        "example_vietnamese": "Các tuyên bố trong quảng cáo đã được xác định là bị phóng đại.",
+        "topic": "daily_life",
+        "level": "B2"
+    },
+    {
+        "word": "exam",
+        "part_of_speech": "n.",
+        "phonetic": "/ig´zæm/",
+        "vietnamese_meaning": "kỳ thi, bài kiểm tra, sự thi cử",
+        "example_english": "Students must present their identification cards before entering the exam room.",
+        "example_vietnamese": "Sinh viên phải xuất trình thẻ căn cước trước khi vào phòng thi.",
+        "topic": "education_and_learning",
+        "level": "A1"
+    },
+    {
+        "word": "examination",
+        "part_of_speech": "n.",
+        "phonetic": "/ig¸zæmi´neiʃən/",
+        "vietnamese_meaning": "kỳ thi, sự kiểm tra, sự thẩm tra, sự khám bệnh",
+        "example_english": "A thorough examination of the medical records was conducted by the specialist.",
+        "example_vietnamese": "Việc kiểm tra kỹ lưỡng các hồ sơ y tế đã được thực hiện bởi chuyên gia.",
+        "topic": "education_and_learning",
+        "level": "B1"
+    },
+    {
+        "word": "examine",
+        "part_of_speech": "v.",
+        "phonetic": "/ɪgˈzæmɪn/",
+        "vietnamese_meaning": "kiểm tra, xem xét, thẩm vấn, khám bệnh, thẩm tra",
+        "example_english": "The committee will examine the feasibility of the project next week.",
+        "example_vietnamese": "Ủy ban sẽ thẩm định tính khả thi của dự án vào tuần tới.",
+        "topic": "education_and_learning",
+        "level": "B1"
+    },
+    {
+        "word": "example",
+        "part_of_speech": "n.",
+        "phonetic": "/ig´za:mp(ə)l/",
+        "vietnamese_meaning": "ví dụ, thí dụ, tấm gương, mẫu mực",
+        "example_english": "This successful case study serves as an excellent example for other departments.",
+        "example_vietnamese": "Nghiên cứu tình huống thành công này là một ví dụ xuất sắc cho các phòng ban khác.",
+        "topic": "education_and_learning",
+        "level": "A1"
+    },
+    {
+        "word": "excellent",
+        "part_of_speech": "adj.",
+        "phonetic": "/ˈeksələnt/",
+        "vietnamese_meaning": "xuất sắc, tuyệt vời, ưu tú, thượng hạng",
+        "example_english": "The university provides excellent academic support for international students.",
+        "example_vietnamese": "Trường đại học cung cấp sự hỗ trợ học thuật xuất sắc cho sinh viên quốc tế.",
+        "topic": "daily_life",
+        "level": "A2"
+    },
+    {
+        "word": "except",
+        "part_of_speech": "prep., conj.",
+        "phonetic": "/ik'sept/",
+        "vietnamese_meaning": "ngoại trừ, trừ ra, không kể, phản đối",
+        "example_english": "The office is open every day except Sunday.",
+        "example_vietnamese": "Văn phòng mở cửa tất cả các ngày trừ Chủ nhật.",
+        "topic": "daily_life",
+        "level": "A2"
+    },
+    {
+        "word": "exception",
+        "part_of_speech": "n.",
+        "phonetic": "/ik'sepʃn/",
+        "vietnamese_meaning": "ngoại lệ, sự trừ ra, sự phản đối, trường hợp đặc biệt",
+        "example_english": "No exception will be made to the established safety regulations.",
+        "example_vietnamese": "Sẽ không có ngoại lệ nào đối với các quy định an toàn đã được thiết lập.",
+        "topic": "daily_life",
+        "level": "B1"
+    },
+    {
+        "word": "exchange",
+        "part_of_speech": "v., n.",
+        "phonetic": "/iks´tʃeindʒ/",
+        "vietnamese_meaning": "trao đổi, sự giao dịch, sự đổi tiền, sàn chứng khoán",
+        "example_english": "The program encourages the exchange of ideas between researchers and practitioners.",
+        "example_vietnamese": "Chương trình khuyến khích sự trao đổi ý tưởng giữa những nhà nghiên cứu và những người thực hành.",
+        "topic": "work_and_business",
+        "level": "B1"
+    },
+    {
+        "word": "excite",
+        "part_of_speech": "v.",
+        "phonetic": "/ik'sait/",
+        "vietnamese_meaning": "kích thích, gây hứng thú, khơi dậy, kích động",
+        "example_english": "The new curriculum is designed to excite students' interest in science.",
+        "example_vietnamese": "Chương trình học mới được thiết kế nhằm khơi dậy sự hứng thú của sinh viên đối với khoa học.",
+        "topic": "daily_life",
+        "level": "B1"
+    },
+    {
+        "word": "excited",
+        "part_of_speech": "adj.",
+        "phonetic": "/ɪkˈsaɪtɪd/",
+        "vietnamese_meaning": "phấn khích, hào hứng, bị kích động, sôi nổi",
+        "example_english": "The team was excited about the positive feedback from the board of directors.",
+        "example_vietnamese": "Nhóm rất phấn khích trước những phản hồi tích cực từ hội đồng quản trị.",
+        "topic": "daily_life",
+        "level": "A1"
+    },
+    {
+        "word": "excitement",
+        "part_of_speech": "n.",
+        "phonetic": "/ik´saitmənt/",
+        "vietnamese_meaning": "sự phấn khích, sự hào hứng, sự kích động, sự nhộn nhịp",
+        "example_english": "There was much excitement surrounding the launch of the new research center.",
+        "example_vietnamese": "Có rất nhiều sự phấn khích xung quanh việc thành lập trung tâm nghiên cứu mới.",
+        "topic": "daily_life",
+        "level": "B1"
+    },
+    {
+        "word": "exciting",
+        "part_of_speech": "adj.",
+        "phonetic": "/ik´saitiη/",
+        "vietnamese_meaning": "thú vị, hào hứng, gây xúc động, gây hồi hộp",
+        "example_english": "The collaboration presents an exciting opportunity for innovation.",
+        "example_vietnamese": "Sự hợp tác này mở ra một cơ hội thú vị cho việc đổi mới sáng tạo.",
+        "topic": "daily_life",
+        "level": "A1"
+    },
+    {
+        "word": "exclude",
+        "part_of_speech": "v.",
+        "phonetic": "/iks´klu:d/",
+        "vietnamese_meaning": "loại trừ, ngăn chặn, tống ra, không bao gồm",
+        "example_english": "The preliminary analysis decided to exclude outlier data from the final report.",
+        "example_vietnamese": "Bản phân tích sơ bộ đã quyết định loại bỏ các dữ liệu ngoại lai khỏi báo cáo cuối cùng.",
+        "topic": "daily_life",
+        "level": "B2"
+    },
+    {
+        "word": "excluding",
+        "part_of_speech": "prep.",
+        "phonetic": "/iks´klu:diη/",
+        "vietnamese_meaning": "ngoại trừ, không kể, không bao gồm",
+        "example_english": "The total cost of the project is estimated at one million dollars, excluding taxes.",
+        "example_vietnamese": "Tổng chi phí dự án ước tính là một triệu đô la, chưa bao gồm thuế.",
+        "topic": "daily_life",
+        "level": "B2"
+    },
+    {
+        "word": "excuse",
+        "part_of_speech": "n., v.",
+        "phonetic": "/iks´kju:z/",
+        "vietnamese_meaning": "lời xin lỗi, lý do bào chữa, tha thứ, giải trình",
+        "example_english": "The student provided a formal excuse for missing the mandatory seminar.",
+        "example_vietnamese": "Sinh viên đã cung cấp một bản giải trình chính thức cho việc vắng mặt tại buổi hội thảo bắt buộc.",
+        "topic": "daily_life",
+        "level": "B1"
+    },
+    {
+        "word": "executive",
+        "part_of_speech": "n., adj.",
+        "phonetic": "/ɪgˈzɛkyətɪv/",
+        "vietnamese_meaning": "điều hành, hành pháp, người quản lý, ủy viên ban quản trị",
+        "example_english": "The executive committee is responsible for making strategic decisions.",
+        "example_vietnamese": "Ủy ban điều hành chịu trách nhiệm đưa ra các quyết định chiến lược.",
+        "topic": "work_and_business",
+        "level": "B2"
+    },
+    {
+        "word": "exercise",
+        "part_of_speech": "n., v.",
+        "phonetic": "/'eksəsaiz/",
+        "vietnamese_meaning": "bài tập, sự rèn luyện, thực hiện, vận dụng, thi hành",
+        "example_english": "Citizens are encouraged to exercise their right to vote in the national elections.",
+        "example_vietnamese": "Công dân được khuyến khích thực hiện quyền bầu cử của mình trong các cuộc bầu cử quốc gia.",
+        "topic": "health_and_body",
+        "level": "A1"
+    },
+    {
+        "word": "exhibit",
+        "part_of_speech": "v., n.",
+        "phonetic": "/ɪgˈzɪbɪt/",
+        "vietnamese_meaning": "triển lãm, trưng bày, biểu lộ, vật chứng",
+        "example_english": "The museum will exhibit a rare collection of historical artifacts next month.",
+        "example_vietnamese": "Bảo tàng sẽ trưng bày một bộ sưu tập hiện vật lịch sử quý hiếm vào tháng tới.",
+        "topic": "society_and_culture",
+        "level": "B2"
+    },
+    {
+        "word": "exhibition",
+        "part_of_speech": "n.",
+        "phonetic": "/ˌɛksəˈbɪʃən/",
+        "vietnamese_meaning": "cuộc triển lãm, sự trưng bày, sự biểu hiện",
+        "example_english": "The annual technology exhibition attracts thousands of professional visitors.",
+        "example_vietnamese": "Triển lãm công nghệ hàng năm thu hút hàng ngàn khách tham quan chuyên nghiệp.",
+        "topic": "society_and_culture",
+        "level": "B1"
+    },
+    {
+        "word": "exist",
+        "part_of_speech": "v.",
+        "phonetic": "/ig'zist/",
+        "vietnamese_meaning": "tồn tại, sống, có thật, hiện hữu",
+        "example_english": "Current evidence suggest that these microorganisms can exist in extreme conditions.",
+        "example_vietnamese": "Bằng chứng hiện tại cho thấy những vi sinh vật này có thể tồn tại trong điều kiện khắc nghiệt.",
+        "topic": "science_and_technology",
+        "level": "B1"
+    },
+    {
+        "word": "existence",
+        "part_of_speech": "n.",
+        "phonetic": "/ig'zistəns/",
+        "vietnamese_meaning": "sự tồn tại, đời sống, sự hiện hữu, thực tại",
+        "example_english": "The research program has been in existence for over two decades.",
+        "example_vietnamese": "Chương trình nghiên cứu này đã tồn tại được hơn hai thập kỷ.",
+        "topic": "science_and_technology",
+        "level": "B2"
+    },
+    {
+        "word": "exit",
+        "part_of_speech": "n.",
+        "phonetic": "/´egzit/",
+        "vietnamese_meaning": "lối ra, sự đi ra, sự xuất cảnh, thoát ra",
+        "example_english": "Please ensure that the emergency exit remains unobstructed at all times.",
+        "example_vietnamese": "Vui lòng đảm bảo rằng lối thoát hiểm luôn không có vật cản.",
+        "topic": "travel_and_transport",
+        "level": "A2"
+    },
+    {
+        "word": "expand",
+        "part_of_speech": "v.",
+        "phonetic": "/iks'pænd/",
+        "vietnamese_meaning": "mở rộng, phát triển, nở ra, trải rộng",
+        "example_english": "The organization plans to expand its activities into the neighboring regions.",
+        "example_vietnamese": "Tổ chức có kế hoạch mở rộng các hoạt động sang các khu vực lân cận.",
+        "topic": "work_and_business",
+        "level": "B1"
+    },
+    {
+        "word": "expect",
+        "part_of_speech": "v.",
+        "phonetic": "/ik'spekt/",
+        "vietnamese_meaning": "mong đợi, kỳ vọng, dự đoán, cho là",
+        "example_english": "We expect all participants to adhere to the professional code of conduct.",
+        "example_vietnamese": "Chúng tôi kỳ vọng tất cả những người tham gia tuân thủ quy tắc ứng xử chuyên nghiệp.",
+        "topic": "daily_life",
+        "level": "A2"
+    },
+    {
+        "word": "expectation",
+        "part_of_speech": "n.",
+        "phonetic": "/,ekspek'tei∫n/",
+        "vietnamese_meaning": "sự mong đợi, sự kỳ vọng, triển vọng, xác suất",
+        "example_english": "The results of the evaluation exceeded all initial expectations.",
+        "example_vietnamese": "Kết quả đánh giá đã vượt xa mọi kỳ vọng ban đầu.",
+        "topic": "daily_life",
+        "level": "B2"
+    },
+    {
+        "word": "expected",
+        "part_of_speech": "adj.",
+        "phonetic": "/iks´pektid/",
+        "vietnamese_meaning": "được chờ đợi, dự kiến, kỳ vọng, thông thường",
+        "example_english": "The expected completion date for the construction project is late next year.",
+        "example_vietnamese": "Ngày hoàn thành dự kiến của dự án xây dựng là cuối năm tới.",
+        "topic": "daily_life",
+        "level": "B1"
+    },
+    {
+        "word": "expense",
+        "part_of_speech": "n.",
+        "phonetic": "/ɪkˈspɛns/",
+        "vietnamese_meaning": "chi phí, phí tổn, sự tiêu tốn, nguồn chi",
+        "example_english": "All travel expenses must be documented with original receipts for reimbursement.",
+        "example_vietnamese": "Tất cả các chi phí đi lại phải được ghi chép cùng với hóa đơn gốc để được hoàn tiền.",
+        "topic": "work_and_business",
+        "level": "B1"
+    },
+    {
+        "word": "expensive",
+        "part_of_speech": "adj.",
+        "phonetic": "/iks'pensiv/",
+        "vietnamese_meaning": "đắt tiền, tốn kém, quý giá, đắt đỏ",
+        "example_english": "Installing advanced security systems can be quite expensive for small firms.",
+        "example_vietnamese": "Lắp đặt các hệ thống an ninh tiên tiến có thể khá tốn kém đối với các công ty nhỏ.",
+        "topic": "daily_life",
+        "level": "A1"
+    },
+    {
+        "word": "experience",
+        "part_of_speech": "n., v.",
+        "phonetic": "/iks'piəriəns/",
+        "vietnamese_meaning": "kinh nghiệm, trải nghiệm, sự nếm trải, trải qua",
+        "example_english": "The position requires at least five years of professional experience in management.",
+        "example_vietnamese": "Vị trí này yêu cầu ít nhất năm năm kinh nghiệm chuyên môn trong lĩnh vực quản lý.",
+        "topic": "work_and_business",
+        "level": "A2"
+    },
+    {
+        "word": "experienced",
+        "part_of_speech": "adj.",
+        "phonetic": "/eks´piəriənst/",
+        "vietnamese_meaning": "có kinh nghiệm, dày dạn, từng trải, lão luyện",
+        "example_english": "The committee is composed of several highly experienced academic professionals.",
+        "example_vietnamese": "Ủy ban bao gồm một vài chuyên gia học thuật dày dạn kinh nghiệm.",
+        "topic": "work_and_business",
+        "level": "B1"
+    },
+    {
+        "word": "experiment",
+        "part_of_speech": "n., v.",
+        "phonetic": "/ɪkˈspɛrəmənt/",
+        "vietnamese_meaning": "cuộc thí nghiệm, sự thử nghiệm, làm thí nghiệm",
+        "example_english": "Laboratory staff must follow safety protocols while conducting the experiment.",
+        "example_vietnamese": "Nhân viên phòng thí nghiệm phải tuân thủ các quy định an toàn khi thực hiện thí nghiệm.",
+        "topic": "science_and_technology",
+        "level": "B1"
+    },
+    {
+        "word": "expert",
+        "part_of_speech": "n., adj.",
+        "phonetic": "/,ekspз'ti:z/",
+        "vietnamese_meaning": "chuyên gia, thành thạo, tinh thông, lão luyện",
+        "example_english": "The government consulted an expert in international law regarding the treaty.",
+        "example_vietnamese": "Chính phủ đã tham khảo ý kiến của một chuyên gia về luật quốc tế liên quan đến hiệp ước.",
+        "topic": "work_and_business",
+        "level": "B1"
+    },
+    {
+        "word": "explain",
+        "part_of_speech": "v.",
+        "phonetic": "/iks'plein/",
+        "vietnamese_meaning": "giải thích, giảng giải, thanh minh, làm sáng tỏ",
+        "example_english": "The manual aims to explain the operational procedures of the new system.",
+        "example_vietnamese": "Sách hướng dẫn nhằm mục đích giải thích các quy trình vận hành của hệ thống mới.",
+        "topic": "education_and_learning",
+        "level": "A2"
+    },
+    {
+        "word": "explanation",
+        "part_of_speech": "n.",
+        "phonetic": "/,eksplə'neiʃn/",
+        "vietnamese_meaning": "sự giải thích, lời giảng giải, bản giải trình, lý do",
+        "example_english": "The director requested a formal explanation for the project delay.",
+        "example_vietnamese": "Giám đốc đã yêu cầu một bản giải trình chính thức về việc chậm trễ dự án.",
+        "topic": "education_and_learning",
+        "level": "A2"
+    },
+    {
+        "word": "explode",
+        "part_of_speech": "v.",
+        "phonetic": "/iks'ploud/",
+        "vietnamese_meaning": "nổ tung, bùng nổ, đập tan, tăng vọt",
+        "example_english": "The population of the city began to explode after the new industrial zone opened.",
+        "example_vietnamese": "Dân số của thành phố bắt đầu tăng vọt sau khi khu công nghiệp mới mở cửa.",
+        "topic": "science_and_technology",
+        "level": "B1"
+    },
+    {
+        "word": "explore",
+        "part_of_speech": "v.",
+        "phonetic": "/iks´plɔ:/",
+        "vietnamese_meaning": "khám phá, thăm dò, thám hiểm, khảo sát",
+        "example_english": "The researchers aim to explore new methods for sustainable waste management.",
+        "example_vietnamese": "Các nhà nghiên cứu đặt mục tiêu khám phá các phương pháp mới cho quản lý chất thải bền vững.",
+        "topic": "science_and_technology",
+        "level": "B1"
+    },
+    {
+        "word": "explosion",
+        "part_of_speech": "n.",
+        "phonetic": "/iks'plouʤn/",
+        "vietnamese_meaning": "sự nổ, sự bùng nổ, sự phát triển ồ ạt, tiếng nổ",
+        "example_english": "Recent years have seen an explosion in the use of artificial intelligence in education.",
+        "example_vietnamese": "Những năm gần đây đã chứng kiến sự bùng nổ trong việc sử dụng trí tuệ nhân tạo trong giáo dục.",
+        "topic": "science_and_technology",
+        "level": "B1"
+    },
+    {
+        "word": "export",
+        "part_of_speech": "v., n.",
+        "phonetic": "/iks´pɔ:t/",
+        "vietnamese_meaning": "xuất khẩu, hàng xuất khẩu, sự xuất khẩu, đưa ra ngoài",
+        "example_english": "The government implemented new policies to encourage the export of agricultural products.",
+        "example_vietnamese": "Chính phủ đã thực hiện các chính sách mới nhằm khuyến khích xuất khẩu nông sản.",
+        "topic": "work_and_business",
+        "level": "B1"
+    },
+    {
+        "word": "expose",
+        "part_of_speech": "v.",
+        "phonetic": "/ɪkˈspoʊz/",
+        "vietnamese_meaning": "phơi bày, lộ ra, vạch trần, tiếp xúc",
+        "example_english": "The audit aimed to expose any irregularities in the company's financial statements.",
+        "example_vietnamese": "Cuộc kiểm toán nhằm mục đích phơi bày bất kỳ điểm bất thường nào trong báo cáo tài chính của công ty.",
+        "topic": "daily_life",
+        "level": "B2"
+    },
+    {
+        "word": "express",
+        "part_of_speech": "v., adj.",
+        "phonetic": "/iks'pres/",
+        "vietnamese_meaning": "bày tỏ, biểu lộ, nhanh, hỏa tốc, rõ ràng",
+        "example_english": "The board of directors wished to express their gratitude for your dedicated service.",
+        "example_vietnamese": "Hội đồng quản trị mong muốn bày tỏ lòng biết ơn đối với sự phục vụ tận tụy của bạn.",
+        "topic": "daily_life",
+        "level": "A2"
+    },
+    {
+        "word": "expression",
+        "part_of_speech": "n.",
+        "phonetic": "/iks'preʃn/",
+        "vietnamese_meaning": "sự diễn đạt, biểu cảm, cụm từ, thành ngữ, biểu thức",
+        "example_english": "Clear expression of ideas is essential for effective professional communication.",
+        "example_vietnamese": "Việc diễn đạt ý tưởng rõ ràng là điều thiết yếu để giao tiếp chuyên nghiệp hiệu quả.",
+        "topic": "education_and_learning",
+        "level": "B2"
+    },
+    {
+        "word": "extend",
+        "part_of_speech": "v.",
+        "phonetic": "/iks'tend/",
+        "vietnamese_meaning": "kéo dài, mở rộng, dành cho, gửi tới",
+        "example_english": "The university decided to extend the deadline for scholarship applications.",
+        "example_vietnamese": "Trường đại học đã quyết định kéo dài thời hạn nộp đơn xin học bổng.",
+        "topic": "work_and_business",
+        "level": "B2"
+    },
+    {
+        "word": "extension",
+        "part_of_speech": "n.",
+        "phonetic": "/ɪkstent ʃən/",
+        "vietnamese_meaning": "sự kéo dài, sự gia hạn, số máy phụ, sự mở rộng",
+        "example_english": "The researchers were granted a six-month extension to complete the final report.",
+        "example_vietnamese": "Các nhà nghiên cứu đã được gia hạn sáu tháng để hoàn thành báo cáo cuối cùng.",
+        "topic": "work_and_business",
+        "level": "B2"
+    },
+    {
+        "word": "extensive",
+        "part_of_speech": "adj.",
+        "phonetic": "/iks´tensiv/",
+        "vietnamese_meaning": "rộng rãi, bao quát, sâu rộng, lớn về số lượng",
+        "example_english": "The report is based on extensive research into urban migration patterns.",
+        "example_vietnamese": "Bản báo cáo dựa trên nghiên cứu sâu rộng về các mô hình di cư đô thị.",
+        "topic": "education_and_learning",
+        "level": "B2"
+    },
+    {
+        "word": "extent",
+        "part_of_speech": "n.",
+        "phonetic": "/ɪkˈstɛnt/",
+        "vietnamese_meaning": "phạm vi, quy mô, mức độ, khoảng rộng",
+        "example_english": "The inspectors are trying to determine the full extent of the environmental damage.",
+        "example_vietnamese": "Các thanh tra viên đang cố gắng xác định toàn bộ quy mô của thiệt hại môi trường.",
+        "topic": "daily_life",
+        "level": "B2"
+    },
+    {
+        "word": "extra",
+        "part_of_speech": "adj., n., adv.",
+        "phonetic": "/'ekstrə/",
+        "vietnamese_meaning": "thêm, phụ, bổ sung, hơn mức bình thường",
+        "example_english": "Additional staffing will be required to manage the extra workload.",
+        "example_vietnamese": "Sẽ cần thêm nhân sự để quản lý khối lượng công việc bổ sung.",
+        "topic": "daily_life",
+        "level": "A2"
+    },
+    {
+        "word": "extraordinary",
+        "part_of_speech": "adj.",
+        "phonetic": "/iks'trɔ:dnri/",
+        "vietnamese_meaning": "phi thường, lạ thường, đặc biệt, khác thường",
+        "example_english": "The company demonstrated extraordinary resilience during the global financial crisis.",
+        "example_vietnamese": "Công ty đã chứng minh được khả năng phục hồi phi thường trong cuộc khủng hoảng tài chính toàn cầu.",
+        "topic": "daily_life",
+        "level": "B2"
+    },
+    {
+        "word": "extreme",
+        "part_of_speech": "adj., n.",
+        "phonetic": "/iks'tri:m/",
+        "vietnamese_meaning": "vô cùng, khắc nghiệt, cực đoan, thái quá, xa nhất",
+        "example_english": "The equipment is designed to operate efficiently under extreme weather conditions.",
+        "example_vietnamese": "Thiết bị được thiết kế để hoạt động hiệu quả trong các điều kiện thời tiết khắc nghiệt.",
+        "topic": "science_and_technology",
+        "level": "B2"
+    },
+    {
+        "word": "extremely",
+        "part_of_speech": "adv.",
+        "phonetic": "/iks´tri:mli/",
+        "vietnamese_meaning": "cực kỳ, vô cùng, tột độ, hết sức",
+        "example_english": "It is extremely important to verify all data before submitting the final report.",
+        "example_vietnamese": "Việc xác minh tất cả dữ liệu trước khi nộp báo cáo cuối cùng là vô cùng quan trọng.",
+        "topic": "daily_life",
+        "level": "B1"
+    },
+    {
+        "word": "eye",
+        "part_of_speech": "n.",
+        "phonetic": "/ai/",
+        "vietnamese_meaning": "mắt, con mắt, cách nhìn, lỗ kim, tâm bão",
+        "example_english": "Laboratory workers must wear safety goggles to protect their eyes from chemical splashes.",
+        "example_vietnamese": "Nhân viên phòng thí nghiệm phải đeo kính bảo hộ để bảo vệ mắt khỏi bị hóa chất bắn vào.",
+        "topic": "health_and_body",
+        "level": "A1"
+    },
+    {
+        "word": "face",
+        "part_of_speech": "n., v.",
+        "phonetic": "/feis/",
+        "vietnamese_meaning": "khuôn mặt, đối mặt, bề mặt, danh dự, đối diện",
+        "example_english": "The organization must face the challenges of digital transformation.",
+        "example_vietnamese": "Tổ chức phải đối mặt với những thách thức của quá trình chuyển đổi số.",
+        "topic": "daily_life",
+        "level": "A1"
+    },
+    {
+        "word": "facility",
+        "part_of_speech": "n.",
+        "phonetic": "/fəˈɪlɪti/",
+        "vietnamese_meaning": "cơ sở vật chất, tiện nghi, điều kiện thuận lợi, năng khiếu",
+        "example_english": "The new research facility is equipped with state-of-the-art laboratory equipment.",
+        "example_vietnamese": "Cơ sở nghiên cứu mới được trang bị các thiết bị phòng thí nghiệm hiện đại nhất.",
+        "topic": "daily_life",
+        "level": "B2"
+    },
+    {
+        "word": "fact",
+        "part_of_speech": "n.",
+        "phonetic": "/fækt/",
+        "vietnamese_meaning": "sự thật, thực tế, dữ kiện, sự việc",
+        "example_english": "The report is based on historical facts and verified scientific data.",
+        "example_vietnamese": "Bản báo cáo dựa trên các sự kiện lịch sử và dữ liệu khoa học đã được xác minh.",
+        "topic": "education_and_learning",
+        "level": "A1"
+    },
+    {
+        "word": "factor",
+        "part_of_speech": "n.",
+        "phonetic": "/'fæktə /",
+        "vietnamese_meaning": "nhân tố, hệ số, đại lý, thừa số",
+        "example_english": "Technological innovation is a critical factor in maintaining economic growth.",
+        "example_vietnamese": "Đổi mới công nghệ là một nhân tố cốt yếu trong việc duy trì tăng trưởng kinh tế.",
+        "topic": "science_and_technology",
+        "level": "B1"
+    },
+    {
+        "word": "factory",
+        "part_of_speech": "n.",
+        "phonetic": "/'fæktəri/",
+        "vietnamese_meaning": "nhà máy, xí nghiệp, xưởng, cơ sở sản xuất",
+        "example_english": "The local factory provides employment opportunities for hundreds of residents.",
+        "example_vietnamese": "Nhà máy địa phương cung cấp cơ hội việc làm cho hàng trăm cư dân.",
+        "topic": "work_and_business",
+        "level": "A2"
+    },
+    {
+        "word": "fail",
+        "part_of_speech": "v.",
+        "phonetic": "/feil/",
+        "vietnamese_meaning": "thất bại, hỏng, trượt, thiếu, không làm được",
+        "example_english": "Students who fail to meet the attendance requirements may be excluded from the final exam.",
+        "example_vietnamese": "Những sinh viên không đáp ứng được yêu cầu chuyên cần có thể bị loại khỏi kỳ thi cuối kỳ.",
+        "topic": "education_and_learning",
+        "level": "A2"
+    },
+    {
+        "word": "failure",
+        "part_of_speech": "n.",
+        "phonetic": "/ˈfeɪlyər/",
+        "vietnamese_meaning": "sự thất bại, người thất bại, sự phá sản, sự hỏng hóc",
+        "example_english": "The failure of the negotiation resulted in a significant delay for the project.",
+        "example_vietnamese": "Sự thất bại của cuộc đàm phán đã dẫn đến sự chậm trễ đáng kể cho dự án.",
+        "topic": "work_and_business",
+        "level": "B2"
+    },
+    {
+        "word": "faint",
+        "part_of_speech": "adj.",
+        "phonetic": "/feɪnt/",
+        "vietnamese_meaning": "mờ nhạt, yếu ớt, ngất đi, uể oải",
+        "example_english": "There is a faint possibility that the deadline will be extended.",
+        "example_vietnamese": "Có một khả năng mong manh là thời hạn sẽ được kéo dài.",
+        "topic": "health_and_body",
+        "level": "B2"
+    },
+    {
+        "word": "faintly",
+        "part_of_speech": "adv.",
+        "phonetic": "/'feintli/",
+        "vietnamese_meaning": "mờ nhạt, yếu ớt, hơi hơi, một cách yếu đuối",
+        "example_english": "The historical documents were so old that the writing was only faintly visible.",
+        "example_vietnamese": "Các tài liệu lịch sử đã quá cũ đến mức chữ viết chỉ còn thấy mờ nhạt.",
+        "topic": "daily_life",
+        "level": "B2"
+    },
+    {
+        "word": "fair",
+        "part_of_speech": "adj.",
+        "phonetic": "/feə/",
+        "vietnamese_meaning": "công bằng, hợp lý, khá tốt, hội chợ, trắng trẻo",
+        "example_english": "The committee aimed to ensure a fair evaluation of all project proposals.",
+        "example_vietnamese": "Ủy ban đặt mục tiêu đảm bảo sự đánh giá công bằng cho tất cả các đề xuất dự án.",
+        "topic": "society_and_culture",
+        "level": "B1"
+    },
+    {
+        "word": "fairly",
+        "part_of_speech": "adv.",
+        "phonetic": "/'feəli/",
+        "vietnamese_meaning": "khá, công bằng, trung thực, rõ ràng",
+        "example_english": "The resources were distributed fairly among all the participating departments.",
+        "example_vietnamese": "Nguồn lực đã được phân bổ một cách công bằng giữa tất cả các phòng ban tham gia.",
+        "topic": "daily_life",
+        "level": "B1"
+    },
+    {
+        "word": "faith",
+        "part_of_speech": "n.",
+        "phonetic": "/feiθ/",
+        "vietnamese_meaning": "niềm tin, sự tin tưởng, sự trung thành, tôn giáo",
+        "example_english": "The investors have full faith in the leadership team's ability to manage the crisis.",
+        "example_vietnamese": "Các nhà đầu tư hoàn toàn tin tưởng vào khả năng quản lý khủng hoảng của đội ngũ lãnh đạo.",
+        "topic": "society_and_culture",
+        "level": "B2"
+    },
+    {
+        "word": "faithful",
+        "part_of_speech": "adj.",
+        "phonetic": "/'feiθful/",
+        "vietnamese_meaning": "trung thành, trung thực, chung thủy, đúng đắn",
+        "example_english": "The translator provided a faithful rendering of the original legal document.",
+        "example_vietnamese": "Người phiên dịch đã cung cấp một bản dịch trung thực với văn bản pháp lý gốc.",
+        "topic": "daily_life",
+        "level": "B2"
+    },
+    {
+        "word": "faithfully",
+        "part_of_speech": "adv.",
+        "phonetic": "/'feiθfuli/",
+        "vietnamese_meaning": "một cách trung thành, trung thực, trân trọng (cuối thư)",
+        "example_english": "All employees are expected to perform their duties faithfully and professionally.",
+        "example_vietnamese": "Tất cả nhân viên được kỳ vọng sẽ thực hiện nhiệm vụ của mình một cách trung thực và chuyên nghiệp.",
+        "topic": "work_and_business",
+        "level": "B2"
+    },
+    {
+        "word": "fall",
+        "part_of_speech": "v., n.",
+        "phonetic": "/fɔl/",
+        "vietnamese_meaning": "rơi, ngã, giảm sút, mùa thu, sụp đổ",
+        "example_english": "The unemployment rate began to fall following the implementation of the new economic policies.",
+        "example_vietnamese": "Tỷ lệ thất nghiệp bắt đầu giảm sau khi thực hiện các chính sách kinh tế mới.",
+        "topic": "nature_and_environment",
+        "level": "A1"
+    },
+    {
+        "word": "fall over",
+        "part_of_speech": "v.",
+        "phonetic": "n/a",
+        "vietnamese_meaning": "ngã lộn nhào, vấp ngã, đổ xuống, bị đổ",
+        "example_english": "Safety barriers were installed to prevent equipment from falling over during transport.",
+        "example_vietnamese": "Các rào chắn an toàn đã được lắp đặt để ngăn thiết bị bị đổ trong quá trình vận chuyển.",
+        "topic": "daily_life",
+        "level": "A2"
+    },
+    {
+        "word": "false",
+        "part_of_speech": "adj.",
+        "phonetic": "/fo:ls/",
+        "vietnamese_meaning": "sai, giả dối, giả tạo, nhân tạo",
+        "example_english": "Providing false information on an official application is a serious legal offense.",
+        "example_vietnamese": "Cung cấp thông tin sai sự thật trong một đơn đăng ký chính thức là một hành vi vi phạm pháp luật nghiêm trọng.",
+        "topic": "education_and_learning",
+        "level": "A2"
+    },
+    {
+        "word": "fame",
+        "part_of_speech": "n.",
+        "phonetic": "/feim/",
+        "vietnamese_meaning": "danh tiếng, sự nổi tiếng, tên tuổi, vinh quang",
+        "example_english": "The scientist achieved international fame for her research on renewable energy.",
+        "example_vietnamese": "Nhà khoa học đã đạt được danh tiếng quốc tế nhờ nghiên cứu về năng lượng tái tạo.",
+        "topic": "society_and_culture",
+        "level": "B2"
+    },
+    {
+        "word": "familiar",
+        "part_of_speech": "adj.",
+        "phonetic": "/fəˈmiliər/",
+        "vietnamese_meaning": "quen thuộc, thân thiết, am hiểu, phổ biến",
+        "example_english": "It is important for administrators to be familiar with the latest educational technologies.",
+        "example_vietnamese": "Điều quan trọng đối với các nhà quản lý là phải quen thuộc với các công nghệ giáo dục mới nhất.",
+        "topic": "daily_life",
+        "level": "B1"
+    },
+    {
+        "word": "family",
+        "part_of_speech": "n., adj.",
+        "phonetic": "/ˈfæmili/",
+        "vietnamese_meaning": "gia đình, gia tộc, dòng dõi, nhóm",
+        "example_english": "The organization provides family counseling services for its employees.",
+        "example_vietnamese": "Tổ chức cung cấp các dịch vụ tư vấn gia đình cho nhân viên của mình.",
+        "topic": "daily_life",
+        "level": "A1"
+    },
+    {
+        "word": "famous",
+        "part_of_speech": "adj.",
+        "phonetic": "/'feiməs/",
+        "vietnamese_meaning": "nổi tiếng, trứ danh, lừng lẫy, cừ khôi",
+        "example_english": "The university is famous for its high academic standards and innovative research.",
+        "example_vietnamese": "Trường đại học nổi tiếng với các tiêu chuẩn học thuật cao và các nghiên cứu đổi mới.",
+        "topic": "society_and_culture",
+        "level": "A1"
+    },
+    {
+        "word": "fan",
+        "part_of_speech": "n.",
+        "phonetic": "/fæn/",
+        "vietnamese_meaning": "người hâm mộ, cái quạt, máy quạt, xòe ra",
+        "example_english": "The ventilation system uses a large industrial fan to circulate air in the warehouse.",
+        "example_vietnamese": "Hệ thống thông gió sử dụng một chiếc quạt công nghiệp lớn để lưu thông không khí trong nhà kho.",
+        "topic": "daily_life",
+        "level": "A2"
+    },
+    {
+        "word": "fancy",
+        "part_of_speech": "v., adj.",
+        "phonetic": "/ˈfænsi/",
+        "vietnamese_meaning": "tưởng tượng, ưa thích, sang trọng, cầu kỳ",
+        "example_english": "The proposed design for the new corporate headquarters was quite fancy and modern.",
+        "example_vietnamese": "Thiết kế đề xuất cho trụ sở tập đoàn mới khá sang trọng và hiện đại.",
+        "topic": "daily_life",
+        "level": "B1"
+    },
+    {
+        "word": "far",
+        "part_of_speech": "adv., adj.",
+        "phonetic": "/fɑ:/",
+        "vietnamese_meaning": "xa, xa xôi, hơn nhiều, ở xa",
+        "example_english": "The actual results were far better than the initial projections.",
+        "example_vietnamese": "Kết quả thực tế tốt hơn nhiều so với những dự báo ban đầu.",
+        "topic": "travel_and_transport",
+        "level": "A1"
+    },
+    {
+        "word": "farm",
+        "part_of_speech": "n.",
+        "phonetic": "/fa:m/",
+        "vietnamese_meaning": "trang trại, nông trang, nuôi trồng, canh tác",
+        "example_english": "The agricultural department is supporting the development of organic farms in the region.",
+        "example_vietnamese": "Sở nông nghiệp đang hỗ trợ phát triển các trang trại hữu cơ trong khu vực.",
+        "topic": "nature_and_environment",
+        "level": "A1"
+    },
+    {
+        "word": "farmer",
+        "part_of_speech": "n.",
+        "phonetic": "/'fɑ:mə(r)/",
+        "vietnamese_meaning": "nông dân, chủ trang trại, người làm ruộng",
+        "example_english": "Local farmers were invited to attend a seminar on sustainable agricultural practices.",
+        "example_vietnamese": "Các nông dân địa phương đã được mời tham dự một buổi hội thảo về các phương pháp nông nghiệp bền vững.",
+        "topic": "nature_and_environment",
+        "level": "A1"
+    },
+    {
+        "word": "farming",
+        "part_of_speech": "n.",
+        "phonetic": "/'fɑ:miɳ/",
+        "vietnamese_meaning": "công việc đồng áng, sự canh tác, sự chăn nuôi",
+        "example_english": "Modern farming techniques have significantly increased crop production.",
+        "example_vietnamese": "Các kỹ thuật canh tác hiện đại đã làm tăng đáng kể sản lượng cây trồng.",
+        "topic": "nature_and_environment",
+        "level": "B1"
+    },
+    {
+        "word": "fashion",
+        "part_of_speech": "n.",
+        "phonetic": "/'fæ∫ən/",
+        "vietnamese_meaning": "thời trang, mốt, phong cách, cách thức",
+        "example_english": "The design of the new products follows the latest trends in industrial fashion.",
+        "example_vietnamese": "Thiết kế của các sản phẩm mới tuân theo các xu hướng mới nhất trong thời trang công nghiệp.",
+        "topic": "society_and_culture",
+        "level": "A2"
+    },
+    {
+        "word": "fashionable",
+        "part_of_speech": "adj.",
+        "phonetic": "/'fæʃnəbl/",
+        "vietnamese_meaning": "hợp thời trang, đúng mốt, sang trọng, thịnh hành",
+        "example_english": "The renovated office space features fashionable interior designs and ergonomic furniture.",
+        "example_vietnamese": "Không gian văn phòng được cải tạo có thiết kế nội thất thời thượng và nội thất công thái học.",
+        "topic": "society_and_culture",
+        "level": "B1"
+    },
+    {
+        "word": "fast",
+        "part_of_speech": "adj., adv.",
+        "phonetic": "/fa:st/",
+        "vietnamese_meaning": "nhanh, mau lẹ, chắc chắn, nhịn ăn",
+        "example_english": "The development of high-speed internet allowed for fast data transmission worldwide.",
+        "example_vietnamese": "Sự phát triển của internet tốc độ cao cho phép truyền dữ liệu nhanh chóng trên toàn thế giới.",
+        "topic": "daily_life",
+        "level": "A1"
+    },
+    {
+        "word": "fasten",
+        "part_of_speech": "v.",
+        "phonetic": "/'fɑ:sn/",
+        "vietnamese_meaning": "thắt, buộc, chốt, cài, đóng chặt",
+        "example_english": "Please ensure that you fasten your seatbelt during takeoff and landing.",
+        "example_vietnamese": "Vui lòng đảm bảo rằng bạn đã thắt dây an toàn khi máy bay cất cánh và hạ cánh.",
+        "topic": "travel_and_transport",
+        "level": "B1"
+    },
+    {
+        "word": "fat",
+        "part_of_speech": "adj., n.",
+        "phonetic": "/fæt/",
+        "vietnamese_meaning": "béo, mỡ, đầy đặn, mỡ màng, màu mỡ",
+        "example_english": "A diet high in saturated fat can lead to various long-term health problems.",
+        "example_vietnamese": "Một chế độ ăn nhiều chất béo bão hòa có thể dẫn đến nhiều vấn đề sức khỏe lâu dài.",
+        "topic": "health_and_body",
+        "level": "A1"
+    },
+    {
+        "word": "father",
+        "part_of_speech": "n.",
+        "phonetic": "/'fɑ:ðə/",
+        "vietnamese_meaning": "cha, bố, người sáng lập, tổ tiên",
+        "example_english": "He followed in his father's footsteps by pursuing a career in public administration.",
+        "example_vietnamese": "Anh ấy đã tiếp bước cha mình bằng cách theo đuổi sự nghiệp trong ngành quản trị công.",
+        "topic": "daily_life",
+        "level": "A1"
+    },
+    {
+        "word": "faucet",
+        "part_of_speech": "n.",
+        "phonetic": "/ˈfɔsɪt/",
+        "vietnamese_meaning": "vòi nước, khóa nước",
+        "example_english": "The building maintenance team replaced all leaking faucets in the administrative building.",
+        "example_vietnamese": "Đội bảo trì tòa nhà đã thay thế tất cả các vòi nước bị rò rỉ trong tòa nhà hành chính.",
+        "topic": "daily_life",
+        "level": "B1"
+    },
+    {
+        "word": "fault",
+        "part_of_speech": "n.",
+        "phonetic": "/fɔ:lt/",
+        "vietnamese_meaning": "lỗi, sai sót, khuyết điểm, đứt gãy (địa chất)",
+        "example_english": "The technical failure was found to be a fault in the system's software architecture.",
+        "example_vietnamese": "Sự cố kỹ thuật đã được xác định là do lỗi trong cấu trúc phần mềm của hệ thống.",
+        "topic": "science_and_technology",
+        "level": "B1"
+    },
+    {
+        "word": "favour",
+        "part_of_speech": "n.",
+        "phonetic": "/'feivз/",
+        "vietnamese_meaning": "thiện ý, sự ủng hộ, sự thiên vị, ân huệ",
+        "example_english": "The committee voted in favour of the proposed changes to the curriculum.",
+        "example_vietnamese": "Ủy ban đã bỏ phiếu ủng hộ những thay đổi đề xuất đối với chương trình học.",
+        "topic": "society_and_culture",
+        "level": "B1"
+    },
+    {
+        "word": "favourite",
+        "part_of_speech": "adj., n.",
+        "phonetic": "/'feivзrit/",
+        "vietnamese_meaning": "được yêu thích, ưa chuộng, sở thích, người được ưu ái",
+        "example_english": "History has always been his favourite subject during his academic studies.",
+        "example_vietnamese": "Lịch sử luôn là môn học yêu thích của anh ấy trong suốt quá trình học tập.",
+        "topic": "daily_life",
+        "level": "A1"
+    },
+    {
+        "word": "fear",
+        "part_of_speech": "n., v.",
+        "phonetic": "/fɪər/",
+        "vietnamese_meaning": "sự sợ hãi, lo ngại, kinh hãi, kính sợ",
+        "example_english": "The organization expressed fear regarding the potential impact of the new legislation.",
+        "example_vietnamese": "Tổ chức bày tỏ lo ngại về tác động tiềm tàng của bộ luật mới.",
+        "topic": "daily_life",
+        "level": "B1"
+    },
+    {
+        "word": "feather",
+        "part_of_speech": "n.",
+        "phonetic": "/'feðə/",
+        "vietnamese_meaning": "lông chim, lông vũ, vật nhẹ",
+        "example_english": "Certain types of bird feathers are used in specialized laboratory research.",
+        "example_vietnamese": "Một số loại lông chim được sử dụng trong các nghiên cứu chuyên sâu tại phòng thí nghiệm.",
+        "topic": "nature_and_environment",
+        "level": "B2"
+    },
+    {
+        "word": "feature",
+        "part_of_speech": "n., v.",
+        "phonetic": "/'fi:tʃə/",
+        "vietnamese_meaning": "đặc điểm, tính năng, nét mặt, điểm đặc trưng, đề cao",
+        "example_english": "A key feature of the new software is its user-friendly administrative interface.",
+        "example_vietnamese": "Một tính năng then chốt của phần mềm mới là giao diện hành chính thân thiện với người dùng.",
+        "topic": "science_and_technology",
+        "level": "B1"
+    },
+    {
+        "word": "February",
+        "part_of_speech": "n.",
+        "phonetic": "/´februəri/",
+        "vietnamese_meaning": "tháng hai",
+        "example_english": "The annual report is scheduled to be published in late February.",
+        "example_vietnamese": "Bản báo cáo thường niên dự kiến sẽ được công bố vào cuối tháng Hai.",
+        "topic": "daily_life",
+        "level": "A1"
+    },
+    {
+        "word": "federal",
+        "part_of_speech": "adj.",
+        "phonetic": "/'fedərəl/",
+        "vietnamese_meaning": "thuộc liên bang, chính quyền trung ương",
+        "example_english": "The federal government announced new funding for public infrastructure projects.",
+        "example_vietnamese": "Chính phủ liên bang đã công bố khoản ngân sách mới cho các dự án cơ sở hạ tầng công cộng.",
+        "topic": "society_and_culture",
+        "level": "B2"
+    },
+    {
+        "word": "fee",
+        "part_of_speech": "n.",
+        "phonetic": "/fi:/",
+        "vietnamese_meaning": "lệ phí, tiền thù lao, học phí, phí dịch vụ",
+        "example_english": "Registration fees for the international conference must be paid by the end of next month.",
+        "example_vietnamese": "Phí đăng ký tham dự hội nghị quốc tế phải được thanh toán vào cuối tháng sau.",
+        "topic": "work_and_business",
+        "level": "B1"
+    },
+    {
+        "word": "feed",
+        "part_of_speech": "v.",
+        "phonetic": "/fid/",
+        "vietnamese_meaning": "cho ăn, nuôi dưỡng, cung cấp, thức ăn gia súc",
+        "example_english": "The animal shelter relies on volunteers to feed and care for abandoned pets.",
+        "example_vietnamese": "Trạm cứu trợ động vật dựa vào các tình nguyện viên để cho ăn và chăm sóc thú cưng bị bỏ rơi.",
+        "topic": "daily_life",
+        "level": "A2"
+    },
+    {
+        "word": "feel",
+        "part_of_speech": "v.",
+        "phonetic": "/fi:l/",
+        "vietnamese_meaning": "cảm thấy, cảm nhận, sờ mó, ý kiến",
+        "example_english": "Administrators often feel a high level of responsibility for student success.",
+        "example_vietnamese": "Các nhà quản lý thường cảm thấy có trách nhiệm cao đối với thành công của sinh viên.",
+        "topic": "daily_life",
+        "level": "A1"
+    },
+    {
+        "word": "feel sick",
+        "part_of_speech": "v. phr.",
+        "phonetic": "/fiːl sɪk/",
+        "vietnamese_meaning": "cảm thấy buồn nôn, thấy không khỏe, thấy khó ở",
+        "example_english": "I feel sick after eating that old cake.",
+        "example_vietnamese": "Tôi cảm thấy buồn nôn sau khi ăn cái bánh cũ đó.",
+        "topic": "health_and_body",
+        "level": "A1"
+    },
+    {
+        "word": "feeling",
+        "part_of_speech": "n.",
+        "phonetic": "/'fi:liɳ/",
+        "vietnamese_meaning": "cảm giác, cảm xúc, tình cảm, sự nhạy cảm",
+        "example_english": "There is a general feeling of optimism regarding the country's economic future.",
+        "example_vietnamese": "Có một cảm giác lạc quan chung về tương lai kinh tế của đất nước.",
+        "topic": "daily_life",
+        "level": "A2"
+    },
+    {
+        "word": "fellow",
+        "part_of_speech": "n.",
+        "phonetic": "/'felou/",
+        "vietnamese_meaning": "đồng chí, bạn đồng hành, anh chàng, nghiên cứu viên",
+        "example_english": "The university appointed a new research fellow to lead the environmental study.",
+        "example_vietnamese": "Trường đại học đã bổ nhiệm một nghiên cứu viên mới để lãnh đạo nghiên cứu về môi trường.",
+        "topic": "education_and_learning",
+        "level": "B2"
+    },
+    {
+        "word": "female",
+        "part_of_speech": "adj., n.",
+        "phonetic": "/´fi:meil/",
+        "vietnamese_meaning": "nữ giới, thuộc giống cái, đàn bà",
+        "example_english": "The organization promotes female representation in senior management positions.",
+        "example_vietnamese": "Tổ chức thúc đẩy sự đại diện của nữ giới trong các vị trí quản lý cấp cao.",
+        "topic": "society_and_culture",
+        "level": "A2"
+    },
+    {
+        "word": "fence",
+        "part_of_speech": "n.",
+        "phonetic": "/fens/",
+        "vietnamese_meaning": "hàng rào, rào chắn, sự tranh luận, đấu kiếm",
+        "example_english": "A security fence was installed around the perimeter of the research facility.",
+        "example_vietnamese": "Một hàng rào an ninh đã được lắp đặt xung quanh chu vi của cơ sở nghiên cứu.",
+        "topic": "daily_life",
+        "level": "B1"
+    },
+    {
+        "word": "festival",
+        "part_of_speech": "n.",
+        "phonetic": "/'festivəl/",
+        "vietnamese_meaning": "lễ hội, ngày hội, đại hội liên hoan",
+        "example_english": "The cultural festival showcases traditional arts and crafts from around the world.",
+        "example_vietnamese": "Lễ hội văn hóa giới thiệu nghệ thuật và thủ công truyền thống từ khắp nơi trên thế giới.",
+        "topic": "society_and_culture",
+        "level": "A1"
+    },
+    {
+        "word": "fetch",
+        "part_of_speech": "v.",
+        "phonetic": "/fetʃ/",
+        "vietnamese_meaning": "tìm về, đem về, bán được giá, làm thở ra",
+        "example_english": "The library clerk was asked to fetch the rare manuscripts from the archives.",
+        "example_vietnamese": "Thư ký thư viện đã được yêu cầu đi lấy các bản thảo hiếm từ kho lưu trữ.",
+        "topic": "daily_life",
+        "level": "B1"
+    },
+    {
+        "word": "fever",
+        "part_of_speech": "n.",
+        "phonetic": "/'fi:və/",
+        "vietnamese_meaning": "cơn sốt, sự cuồng nhiệt, bệnh sốt",
+        "example_english": "Health workers monitored the patients for common symptoms such as fever and cough.",
+        "example_vietnamese": "Nhân viên y tế đã theo dõi các bệnh nhân để tìm các triệu chứng phổ biến như sốt và ho.",
+        "topic": "health_and_body",
+        "level": "A2"
+    },
+    {
+        "word": "few",
+        "part_of_speech": "det., adj., pron.",
+        "phonetic": "/fju:/",
+        "vietnamese_meaning": "ít, vài, không nhiều",
+        "example_english": "Only a few applicants met the strict criteria for the senior position.",
+        "example_vietnamese": "Chỉ có một vài ứng viên đáp ứng được các tiêu chí khắt khe cho vị trí cấp cao.",
+        "topic": "daily_life",
+        "level": "A1"
+    },
+    {
+        "word": "field",
+        "part_of_speech": "n.",
+        "phonetic": "/fi:ld/",
+        "vietnamese_meaning": "lĩnh vực, cánh đồng, sân vận động, bãi chiến trường",
+        "example_english": "The professor is a renowned expert in the field of linguistics.",
+        "example_vietnamese": "Giáo sư là một chuyên gia nổi tiếng trong lĩnh vực ngôn ngữ học.",
+        "topic": "education_and_learning",
+        "level": "A2"
+    },
+    {
+        "word": "fight",
+        "part_of_speech": "v., n.",
+        "phonetic": "/fait/",
+        "vietnamese_meaning": "đấu tranh, chiến đấu, cuộc chiến, sự cãi vã",
+        "example_english": "The organization works to fight against inequality in the education system.",
+        "example_vietnamese": "Tổ chức hoạt động nhằm đấu tranh chống lại sự bất bình đẳng trong hệ thống giáo dục.",
+        "topic": "society_and_culture",
+        "level": "A2"
+    },
+    {
+        "word": "fighting",
+        "part_of_speech": "n.",
+        "phonetic": "/´faitiη/",
+        "vietnamese_meaning": "sự chiến đấu, giao tranh, đánh nhau, chiến đấu",
+        "example_english": "The international agency called for an immediate end to the fighting in the region.",
+        "example_vietnamese": "Cơ quan quốc tế đã kêu gọi chấm dứt ngay lập tức các cuộc giao tranh trong khu vực.",
+        "topic": "society_and_culture",
+        "level": "B1"
+    },
+    {
+        "word": "figure",
+        "part_of_speech": "n., v.",
+        "phonetic": "/figə(r)/",
+        "vietnamese_meaning": "con số, nhân vật, hình dáng, sơ đồ, tính toán",
+        "example_english": "The final budget figures will be presented during the executive board meeting.",
+        "example_vietnamese": "Các con số ngân sách cuối cùng sẽ được trình bày trong cuộc họp hội đồng điều hành.",
+        "topic": "work_and_business",
+        "level": "A2"
+    },
+    {
+        "word": "file",
+        "part_of_speech": "n.",
+        "phonetic": "/fail/",
+        "vietnamese_meaning": "hồ sơ, tệp tin, cái dũa, hàng lối, sắp xếp",
+        "example_english": "Please organize all the student records into individual files.",
+        "example_vietnamese": "Vui lòng sắp xếp tất cả hồ sơ sinh viên thành các tệp riêng lẻ.",
+        "topic": "work_and_business",
+        "level": "A2"
+    },
+    {
+        "word": "fill",
+        "part_of_speech": "v.",
+        "phonetic": "/fil/",
+        "vietnamese_meaning": "làm đầy, lấp kín, đổ đầy, đáp ứng",
+        "example_english": "Applicants are required to fill out the formal registration form accurately.",
+        "example_vietnamese": "Các ứng viên được yêu cầu điền đầy đủ và chính xác vào mẫu đăng ký chính thức.",
+        "topic": "daily_life",
+        "level": "A1"
+    },
+    {
+        "word": "film",
+        "part_of_speech": "n., v.",
+        "phonetic": "/film/",
+        "vietnamese_meaning": "bộ phim, phim ảnh, lớp màng mỏng, quay phim",
+        "example_english": "The university's media center produced a documentary film about local history.",
+        "example_vietnamese": "Trung tâm truyền thông của trường đại học đã sản xuất một bộ phim tài liệu về lịch sử địa phương.",
+        "topic": "society_and_culture",
+        "level": "A1"
+    },
+    {
+        "word": "final",
+        "part_of_speech": "adj., n.",
+        "phonetic": "/'fainl/",
+        "vietnamese_meaning": "cuối cùng, sau cùng, trận chung kết, quyết định",
+        "example_english": "The committee reached a final decision regarding the project's funding.",
+        "example_vietnamese": "Ủy ban đã đưa ra quyết định cuối cùng liên quan đến kinh phí của dự án.",
+        "topic": "daily_life",
+        "level": "A1"
+    },
+    {
+        "word": "finally",
+        "part_of_speech": "adv.",
+        "phonetic": "/´fainəli/",
+        "vietnamese_meaning": "cuối cùng, sau cùng, rốt cuộc, dứt khoát",
+        "example_english": "After several months of negotiation, the agreement was finally signed.",
+        "example_vietnamese": "Sau vài tháng đàm phán, bản thỏa thuận cuối cùng đã được ký kết.",
+        "topic": "daily_life",
+        "level": "A2"
+    },
+    {
+        "word": "finance",
+        "part_of_speech": "n., v.",
+        "phonetic": "/fɪˈnæns/",
+        "vietnamese_meaning": "tài chính, tiền tệ, cấp vốn, tài trợ",
+        "example_english": "The organization's finance department is responsible for managing the annual budget.",
+        "example_vietnamese": "Phòng tài chính của tổ chức chịu trách nhiệm quản lý ngân sách hàng năm.",
+        "topic": "work_and_business",
+        "level": "B2"
+    },
+    {
+        "word": "financial",
+        "part_of_speech": "adj.",
+        "phonetic": "/fai'næn∫l/",
+        "vietnamese_meaning": "thuộc tài chính, về tiền bạc, có tính tài chính",
+        "example_english": "The company provides financial assistance to students from low-income families.",
+        "example_vietnamese": "Công ty cung cấp hỗ trợ tài chính cho sinh viên từ các gia đình có thu nhập thấp.",
+        "topic": "work_and_business",
+        "level": "B1"
+    },
+    {
+        "word": "find",
+        "part_of_speech": "v.",
+        "phonetic": "/faind/",
+        "vietnamese_meaning": "tìm thấy, nhận ra, kết luận, khám phá",
+        "example_english": "The research team aims to find a sustainable solution for environmental pollution.",
+        "example_vietnamese": "Đội ngũ nghiên cứu đặt mục tiêu tìm ra giải pháp bền vững cho vấn đề ô nhiễm môi trường.",
+        "topic": "daily_life",
+        "level": "A1"
+    },
+    {
+        "word": "find out",
+        "part_of_speech": "v.",
+        "phonetic": "n/a",
+        "vietnamese_meaning": "khám phá, tìm ra, vạch trần, hiểu ra",
+        "example_english": "We need to find out the cause of the technical failure in the system.",
+        "example_vietnamese": "Chúng ta cần tìm ra nguyên nhân của sự cố kỹ thuật trong hệ thống.",
+        "topic": "daily_life",
+        "level": "A2"
+    },
+    {
+        "word": "fine",
+        "part_of_speech": "adj.",
+        "phonetic": "/fain/",
+        "vietnamese_meaning": "tốt, đẹp, khỏe, tiền phạt, nguyên chất",
+        "example_english": "The administrative staff performed a fine job in organizing the conference.",
+        "example_vietnamese": "Đội ngũ hành chính đã hoàn thành tốt công việc tổ chức hội nghị.",
+        "topic": "daily_life",
+        "level": "A1"
+    },
+    {
+        "word": "finely",
+        "part_of_speech": "adv.",
+        "phonetic": "/´fainli/",
+        "vietnamese_meaning": "đẹp đẽ, tinh vi, tế nhị, mịn",
+        "example_english": "The detailed drawings were finely crafted by the professional architect.",
+        "example_vietnamese": "Các bản vẽ chi tiết đã được kiến trúc sư chuyên nghiệp thực hiện một cách tinh xảo.",
+        "topic": "science_and_technology",
+        "level": "B2"
+    }
+]

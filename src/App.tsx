@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Languages, 
@@ -121,8 +121,8 @@ interface Lesson {
   userName: string;
   language: Language;
   createdAt: number;
-  lastPracticed?: number; // Lịch sử ôn tập
-  practiceCount?: number; // Số lần học
+  lastPracticed?: number;
+  practiceCount?: number;
   vocabularies: Vocabulary[];
 }
 
@@ -195,6 +195,21 @@ const isDefSentence = (text?: string) => {
   return t.endsWith('.') || t.endsWith('!') || t.endsWith('?');
 };
 
+// THUẬT TOÁN MAP CHỦ ĐỀ CHO TIẾNG ĐỨC
+const mapSubTopicToMainTopic = (rawTopic?: string) => {
+  if (!rawTopic) return 'other';
+  const t = rawTopic.toLowerCase();
+  if (/(trường|giáo dục|học|bằng cấp|nghiên cứu|thầy|cô|sinh viên|môn|education|school)/i.test(t)) return 'education_and_learning';
+  if (/(công việc|nghề|công sở|kinh doanh|tài chính|tiền|công ty|văn phòng|work|business)/i.test(t)) return 'work_and_business';
+  if (/(sức khỏe|cơ thể|y tế|bệnh|dinh dưỡng|thuốc|bác sĩ|health|body)/i.test(t)) return 'health_and_body';
+  if (/(khoa học|công nghệ|máy tính|internet|phát minh|science|tech)/i.test(t)) return 'science_and_technology';
+  if (/(xã hội|văn hóa|nghệ thuật|thể thao|giải trí|luật|chính trị|tôn giáo|society|culture)/i.test(t)) return 'society_and_culture';
+  if (/(thiên nhiên|môi trường|động vật|thực vật|khí hậu|thời tiết|địa lý|nature|environment)/i.test(t)) return 'nature_and_environment';
+  if (/(du lịch|giao thông|phương tiện|kỳ nghỉ|xe|đường|travel|transport)/i.test(t)) return 'travel_and_transport';
+  if (/(đời sống|hàng ngày|gia đình|thời gian|đồ ăn|thức|mua sắm|nhà|cảm xúc|màu|vật|daily)/i.test(t)) return 'daily_life';
+  return 'other';
+};
+
 // Components
 const RobotAnimation = ({ type }: { type: 'happy' | 'thinking' | 'sad' }) => {
   const lottiePaths = {
@@ -202,7 +217,6 @@ const RobotAnimation = ({ type }: { type: 'happy' | 'thinking' | 'sad' }) => {
     thinking: 'https://assets10.lottiefiles.com/packages/lf20_i9mxcD.json',
     sad: 'https://assets10.lottiefiles.com/packages/lf20_96bovdur.json'
   };
-  
   return (
     <div className="w-48 h-48 mx-auto">
       <Lottie animationData={null} path={lottiePaths[type]} loop={true} />
@@ -344,7 +358,6 @@ export default function App() {
     }
   };
 
-  // Cập nhật Lịch sử ôn tập khi hoàn thành game
   const handleGameComplete = async (res: GameResult) => {
     setGameResults(prev => [...prev, { ...res, language }]);
     if (activeLessonId && !isTestMode) {
@@ -518,10 +531,10 @@ export default function App() {
             <motion.div key={`topics-${language}`} className="w-full" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
               <TopicLibraryView 
                 language={language} 
-                onOpenInInput={(vocabData, topicName) => {
-                  // Mở sang màn hình nhập liệu và bắt buộc lưu
+                lessons={lessons}
+                onOpenInInput={(vocabData, generatedTitle) => {
                   setEditingLesson({
-                    title: `Từ vựng chủ đề: ${topicName}`,
+                    title: generatedTitle,
                     vocabularies: vocabData,
                     language,
                     wordCount: vocabData.length,
@@ -637,7 +650,6 @@ function MobileNavButton({ active, onClick, icon }: { active: boolean, onClick: 
 // --- VIEWS ---
 
 function HomeView({ setView, language, user, lessons }: { setView: (v: View) => void, language: Language, user: User, lessons: Lesson[] }) {
-  // AIBTeM Nhắc nhở ôn tập (Bài học chưa học quá 3 ngày hoặc chưa từng học)
   const needsReview = lessons.filter(l => 
     l.language === language && 
     (!l.lastPracticed || (Date.now() - l.lastPracticed > 3 * 24 * 60 * 60 * 1000))
@@ -716,15 +728,44 @@ function StatCard({ title, value, color }: { title: string, value: string, color
 }
 
 // --- TOPIC LIBRARY VIEW ---
-function TopicLibraryView({ language, onOpenInInput }: { language: Language, onOpenInInput: (vocab: Vocabulary[], topicName: string) => void }) {
-  const currentDict: any[] = language === 'en' ? enDictDataRaw : deDictDataRaw;
+function TopicLibraryView({ language, lessons, onOpenInInput }: { language: Language, lessons: Lesson[], onOpenInInput: (vocab: Vocabulary[], title: string) => void }) {
+  
+  // Tối ưu hóa Database: Áp dụng thuật toán gom nhóm cho Tiếng Đức nếu cần
+  const currentDict = useMemo(() => {
+    const rawDict = language === 'en' ? enDictDataRaw : deDictDataRaw;
+    if (language === 'de') {
+      return rawDict.map(w => ({
+        ...w,
+        topic: w.topic && !['education_and_learning','work_and_business','daily_life','health_and_body','science_and_technology','society_and_culture','nature_and_environment','travel_and_transport'].includes(w.topic) 
+          ? mapSubTopicToMainTopic(w.topic) 
+          : (w.topic || 'other')
+      }));
+    }
+    // Đối với tiếng Anh, nếu thiếu topic thì gom vào 'other'
+    return rawDict.map(w => ({
+      ...w,
+      topic: w.topic || 'other'
+    }));
+  }, [language]);
+
   const [selectedTopic, setSelectedTopic] = useState<any | null>(null);
   const [selectedWords, setSelectedWords] = useState<Set<string>>(new Set());
+
+  // Thuật toán theo dõi từ đã học trong Thư viện
+  const learnedWordsMap = useMemo(() => {
+    const map = new Map<string, string>();
+    lessons.filter(l => l.language === language).forEach(lesson => {
+      lesson.vocabularies.forEach(v => {
+        if (!map.has(v.word)) map.set(v.word, lesson.title);
+      });
+    });
+    return map;
+  }, [lessons, language]);
 
   const KNOWN_TOPIC_IDS = [
     'education_and_learning', 'work_and_business', 'daily_life', 
     'health_and_body', 'science_and_technology', 'society_and_culture', 
-    'nature_and_environment', 'travel_and_transport'
+    'nature_and_environment', 'travel_and_transport', 'other'
   ];
 
   const topics = [
@@ -736,13 +777,12 @@ function TopicLibraryView({ language, onOpenInInput }: { language: Language, onO
     { id: 'society_and_culture', name: 'Xã hội & Văn hóa', desc: 'Nghệ thuật, luật pháp, chính trị...', icon: Globe, color: 'bg-purple-500', textCol: 'text-purple-500', bgSoft: 'bg-purple-50' },
     { id: 'nature_and_environment', name: 'Thiên nhiên & Môi trường', desc: 'Khí hậu, động vật, địa lý...', icon: Leaf, color: 'bg-emerald-500', textCol: 'text-emerald-500', bgSoft: 'bg-emerald-50' },
     { id: 'travel_and_transport', name: 'Du lịch & Giao thông', desc: 'Giao thông công cộng, kỳ nghỉ...', icon: Plane, color: 'bg-amber-500', textCol: 'text-amber-500', bgSoft: 'bg-amber-50' },
-    // Chủ đề thứ 9: Rổ chứa tất cả các từ chưa phân loại
-    { id: 'other', name: 'Chủ đề khác (Chưa phân loại)', desc: 'Các từ vựng mở rộng chưa nằm trong 8 nhóm trên.', icon: LayoutGrid, color: 'bg-slate-700', textCol: 'text-slate-700', bgSoft: 'bg-slate-100' }
+    { id: 'other', name: 'Chủ đề khác', desc: 'Các từ vựng mở rộng chưa phân nhóm cụ thể.', icon: LayoutGrid, color: 'bg-slate-700', textCol: 'text-slate-700', bgSoft: 'bg-slate-100' }
   ];
 
   const getTopicWords = (topicId: string) => {
     if (topicId === 'other') {
-      return currentDict.filter(w => !w.topic || !KNOWN_TOPIC_IDS.includes(w.topic));
+      return currentDict.filter(w => !KNOWN_TOPIC_IDS.includes(w.topic) || w.topic === 'other');
     }
     return currentDict.filter(w => w.topic === topicId);
   };
@@ -769,20 +809,48 @@ function TopicLibraryView({ language, onOpenInInput }: { language: Language, onO
     }));
   };
 
-  const handleLearnRandom = (topicId: string) => {
+  // Thuật toán tự động đặt tên bài học
+  const generateLessonTitle = (topicName: string, prefix: 'NN' | 'TC') => {
+    const baseName = `${topicName} - ${prefix}`;
+    const matchingLessons = lessons.filter(l => l.language === language && l.title.startsWith(baseName));
+    let maxSeq = 0;
+    matchingLessons.forEach(l => {
+      const match = l.title.match(/(\d+)$/);
+      if (match) {
+        const seq = parseInt(match[1], 10);
+        if (seq > maxSeq) maxSeq = seq;
+      }
+    });
+    const nextSeq = (maxSeq + 1).toString().padStart(2, '0');
+    return `${baseName}${nextSeq}`;
+  };
+
+  const handleLearnRandom = (topicId: string, topicName: string) => {
     const wordsInTopic = getTopicWords(topicId);
     if (wordsInTopic.length === 0) {
       alert("Chủ đề này hiện chưa có từ vựng trong cơ sở dữ liệu!");
       return;
     }
-    const shuffled = [...wordsInTopic].sort(() => 0.5 - Math.random()).slice(0, 15);
-    onOpenInInput(formatToVocab(shuffled), selectedTopic.name);
+    // Lọc bỏ những từ đã học
+    let unlearnedWords = wordsInTopic.filter(w => !learnedWordsMap.has(w.word));
+    
+    // Nếu từ mới còn quá ít (< 15), lấy nốt những từ mới đó, và có thể lấy bù từ cũ (nếu muốn)
+    // Ở đây ta cứ ưu tiên lấy hết từ mới trước. Nếu < 15 thì lấy tất cả những từ chưa học còn lại.
+    if (unlearnedWords.length === 0) {
+      alert("Chúc mừng! Bạn đã lưu/học toàn bộ từ vựng trong chủ đề này. Hệ thống sẽ bốc lại các từ cũ nhé.");
+      unlearnedWords = wordsInTopic; // Lấy lại toàn bộ nếu đã học hết
+    }
+
+    const shuffled = [...unlearnedWords].sort(() => 0.5 - Math.random()).slice(0, 15);
+    const title = generateLessonTitle(topicName, 'NN');
+    onOpenInInput(formatToVocab(shuffled), title);
   };
 
-  const handleLearnSelected = () => {
+  const handleLearnSelected = (topicName: string) => {
     if (selectedWords.size < 5) return;
     const wordsToLearn = currentDict.filter(w => selectedWords.has(w.word));
-    onOpenInInput(formatToVocab(wordsToLearn), selectedTopic.name);
+    const title = generateLessonTitle(topicName, 'TC');
+    onOpenInInput(formatToVocab(wordsToLearn), title);
   };
 
   if (selectedTopic) {
@@ -805,18 +873,20 @@ function TopicLibraryView({ language, onOpenInInput }: { language: Language, onO
             <p className="text-white/80 text-lg mb-8">{selectedTopic.desc}</p>
             <div className="flex flex-wrap items-center gap-4">
               <span className="bg-black/20 px-6 py-3 rounded-xl font-bold backdrop-blur-md">
-                Tổng cộng: {words.length} từ vựng
+                Tổng cộng: {words.length} từ
+              </span>
+              <span className="bg-white/20 px-6 py-3 rounded-xl font-bold backdrop-blur-md">
+                Đã lưu: {words.filter(w => learnedWordsMap.has(w.word)).length} từ
               </span>
               <button 
-                onClick={() => handleLearnRandom(selectedTopic.id)}
+                onClick={() => handleLearnRandom(selectedTopic.id, selectedTopic.name)}
                 disabled={words.length === 0}
                 className="bg-white text-slate-900 px-8 py-3 rounded-xl font-bold hover:scale-105 transition-transform flex items-center gap-2 shadow-lg disabled:opacity-50 disabled:hover:scale-100"
               >
                 <Shuffle size={20} className={selectedTopic.textCol} /> Học 15 từ ngẫu nhiên
               </button>
-              {/* NÚT HỌC LỰA CHỌN */}
               <button 
-                onClick={handleLearnSelected}
+                onClick={() => handleLearnSelected(selectedTopic.name)}
                 disabled={selectedWords.size < 5}
                 className={cn(
                   "px-8 py-3 rounded-xl font-bold transition-all flex items-center gap-2 shadow-lg",
@@ -845,41 +915,54 @@ function TopicLibraryView({ language, onOpenInInput }: { language: Language, onO
             )}
           </div>
           <div className="divide-y divide-slate-50">
-            {words.length > 0 ? words.map((vocab, idx) => (
-              <div key={idx} className="p-4 hover:bg-slate-50 transition-colors flex items-center justify-between group">
-                <div 
-                  className="flex flex-1 items-center gap-4 cursor-pointer"
-                  onClick={() => toggleWordSelection(vocab.word)}
-                >
-                  <input 
-                    type="checkbox" 
-                    checked={selectedWords.has(vocab.word)}
-                    readOnly
-                    className="w-5 h-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
-                  />
-                  <div>
-                    <div className="flex items-baseline gap-2 mb-1">
-                      <span className="font-bold text-xl text-slate-900 group-hover:text-indigo-600 transition-colors">
-                        {vocab.article && <span className={cn(
-                          "font-normal mr-2",
-                          vocab.article.toLowerCase() === 'der' ? "text-blue-500" :
-                          vocab.article.toLowerCase() === 'die' ? "text-red-500" : "text-green-500"
-                        )}>{vocab.article}</span>}
-                        {vocab.word}
-                      </span>
-                      {vocab.phonetic && <span className="text-sm font-mono text-slate-400">{renderPhonetic(vocab.phonetic)}</span>}
+            {words.length > 0 ? words.map((vocab, idx) => {
+              const isLearned = learnedWordsMap.has(vocab.word);
+              const lessonName = learnedWordsMap.get(vocab.word);
+
+              return (
+                <div key={idx} className={cn("p-4 hover:bg-slate-50 transition-colors flex items-center justify-between group", isLearned && "bg-emerald-50/30")}>
+                  <div 
+                    className="flex flex-1 items-start gap-4 cursor-pointer"
+                    onClick={() => toggleWordSelection(vocab.word)}
+                  >
+                    <input 
+                      type="checkbox" 
+                      checked={selectedWords.has(vocab.word)}
+                      readOnly
+                      className="w-5 h-5 mt-1 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                    />
+                    <div>
+                      <div className="flex items-baseline gap-2 mb-1">
+                        <span className={cn("font-bold text-xl transition-colors", isLearned ? "text-emerald-700" : "text-slate-900 group-hover:text-indigo-600")}>
+                          {vocab.article && <span className={cn(
+                            "font-normal mr-2",
+                            vocab.article.toLowerCase() === 'der' ? "text-blue-500" :
+                            vocab.article.toLowerCase() === 'die' ? "text-red-500" : "text-green-500"
+                          )}>{vocab.article}</span>}
+                          {vocab.word}
+                        </span>
+                        {vocab.phonetic && <span className="text-sm font-mono text-slate-400">{renderPhonetic(vocab.phonetic)}</span>}
+                      </div>
+                      <div className={cn("mb-1", isLearned ? "text-emerald-600/80" : "text-slate-600")}>
+                        {vocab.vietnamese_meaning || vocab.meaning}
+                      </div>
+                      {/* Cảnh báo từ đã lưu */}
+                      {isLearned && (
+                        <div className="text-xs font-bold text-emerald-500 flex items-center gap-1 mt-1">
+                          <CheckCircle2 size={12} /> Đã lưu trong bài: {lessonName}
+                        </div>
+                      )}
                     </div>
-                    <div className="text-slate-600">{vocab.vietnamese_meaning || vocab.meaning}</div>
                   </div>
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); handleSpeak(vocab.word, language); }}
+                    className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 hover:bg-indigo-100 hover:text-indigo-600 flex items-center justify-center transition-all ml-4 shrink-0"
+                  >
+                    <Volume2 size={20} />
+                  </button>
                 </div>
-                <button 
-                  onClick={(e) => { e.stopPropagation(); handleSpeak(vocab.word, language); }}
-                  className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 hover:bg-indigo-100 hover:text-indigo-600 flex items-center justify-center transition-all ml-4 shrink-0"
-                >
-                  <Volume2 size={20} />
-                </button>
-              </div>
-            )) : (
+              );
+            }) : (
               <div className="p-12 text-center text-slate-400">
                 Đang cập nhật từ vựng cho chủ đề này...
               </div>
@@ -900,6 +983,9 @@ function TopicLibraryView({ language, onOpenInInput }: { language: Language, onO
       <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {topics.map((topic) => {
           const count = getTopicWords(topic.id).length;
+          // Chỉ hiển thị các thẻ có từ vựng (Trừ thẻ "Chủ đề khác" nếu = 0 thì ẩn luôn cho đẹp)
+          if (topic.id === 'other' && count === 0) return null;
+
           return (
             <motion.button 
               key={topic.id}

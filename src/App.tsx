@@ -1025,7 +1025,6 @@ function TopicLibraryView({ language, lessons, onOpenInInput }: { language: Lang
   );
 }
 
-// --- DICTIONARY VIEW CHUYÊN SÂU ---
 function DictionaryView({ language }: { language: Language }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [suggestions, setSuggestions] = useState<any[]>([]);
@@ -1741,7 +1740,6 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
 
       const finalValidRows = finalRows.filter(r => r.word && r.meaning);
       
-      // BẢO TOÀN DỮ LIỆU CŨ: Lưu lại toàn bộ các trường nếu có
       const lessonData: Omit<Lesson, 'id'> = {
         title: lessonTitle.trim(),
         wordCount: finalValidRows.length,
@@ -2174,7 +2172,6 @@ function GameCard({ title, desc, icon, onClick, colorClass }: { title: string, d
 
 function GameContainer({ type, vocabList, language, onBack, onFinish, playSound }: { type: GameType, vocabList: Vocabulary[], language: Language, onBack: () => void, onFinish: (score: number) => void, playSound: (t: 'correct' | 'wrong') => void }) {
   
-  // TỰ ĐỘNG BỒI ĐẮP DỮ LIỆU (AUTO-ENRICHMENT) TỪ TỪ ĐIỂN CHÍNH
   const currentDict = language === 'en' ? enDictDataRaw : deDictDataRaw;
   const enrichedVocabList = useMemo(() => {
       return vocabList.map(v => {
@@ -2199,7 +2196,6 @@ function GameContainer({ type, vocabList, language, onBack, onFinish, playSound 
   const [step, setStep] = useState(0);
   const [score, setScore] = useState(0);
   
-  // Trò chơi Flashcard lặp toàn bộ, các trò khác ngẫu nhiên 5 từ (Dùng danh sách đã được bồi đắp dữ liệu)
   const gameVocabs = type === 'flashcards' ? enrichedVocabList : [...enrichedVocabList].sort(() => 0.5 - Math.random()).slice(0, 5);
   const currentVocab = gameVocabs[step];
 
@@ -2278,13 +2274,18 @@ function GameContainer({ type, vocabList, language, onBack, onFinish, playSound 
 
 function FlashcardGame({ vocab, onNext, onPrev, language, step, totalSteps }: { vocab: Vocabulary, onNext: () => void, onPrev: () => void, language: Language, step: number, totalSteps: number }) {
   const [side, setSide] = useState(0); 
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [errorText, setErrorText] = useState('');
+  const [showThankYou, setShowThankYou] = useState(false);
 
   useEffect(() => {
     setSide(0);
+    setShowReportModal(false);
+    setErrorText('');
+    setShowThankYou(false);
   }, [vocab]);
 
   useEffect(() => {
-    // Khi lật sang mặt 3, tự động phát âm thanh
     if (side === 2) {
        handleSpeak(vocab.word, language);
     }
@@ -2293,9 +2294,12 @@ function FlashcardGame({ vocab, onNext, onPrev, language, step, totalSteps }: { 
   const definition = language === 'en' ? (vocab.english_definition || vocab.definition) : (vocab.german_definition || vocab.definition);
   const exampleText = language === 'en' ? (vocab.example_english || vocab.example) : (vocab.example_german || vocab.example);
 
+  const handleReportSubmit = () => {
+    setShowThankYou(true);
+  };
+
   return (
     <div className="space-y-8 w-full max-w-4xl mx-auto">
-      {/* Khung thẻ cố định chiều cao 220px, tràn viền w-full */}
       <div className="perspective-[1000px] w-full min-h-[220px]">
         <AnimatePresence mode="wait">
           <motion.div 
@@ -2308,7 +2312,6 @@ function FlashcardGame({ vocab, onNext, onPrev, language, step, totalSteps }: { 
             className="w-full min-h-[220px] bg-white rounded-[2rem] shadow-xl border border-slate-100 flex flex-col p-6 md:p-10 cursor-pointer relative overflow-hidden group"
           >
             <div className="flex-grow flex flex-col justify-center w-full">
-              {/* MẶT 1 */}
               {side === 0 && (
                 <div className="text-left w-full space-y-2">
                    <div className="text-xl text-slate-800 leading-relaxed">
@@ -2318,7 +2321,6 @@ function FlashcardGame({ vocab, onNext, onPrev, language, step, totalSteps }: { 
                 </div>
               )}
               
-              {/* MẶT 2 */}
               {side === 1 && (
                 <div className="text-left w-full space-y-4">
                    <div className="text-xl font-bold text-emerald-600">
@@ -2335,15 +2337,12 @@ function FlashcardGame({ vocab, onNext, onPrev, language, step, totalSteps }: { 
                 </div>
               )}
 
-              {/* MẶT 3 */}
               {side === 2 && (
                 <div className="text-left w-full space-y-4">
-                   {/* Dòng 1: Từ vựng + (Loại từ) */}
                    <div className="text-xl font-bold text-indigo-600">
                       {vocab.word} {vocab.part_of_speech && <span className="font-normal text-slate-500">({vocab.part_of_speech})</span>}
                    </div>
 
-                   {/* Dòng 2: Loa + Phiên âm */}
                    {vocab.phonetic && (
                      <div className="flex items-center gap-3 text-slate-500">
                          <button onClick={(e) => {e.stopPropagation(); handleSpeak(vocab.word, language)}} className="hover:text-indigo-600 transition-colors p-2 bg-slate-50 rounded-full hover:bg-indigo-50 border border-slate-100 shadow-sm">
@@ -2353,7 +2352,6 @@ function FlashcardGame({ vocab, onNext, onPrev, language, step, totalSteps }: { 
                      </div>
                    )}
 
-                   {/* Dòng 3: Loa câu + Câu ví dụ + Nghĩa ví dụ */}
                    {(exampleText) && (
                      <div className="flex items-start gap-3 mt-4 pt-4 border-t border-slate-100">
                         <button onClick={(e) => {e.stopPropagation(); handleSpeak(exampleText || '', language)}} className="hover:text-indigo-600 transition-colors text-slate-400 mt-1 shrink-0 p-1.5 bg-white rounded-full shadow-sm border border-slate-100">
@@ -2382,7 +2380,8 @@ function FlashcardGame({ vocab, onNext, onPrev, language, step, totalSteps }: { 
         </AnimatePresence>
       </div>
 
-      <div className="flex gap-4 w-full">
+      {/* 3 NÚT ĐIỀU HƯỚNG MỚI */}
+      <div className="flex flex-col sm:flex-row gap-4 w-full">
          <button 
            onClick={onPrev} 
            disabled={step === 0} 
@@ -2390,6 +2389,14 @@ function FlashcardGame({ vocab, onNext, onPrev, language, step, totalSteps }: { 
          >
            <ChevronLeft size={20} /> Lùi lại
          </button>
+
+         <button 
+           onClick={() => setShowReportModal(true)} 
+           className="flex-1 py-4 rounded-2xl font-bold text-lg bg-orange-50 border-2 border-orange-100 text-orange-600 hover:bg-orange-100 hover:border-orange-200 transition-all flex items-center justify-center gap-2"
+         >
+           <AlertCircle size={20} /> Báo lỗi
+         </button>
+
          <button 
            onClick={onNext} 
            className="flex-1 py-4 rounded-2xl font-bold text-lg bg-indigo-600 text-white hover:bg-indigo-700 hover:scale-[1.02] active:scale-95 shadow-xl shadow-indigo-200 transition-all flex items-center justify-center gap-2"
@@ -2397,6 +2404,81 @@ function FlashcardGame({ vocab, onNext, onPrev, language, step, totalSteps }: { 
            {step === totalSteps - 1 ? 'Hoàn thành' : 'Tiếp theo'} {step !== totalSteps - 1 && <ChevronRight size={20} />}
          </button>
       </div>
+
+      {/* MODAL BÁO LỖI */}
+      <AnimatePresence>
+        {showReportModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => !showThankYou && setShowReportModal(false)}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative bg-white w-full max-w-lg rounded-[3rem] p-8 md:p-10 shadow-2xl overflow-hidden z-10"
+            >
+              {!showThankYou ? (
+                <>
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center shrink-0">
+                      <AlertCircle size={24} />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-bold text-slate-900">Báo lỗi từ vựng</h3>
+                      <p className="text-slate-500 text-sm">Từ: <strong className="text-indigo-600">{vocab.word}</strong></p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4 mb-8">
+                    <textarea 
+                      autoFocus
+                      value={errorText}
+                      onChange={(e) => setErrorText(e.target.value)}
+                      placeholder="Vui lòng nhập nội dung lỗi vào đây..."
+                      className="w-full bg-slate-50 border-2 border-slate-200 rounded-2xl px-6 py-5 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all text-lg font-medium placeholder:text-slate-400 min-h-[150px] resize-none"
+                    />
+                  </div>
+                  
+                  <div className="flex gap-4">
+                    <button 
+                      onClick={() => setShowReportModal(false)}
+                      className="flex-1 py-4 rounded-2xl font-bold text-slate-500 hover:bg-slate-100 transition-all"
+                    >
+                      Hủy
+                    </button>
+                    <button 
+                      onClick={handleReportSubmit}
+                      disabled={!errorText.trim()}
+                      className="flex-1 bg-indigo-600 text-white py-4 rounded-2xl font-bold hover:bg-indigo-700 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-indigo-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Gửi báo cáo
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-8">
+                  <div className="w-24 h-24 bg-emerald-100 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <CheckCircle2 size={48} />
+                  </div>
+                  <h3 className="text-3xl font-bold text-slate-900 mb-2">Cảm ơn bạn!</h3>
+                  <p className="text-slate-500 text-lg mb-8">Cảm ơn bạn đã đóng góp để hệ thống hoàn thiện hơn.</p>
+                  <button 
+                    onClick={() => { setShowReportModal(false); setShowThankYou(false); setErrorText(''); }}
+                    className="w-full py-4 rounded-2xl font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-all"
+                  >
+                    Đóng
+                  </button>
+                </div>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

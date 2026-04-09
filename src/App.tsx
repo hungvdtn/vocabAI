@@ -747,12 +747,9 @@ function StatCard({ title, value, color }: { title: string, value: string, color
   );
 }
 
-// --- TOPIC LIBRARY VIEW ---
 function TopicLibraryView({ language, lessons, onOpenInInput }: { language: Language, lessons: Lesson[], onOpenInInput: (vocab: Vocabulary[], title: string) => void }) {
-  
   const currentDict = useMemo(() => {
     const rawDict = language === 'en' ? enDictDataRaw : deDictDataRaw;
-    
     return rawDict.map(w => {
       if (w.topic && KNOWN_TOPIC_IDS.includes(w.topic)) {
           return w;
@@ -1744,6 +1741,7 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
 
       const finalValidRows = finalRows.filter(r => r.word && r.meaning);
       
+      // BẢO TOÀN DỮ LIỆU CŨ: Lưu lại toàn bộ các trường nếu có
       const lessonData: Omit<Lesson, 'id'> = {
         title: lessonTitle.trim(),
         wordCount: finalValidRows.length,
@@ -2175,11 +2173,34 @@ function GameCard({ title, desc, icon, onClick, colorClass }: { title: string, d
 // --- GAME LOGIC ---
 
 function GameContainer({ type, vocabList, language, onBack, onFinish, playSound }: { type: GameType, vocabList: Vocabulary[], language: Language, onBack: () => void, onFinish: (score: number) => void, playSound: (t: 'correct' | 'wrong') => void }) {
+  
+  // TỰ ĐỘNG BỒI ĐẮP DỮ LIỆU (AUTO-ENRICHMENT) TỪ TỪ ĐIỂN CHÍNH
+  const currentDict = language === 'en' ? enDictDataRaw : deDictDataRaw;
+  const enrichedVocabList = useMemo(() => {
+      return vocabList.map(v => {
+          const dictEntry = currentDict.find(d => d.word.toLowerCase() === v.word.toLowerCase());
+          if (dictEntry) {
+              return {
+                  ...v,
+                  part_of_speech: v.part_of_speech || dictEntry.part_of_speech || dictEntry.type,
+                  phonetic: v.phonetic || dictEntry.phonetic,
+                  english_definition: v.english_definition || dictEntry.english_definition || dictEntry.definition,
+                  german_definition: v.german_definition || dictEntry.german_definition || dictEntry.definition,
+                  example: v.example || dictEntry.example,
+                  example_english: v.example_english || dictEntry.example_english,
+                  example_german: v.example_german || dictEntry.example_german,
+                  example_vietnamese: v.example_vietnamese || dictEntry.example_vietnamese
+              };
+          }
+          return v;
+      });
+  }, [vocabList, language]);
+
   const [step, setStep] = useState(0);
   const [score, setScore] = useState(0);
   
-  // Trò chơi Flashcard lặp toàn bộ, các trò khác ngẫu nhiên 5 từ
-  const gameVocabs = type === 'flashcards' ? vocabList : [...vocabList].sort(() => 0.5 - Math.random()).slice(0, 5);
+  // Trò chơi Flashcard lặp toàn bộ, các trò khác ngẫu nhiên 5 từ (Dùng danh sách đã được bồi đắp dữ liệu)
+  const gameVocabs = type === 'flashcards' ? enrichedVocabList : [...enrichedVocabList].sort(() => 0.5 - Math.random()).slice(0, 5);
   const currentVocab = gameVocabs[step];
 
   const next = (correct: boolean) => {
@@ -2274,8 +2295,8 @@ function FlashcardGame({ vocab, onNext, onPrev, language, step, totalSteps }: { 
 
   return (
     <div className="space-y-8 w-full max-w-4xl mx-auto">
-      {/* Khung thẻ cố định chiều cao 280px, tràn viền w-full */}
-      <div className="perspective-[1000px] w-full min-h-[280px]">
+      {/* Khung thẻ cố định chiều cao 220px, tràn viền w-full */}
+      <div className="perspective-[1000px] w-full min-h-[220px]">
         <AnimatePresence mode="wait">
           <motion.div 
             key={side}
@@ -2284,21 +2305,25 @@ function FlashcardGame({ vocab, onNext, onPrev, language, step, totalSteps }: { 
             exit={{ rotateX: -90, opacity: 0 }}
             transition={{ duration: 0.3, ease: "easeInOut" }}
             onClick={() => setSide((side + 1) % 3)}
-            className="w-full min-h-[280px] bg-white rounded-[2rem] shadow-xl border border-slate-100 flex flex-col p-6 md:p-10 cursor-pointer relative overflow-hidden group"
+            className="w-full min-h-[220px] bg-white rounded-[2rem] shadow-xl border border-slate-100 flex flex-col p-6 md:p-10 cursor-pointer relative overflow-hidden group"
           >
             <div className="flex-grow flex flex-col justify-center w-full">
+              {/* MẶT 1 */}
               {side === 0 && (
-                <div className="text-left w-full">
-                   <div className="text-lg md:text-xl font-medium text-slate-800 leading-relaxed">
+                <div className="text-left w-full space-y-2">
+                   <div className="text-xl text-slate-800 leading-relaxed">
                      {vocab.part_of_speech && <span className="font-bold text-indigo-600 mr-2">({vocab.part_of_speech})</span>}
                      {definition || "Chưa có định nghĩa ngôn ngữ gốc cho từ này."}
                    </div>
                 </div>
               )}
               
+              {/* MẶT 2 */}
               {side === 1 && (
-                <div className="text-left space-y-2 w-full">
-                   <h3 className="text-xl md:text-2xl font-bold text-emerald-600">{vocab.vietnamese_meaning || vocab.meaning}</h3>
+                <div className="text-left w-full space-y-4">
+                   <div className="text-xl font-bold text-emerald-600">
+                     {vocab.vietnamese_meaning || vocab.meaning}
+                   </div>
                    {vocab.phonetic && (
                      <div className="flex items-center gap-3 text-slate-500">
                        <button onClick={(e) => {e.stopPropagation(); handleSpeak(vocab.word, language)}} className="hover:text-indigo-600 transition-colors p-2 bg-slate-50 rounded-full hover:bg-indigo-50 border border-slate-100 shadow-sm">
@@ -2310,13 +2335,15 @@ function FlashcardGame({ vocab, onNext, onPrev, language, step, totalSteps }: { 
                 </div>
               )}
 
+              {/* MẶT 3 */}
               {side === 2 && (
                 <div className="text-left w-full space-y-4">
-                   <div className="flex items-baseline gap-2">
-                      <h3 className="text-xl md:text-2xl font-bold text-indigo-600">{vocab.word}</h3>
-                      {vocab.part_of_speech && <span className="text-base text-slate-500 font-medium">({vocab.part_of_speech})</span>}
+                   {/* Dòng 1: Từ vựng + (Loại từ) */}
+                   <div className="text-xl font-bold text-indigo-600">
+                      {vocab.word} {vocab.part_of_speech && <span className="font-normal text-slate-500">({vocab.part_of_speech})</span>}
                    </div>
 
+                   {/* Dòng 2: Loa + Phiên âm */}
                    {vocab.phonetic && (
                      <div className="flex items-center gap-3 text-slate-500">
                          <button onClick={(e) => {e.stopPropagation(); handleSpeak(vocab.word, language)}} className="hover:text-indigo-600 transition-colors p-2 bg-slate-50 rounded-full hover:bg-indigo-50 border border-slate-100 shadow-sm">
@@ -2326,23 +2353,22 @@ function FlashcardGame({ vocab, onNext, onPrev, language, step, totalSteps }: { 
                      </div>
                    )}
 
+                   {/* Dòng 3: Loa câu + Câu ví dụ + Nghĩa ví dụ */}
                    {(exampleText) && (
-                     <div className="pt-4 border-t border-slate-100">
-                       <div className="flex items-start gap-3">
-                          <button onClick={(e) => {e.stopPropagation(); handleSpeak(exampleText || '', language)}} className="hover:text-indigo-600 transition-colors text-slate-400 mt-1 shrink-0 p-1.5 bg-white rounded-full shadow-sm border border-slate-100">
-                            <Volume2 size={18} />
-                          </button>
-                          <div className="space-y-1">
-                             <div className="text-lg text-slate-700 leading-relaxed italic">
-                                {highlightWordInSentence(exampleText || '', vocab.word)}
-                             </div>
-                             {vocab.example_vietnamese && (
-                                <div className="text-base text-slate-500">
-                                   {vocab.example_vietnamese}
-                                </div>
-                             )}
-                          </div>
-                       </div>
+                     <div className="flex items-start gap-3 mt-4 pt-4 border-t border-slate-100">
+                        <button onClick={(e) => {e.stopPropagation(); handleSpeak(exampleText || '', language)}} className="hover:text-indigo-600 transition-colors text-slate-400 mt-1 shrink-0 p-1.5 bg-white rounded-full shadow-sm border border-slate-100">
+                          <Volume2 size={18} />
+                        </button>
+                        <div className="space-y-1">
+                           <div className="text-lg text-slate-700 leading-relaxed italic">
+                              {highlightWordInSentence(exampleText || '', vocab.word)}
+                           </div>
+                           {vocab.example_vietnamese && (
+                              <div className="text-base text-slate-500">
+                                 {vocab.example_vietnamese}
+                              </div>
+                           )}
+                        </div>
                      </div>
                    )}
                 </div>

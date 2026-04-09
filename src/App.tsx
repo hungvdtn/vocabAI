@@ -62,7 +62,7 @@ import {
 } from 'firebase/firestore';
 import { signInWithPopup, onAuthStateChanged, User, signOut } from 'firebase/auth';
 import { db, auth, googleProvider } from './firebase';
-import { generateDistractors, generateExampleSentence, analyzePerformance, translateWord, checkLocalDictionary } from './services/ai';
+import { generateDistractors, generateExampleSentence, translateWord, checkLocalDictionary } from './services/ai';
 import { cn } from './lib/utils';
 
 import { 
@@ -127,6 +127,7 @@ interface Lesson {
 }
 
 interface GameResult {
+  lessonId: string; // Theo dõi game thuộc lesson nào
   gameType: GameType;
   score: number;
   total: number;
@@ -141,10 +142,10 @@ const Confetti = () => {
   const colors = ['bg-red-500', 'bg-blue-500', 'bg-emerald-500', 'bg-yellow-400', 'bg-purple-500', 'bg-pink-500'];
   return (
     <div className="fixed inset-0 pointer-events-none z-[100] overflow-hidden">
-      {[...Array(60)].map((_, i) => {
+      {[...Array(80)].map((_, i) => {
         const left = Math.random() * 100;
         const animationDuration = 2 + Math.random() * 4;
-        const animationDelay = Math.random() * 1.5;
+        const animationDelay = Math.random() * 0.5;
         const color = colors[Math.floor(Math.random() * colors.length)];
         const isCircle = Math.random() > 0.5;
         return (
@@ -163,8 +164,36 @@ const Confetti = () => {
 };
 
 // ------------------------------------------------------------------------------------
-// HỆ THỐNG ÂM THANH NATIVE
+// HỆ THỐNG TỪ ĐIỂN KHEN NGỢI NGẪU NHIÊN CHỐNG NHÀM CHÁN
 // ------------------------------------------------------------------------------------
+const PRAISE_MESSAGES = [
+  "Keep up the good work! Tuyệt vời!",
+  "Thật xuất sắc! Bạn đang làm rất tốt!",
+  "Phong độ đỉnh cao! Cứ thế phát huy nhé!",
+  "Quá ấn tượng! Điểm số nói lên tất cả!",
+  "Tuyệt cú mèo! Bạn thực sự là một cao thủ!",
+  "Không thể tin nổi! Quá nhanh và quá nguy hiểm!",
+  "Perfect! Bạn sắp thông thạo ngôn ngữ này rồi đấy!"
+];
+
+const getRandomPraise = () => PRAISE_MESSAGES[Math.floor(Math.random() * PRAISE_MESSAGES.length)];
+
+// ------------------------------------------------------------------------------------
+// HỆ THỐNG ÂM THANH GAME & NATIVE TTS
+// ------------------------------------------------------------------------------------
+
+const playGameSound = (type: 'correct' | 'wrong' | 'success') => {
+  let audioSrc = '';
+  if (type === 'correct') audioSrc = '/assets/correct.mp3'; // CẦN ĐỂ FILE TRONG THƯ MỤC PUBLIC/ASSETS
+  else if (type === 'wrong') audioSrc = '/assets/error-3.mp3';
+  else if (type === 'success') audioSrc = '/assets/great-success.mp3';
+  
+  if (audioSrc) {
+    const audio = new Audio(audioSrc);
+    audio.play().catch(e => console.warn("Lỗi phát âm thanh (có thể chưa có file trong thư mục public/assets):", e));
+  }
+};
+
 const handleSpeak = (text: string, lang: Language) => {
   if (!('speechSynthesis' in window)) {
     console.warn("Trình duyệt không hỗ trợ âm thanh.");
@@ -326,11 +355,6 @@ export default function App() {
     return () => unsubscribe();
   }, [user, language, isTestMode]);
 
-  const playSound = (type: 'correct' | 'wrong') => {
-    const audio = new Audio(type === 'correct' ? 'assets/sound-correct.mp3' : 'assets/sound-wrong.mp3');
-    audio.play().catch(() => {}); 
-  };
-
   const deleteLesson = async (lessonId: string) => {
     try {
       await deleteDoc(doc(db, 'lessons', lessonId));
@@ -339,8 +363,13 @@ export default function App() {
     }
   };
 
+  // LOGIC THEO DÕI & TỰ ĐỘNG CHUYỂN SANG BÁO CÁO KHI CHƠI ĐỦ 5 GAME
   const handleGameComplete = async (res: GameResult) => {
-    setGameResults(prev => [...prev, { ...res, language }]);
+    // 1. Lưu kết quả game vào bộ nhớ
+    const newResults = [...gameResults, { ...res, language }];
+    setGameResults(newResults);
+    
+    // Cập nhật lên CSDL
     if (activeLessonId && !isTestMode) {
       try {
         const lessonRef = doc(db, 'lessons', activeLessonId);
@@ -350,7 +379,22 @@ export default function App() {
         console.error("Lỗi cập nhật lịch sử:", error);
       }
     }
-    setActiveGame(null);
+    
+    setActiveGame(null); // Đóng game hiện tại
+    
+    // 2. Đếm số game đã chơi của bài học này trong phiên hiện tại
+    if (activeLessonId) {
+       const gamesPlayedOfThisLesson = newResults.filter(r => r.lessonId === activeLessonId).map(r => r.gameType);
+       const uniqueGamesPlayed = new Set(gamesPlayedOfThisLesson);
+       
+       // Nếu đã chơi đủ 5 loại game khác nhau (flashcards, quiz, matching, writing, fill)
+       if (uniqueGamesPlayed.size >= 5) {
+          // Bắn ra pháo hoa siêu bự
+          playGameSound('success');
+          // Tự động đá sang trang Report
+          setView('report');
+       }
+    }
   };
 
   if (!user) {
@@ -398,13 +442,13 @@ export default function App() {
           <div className="flex items-center gap-3 lg:gap-4">
             <div className="flex bg-slate-100 p-1 rounded-xl">
               <button 
-                onClick={() => { setLanguage('en'); setEditingLesson(null); setPlayVocabList([]); setActiveLessonId(null); }}
+                onClick={() => { setLanguage('en'); setEditingLesson(null); setPlayVocabList([]); setActiveLessonId(null); setGameResults([]); }}
                 className={cn("px-2 lg:px-3 py-1 rounded-lg text-sm font-medium transition-all", language === 'en' ? "bg-white shadow-sm text-indigo-600" : "text-slate-500")}
               >
                 EN
               </button>
               <button 
-                onClick={() => { setLanguage('de'); setEditingLesson(null); setPlayVocabList([]); setActiveLessonId(null); }}
+                onClick={() => { setLanguage('de'); setEditingLesson(null); setPlayVocabList([]); setActiveLessonId(null); setGameResults([]); }}
                 className={cn("px-2 lg:px-3 py-1 rounded-lg text-sm font-medium transition-all", language === 'de' ? "bg-white shadow-sm text-indigo-600" : "text-slate-500")}
               >
                 DE
@@ -486,7 +530,16 @@ export default function App() {
           {view === 'games' && (
             <motion.div key="games" className="w-full" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <GamesView 
-                vocabList={playVocabList} language={language} onComplete={handleGameComplete} playSound={playSound} activeGame={activeGame} setActiveGame={setActiveGame} onGoToLibrary={() => setView('library')} onGoToTopics={() => setView('topics')} onGoToInput={() => setView('input')} hasLessons={lessons.some(l => l.language === language)}
+                vocabList={playVocabList} 
+                language={language} 
+                onComplete={handleGameComplete} 
+                activeGame={activeGame} 
+                setActiveGame={setActiveGame} 
+                onGoToLibrary={() => setView('library')} 
+                onGoToTopics={() => setView('topics')} 
+                onGoToInput={() => setView('input')} 
+                hasLessons={lessons.some(l => l.language === language)}
+                activeLessonId={activeLessonId || ''}
               />
             </motion.div>
           )}
@@ -497,7 +550,7 @@ export default function App() {
           )}
           {view === 'report' && (
             <motion.div key="report" className="w-full" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <ReportView results={gameResults} language={language} />
+              <ReportView results={gameResults} language={language} activeLessonId={activeLessonId || ''} />
             </motion.div>
           )}
         </AnimatePresence>
@@ -637,25 +690,7 @@ function TopicLibraryView({ language, lessons, onOpenInInput }: { language: Lang
 
   const formatToVocab = (wordsArray: any[]): Vocabulary[] => {
     return wordsArray.map(w => ({
-      word: w.word,
-      meaning: w.vietnamese_meaning || w.meaning,
-      type: w.part_of_speech,
-      part_of_speech: w.part_of_speech,
-      phonetic: w.phonetic,
-      definition: language === 'en' ? w.english_definition : w.german_definition,
-      english_definition: w.english_definition,
-      german_definition: w.german_definition,
-      example: language === 'en' ? w.example_english : w.example_german,
-      example_english: w.example_english,
-      example_german: w.example_german,
-      example_vietnamese: w.example_vietnamese,
-      article: w.article,
-      plural: w.plural,
-      synonyms: w.synonyms || w.synonym,
-      topic: w.topic,
-      language: language,
-      userId: 'system',
-      createdAt: Date.now()
+      word: w.word, meaning: w.vietnamese_meaning || w.meaning, type: w.part_of_speech, part_of_speech: w.part_of_speech, phonetic: w.phonetic, definition: language === 'en' ? w.english_definition : w.german_definition, english_definition: w.english_definition, german_definition: w.german_definition, example: language === 'en' ? w.example_english : w.example_german, example_english: w.example_english, example_german: w.example_german, example_vietnamese: w.example_vietnamese, article: w.article, plural: w.plural, synonyms: w.synonyms || w.synonym, topic: w.topic, language: language, userId: 'system', createdAt: Date.now()
     }));
   };
 
@@ -789,22 +824,17 @@ function TopicLibraryView({ language, lessons, onOpenInInput }: { language: Lang
   );
 }
 
-// --- DICTIONARY VIEW CHUYÊN SÂU ---
 function DictionaryView({ language }: { language: Language }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [selectedWord, setSelectedWord] = useState<any | null>(null);
-  
   const [aiTranslation, setAiTranslation] = useState<string[] | null>(null);
   const [isTranslating, setIsTranslating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
-  
   const searchRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    setSearchTerm(''); setSelectedWord(null); setSuggestions([]); setAiTranslation(null);
-  }, [language]);
+  useEffect(() => { setSearchTerm(''); setSelectedWord(null); setSuggestions([]); setAiTranslation(null); }, [language]);
 
   const currentDict: any[] = language === 'en' ? enDictDataRaw : deDictDataRaw;
 
@@ -815,9 +845,7 @@ function DictionaryView({ language }: { language: Language }) {
     setSuggestions(results); setSelectedWord(null); 
   };
 
-  const handleSelectWord = (wordObj: any) => {
-    setSelectedWord(wordObj); setSearchTerm(wordObj.word); setSuggestions([]); setAiTranslation(null);
-  };
+  const handleSelectWord = (wordObj: any) => { setSelectedWord(wordObj); setSearchTerm(wordObj.word); setSuggestions([]); setAiTranslation(null); };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && searchTerm.trim() !== '') {
@@ -837,11 +865,8 @@ function DictionaryView({ language }: { language: Language }) {
       if (data && Array.isArray(data.translations)) meaningArray = data.translations;
       else if (typeof data === 'string' && data.trim() !== '') meaningArray = data.split(',').map((s:string) => s.trim()).filter((s:string) => s !== '');
       setAiTranslation(meaningArray);
-    } catch (error) {
-      setAiTranslation(["Lỗi kết nối AIBTeM. Vui lòng thử lại sau."]);
-    } finally {
-      setIsTranslating(false);
-    }
+    } catch (error) { setAiTranslation(["Lỗi kết nối AIBTeM. Vui lòng thử lại sau."]); } 
+    finally { setIsTranslating(false); }
   };
 
   const handleSaveToDatabase = async () => {
@@ -850,42 +875,28 @@ function DictionaryView({ language }: { language: Language }) {
       await new Promise(resolve => setTimeout(resolve, 1000));
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
-    } catch (error) {
-      alert("Lỗi khi lưu vào Google Sheets!");
-    } finally {
-      setIsSaving(false);
-    }
+    } catch (error) { alert("Lỗi khi lưu vào Google Sheets!"); } 
+    finally { setIsSaving(false); }
   };
 
   const startVoiceSearch = () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (SpeechRecognition) {
-      const recognition = new SpeechRecognition();
-      recognition.lang = language === 'en' ? 'en-US' : 'de-DE';
-      recognition.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        setSearchTerm(transcript); handleSearchChange(transcript);
-      };
+      const recognition = new SpeechRecognition(); recognition.lang = language === 'en' ? 'en-US' : 'de-DE';
+      recognition.onresult = (event: any) => { const transcript = event.results[0][0].transcript; setSearchTerm(transcript); handleSearchChange(transcript); };
       recognition.start();
-    } else {
-      alert("Trình duyệt của bạn không hỗ trợ tính năng nhận diện giọng nói (Vui lòng sử dụng Google Chrome).");
-    }
+    } else alert("Trình duyệt của bạn không hỗ trợ tính năng nhận diện giọng nói (Vui lòng sử dụng Google Chrome).");
   };
 
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (searchRef.current && !searchRef.current.contains(event.target as Node)) setSuggestions([]);
-    }
+    function handleClickOutside(event: MouseEvent) { if (searchRef.current && !searchRef.current.contains(event.target as Node)) setSuggestions([]); }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [searchRef]);
 
   return (
     <div className="w-full pb-32">
-      <div className="text-center space-y-4 mb-8 mt-4">
-        <h2 className="text-3xl font-black text-indigo-700">Từ điển {language === 'en' ? 'Anh - Việt' : 'Đức - Việt'}</h2>
-      </div>
-
+      <div className="text-center space-y-4 mb-8 mt-4"><h2 className="text-3xl font-black text-indigo-700">Từ điển {language === 'en' ? 'Anh - Việt' : 'Đức - Việt'}</h2></div>
       <div className="relative w-full" ref={searchRef}>
         <div className="relative">
           <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 w-6 h-6" />
@@ -918,9 +929,7 @@ function DictionaryView({ language }: { language: Language }) {
               <p className="flex items-center gap-2"><CheckCircle2 className="text-emerald-500 shrink-0" size={18}/> Hỗ trợ tra từ bằng giọng nói.</p>
             </div>
           </div>
-          <div className="flex justify-center">
-            <img src="https://placehold.co/300x300/4f46e5/white?text=AIBTeM+Mochi" alt="Mochi Placeholder" className="w-48 h-48 md:w-64 md:h-64 object-contain animate-[bounce_3s_infinite]" />
-          </div>
+          <div className="flex justify-center"><img src="https://placehold.co/300x300/4f46e5/white?text=AIBTeM+Mochi" alt="Mochi Placeholder" className="w-48 h-48 md:w-64 md:h-64 object-contain animate-[bounce_3s_infinite]" /></div>
         </div>
       )}
 
@@ -967,41 +976,23 @@ function DictionaryView({ language }: { language: Language }) {
             </span>
             {selectedWord.part_of_speech && <span className="text-xl text-slate-500 font-medium">({selectedWord.part_of_speech})</span>}
           </div>
-
           {selectedWord.phonetic && (
             <div className="flex items-center gap-3 mb-6">
               <Volume2 className="text-indigo-600 cursor-pointer hover:text-indigo-800 hover:scale-110 transition-transform" onClick={() => handleSpeak(selectedWord.word, language)} size={22} />
               <span className="font-mono text-slate-600 text-lg">{renderPhonetic(selectedWord.phonetic)}</span>
             </div>
           )}
-
           <div className="mb-4">
-            {language === 'en' && selectedWord.english_definition && (
-              <div className="text-slate-800 mb-1 text-lg font-medium">
-                <span className="font-bold text-slate-500 mr-2">def. ({isDefSentence(selectedWord.english_definition) ? 'sentence' : 'phrase'}):</span> {selectedWord.english_definition}
-              </div>
-            )}
-            {language === 'de' && selectedWord.german_definition && (
-              <div className="text-slate-800 mb-1 text-lg font-medium">
-                <span className="font-bold text-slate-500 mr-2">Begr. ({isDefSentence(selectedWord.german_definition) ? 'Satz' : 'Aus'}):</span> {selectedWord.german_definition}
-              </div>
-            )}
-            {(selectedWord.synonyms || selectedWord.synonym) && (
-              <div className="text-slate-700 text-lg mt-2"><span className="font-bold text-indigo-600 mr-2">Từ đồng nghĩa:</span>{selectedWord.synonyms || selectedWord.synonym}</div>
-            )}
+            {language === 'en' && selectedWord.english_definition && <div className="text-slate-800 mb-1 text-lg font-medium"><span className="font-bold text-slate-500 mr-2">def. ({isDefSentence(selectedWord.english_definition) ? 'sentence' : 'phrase'}):</span> {selectedWord.english_definition}</div>}
+            {language === 'de' && selectedWord.german_definition && <div className="text-slate-800 mb-1 text-lg font-medium"><span className="font-bold text-slate-500 mr-2">Begr. ({isDefSentence(selectedWord.german_definition) ? 'Satz' : 'Aus'}):</span> {selectedWord.german_definition}</div>}
+            {(selectedWord.synonyms || selectedWord.synonym) && <div className="text-slate-700 text-lg mt-2"><span className="font-bold text-indigo-600 mr-2">Từ đồng nghĩa:</span>{selectedWord.synonyms || selectedWord.synonym}</div>}
           </div>
-
-          <div className="text-emerald-700 mb-8 text-xl font-bold flex items-start">
-            <span className="text-emerald-600 mr-2">Nghĩa:</span><span>{selectedWord.vietnamese_meaning || selectedWord.meaning}</span>
-          </div>
-
+          <div className="text-emerald-700 mb-8 text-xl font-bold flex items-start"><span className="text-emerald-600 mr-2">Nghĩa:</span><span>{selectedWord.vietnamese_meaning || selectedWord.meaning}</span></div>
           {(selectedWord.example_english || selectedWord.example_german || selectedWord.example) && (
             <div className="mt-4 border-t border-slate-100 pt-6">
               <div className="flex items-start gap-3 mb-2">
                 <Volume2 className="text-slate-400 cursor-pointer hover:text-indigo-600 mt-1 flex-shrink-0 transition-colors" onClick={() => handleSpeak(selectedWord.example_english || selectedWord.example_german || selectedWord.example, language)} size={20} />
-                <span className="text-slate-800 text-lg leading-relaxed">
-                  <span className="font-bold text-slate-500 mr-2">Ví dụ:</span><span className="italic">{highlightWordInSentence(selectedWord.example_english || selectedWord.example_german || selectedWord.example, selectedWord.word)}</span>
-                </span>
+                <span className="text-slate-800 text-lg leading-relaxed"><span className="font-bold text-slate-500 mr-2">Ví dụ:</span><span className="italic">{highlightWordInSentence(selectedWord.example_english || selectedWord.example_german || selectedWord.example, selectedWord.word)}</span></span>
               </div>
               {selectedWord.example_vietnamese && <div className="ml-8 pl-1 text-slate-600 text-lg">{selectedWord.example_vietnamese}</div>}
             </div>
@@ -1355,7 +1346,7 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
   );
 }
 
-function GamesView({ vocabList, language, onComplete, playSound, activeGame, setActiveGame, onGoToLibrary, onGoToTopics, onGoToInput, hasLessons }: { vocabList: Vocabulary[], language: Language, onComplete: (res: GameResult) => void, playSound: (t: 'correct' | 'wrong') => void, activeGame: GameType | null, setActiveGame: (g: GameType | null) => void, onGoToLibrary: () => void, onGoToTopics: () => void, onGoToInput: () => void, hasLessons: boolean }) {
+function GamesView({ vocabList, language, onComplete, playSound, activeGame, setActiveGame, onGoToLibrary, onGoToTopics, onGoToInput, hasLessons, activeLessonId }: { vocabList: Vocabulary[], language: Language, onComplete: (res: GameResult) => void, playSound: (t: 'correct' | 'wrong' | 'success') => void, activeGame: GameType | null, setActiveGame: (g: GameType | null) => void, onGoToLibrary: () => void, onGoToTopics: () => void, onGoToInput: () => void, hasLessons: boolean, activeLessonId: string }) {
   
   if (vocabList.length < 5) {
     if (!hasLessons) {
@@ -1383,7 +1374,7 @@ function GamesView({ vocabList, language, onComplete, playSound, activeGame, set
 
   if (activeGame) {
     return (
-      <GameContainer type={activeGame} vocabList={vocabList} language={language} onBack={() => setActiveGame(null)} onFinish={(score) => { onComplete({ gameType: activeGame, score, total: 5, timestamp: Date.now(), language }); }} playSound={playSound} />
+      <GameContainer type={activeGame} vocabList={vocabList} language={language} activeLessonId={activeLessonId} onBack={() => setActiveGame(null)} onFinish={(score) => { onComplete({ lessonId: activeLessonId, gameType: activeGame, score, total: type === 'flashcards' ? vocabList.length : 5, timestamp: Date.now(), language }); }} playSound={playSound} />
     );
   }
 
@@ -1418,9 +1409,9 @@ function GameCard({ title, desc, icon, onClick, colorClass }: { title: string, d
   );
 }
 
-// --- GAME LOGIC MỚI KÈM MÀN HÌNH TỔNG KẾT ---
+// --- GAME LOGIC ---
 
-function GameContainer({ type, vocabList, language, onBack, onFinish, playSound }: { type: GameType, vocabList: Vocabulary[], language: Language, onBack: () => void, onFinish: (score: number) => void, playSound: (t: 'correct' | 'wrong') => void }) {
+function GameContainer({ type, vocabList, language, onBack, onFinish, playSound, activeLessonId }: { type: GameType, vocabList: Vocabulary[], language: Language, onBack: () => void, onFinish: (score: number) => void, playSound: (t: 'correct' | 'wrong' | 'success') => void, activeLessonId: string }) {
   const currentDict = language === 'en' ? enDictDataRaw : deDictDataRaw;
   const enrichedVocabList = useMemo(() => {
       return vocabList.map(v => {
@@ -1442,7 +1433,14 @@ function GameContainer({ type, vocabList, language, onBack, onFinish, playSound 
   
   const [answerHistory, setAnswerHistory] = useState<('correct'|'wrong'|null)[]>(new Array(gameVocabs.length).fill(null));
 
-  // Hàm ghi nhận kết quả và chuyển bước
+  useEffect(() => {
+     if (type === 'flashcards') {
+         const newHistory = [...answerHistory];
+         newHistory[step] = 'correct'; 
+         setAnswerHistory(newHistory);
+     }
+  }, [step, type]);
+
   const handleAnswer = (correct: boolean, userAnswer: string, customMistakeWord?: string, customCorrectAns?: string) => {
       const newHistory = [...answerHistory];
       newHistory[step] = correct ? 'correct' : 'wrong';
@@ -1470,7 +1468,7 @@ function GameContainer({ type, vocabList, language, onBack, onFinish, playSound 
           if (type === 'flashcards') {
               onFinish(score);
           } else {
-              setIsFinished(true); // Kích hoạt màn hình tổng kết
+              setIsFinished(true); 
           }
       }
   };
@@ -1478,25 +1476,30 @@ function GameContainer({ type, vocabList, language, onBack, onFinish, playSound 
   // MÀN HÌNH TỔNG KẾT
   if (isFinished) {
       const percentage = Math.round((score / gameVocabs.length) * 100);
-      const isGood = percentage >= 60;
+      const isGood = percentage >= 80;
+
+      useEffect(() => {
+          if (isGood) {
+              playSound('success');
+          }
+      }, []);
       
       return (
           <div className="w-full max-w-3xl mx-auto">
-              <Confetti />
-              <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white rounded-[3rem] p-8 md:p-12 shadow-xl border border-slate-100 text-center relative overflow-hidden">
-                  {/* Hình thỏ Mochi Placeholder */}
-                  <img src={isGood ? "https://api.dicebear.com/7.x/fun-emoji/svg?seed=MochiHappy" : "https://api.dicebear.com/7.x/fun-emoji/svg?seed=MochiSad"} alt="Mochi" className="w-40 h-40 mx-auto mb-6 bg-indigo-50 rounded-full p-4" />
+              {isGood && <Confetti />}
+              <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white rounded-[3rem] p-8 md:p-12 shadow-xl border border-slate-100 text-center relative overflow-hidden z-10">
+                  <img src={isGood ? "https://api.dicebear.com/7.x/fun-emoji/svg?seed=MochiHappy" : "https://api.dicebear.com/7.x/fun-emoji/svg?seed=MochiSad"} alt="Mochi" className="w-40 h-40 mx-auto mb-6 bg-indigo-50 rounded-full p-4 border-4 border-white shadow-lg" />
                   
                   <h2 className="text-3xl md:text-4xl font-black text-slate-800 mb-4">
-                      {isGood ? "Keep up the good work! Tuyệt vời!" : "Cố gắng lên nhé! Đừng bỏ cuộc!"}
+                      {isGood ? getRandomPraise() : "Cố gắng lên nhé! Luyện tập thêm sẽ thành công!"}
                   </h2>
                   <p className="text-lg md:text-xl text-slate-600 mb-8 font-medium">
                       Tổng số có <strong className="text-indigo-600">{gameVocabs.length}</strong> câu, bạn đã làm đúng <strong className="text-emerald-600">{score}</strong> câu; sai <strong className="text-red-500">{gameVocabs.length - score}</strong> câu!
                   </p>
 
                   {mistakes.length > 0 && (
-                      <div className="text-left bg-slate-50 p-6 md:p-8 rounded-3xl space-y-4 mb-8 border border-slate-100">
-                          <h4 className="font-bold text-slate-700 text-lg border-b border-slate-200 pb-3 mb-4">Chi tiết các lỗi sai:</h4>
+                      <div className="text-left bg-slate-50 p-6 md:p-8 rounded-3xl space-y-4 mb-8 border border-slate-100 max-h-[300px] overflow-y-auto">
+                          <h4 className="font-bold text-slate-700 text-lg border-b border-slate-200 pb-3 mb-4 sticky top-0 bg-slate-50">Chi tiết các lỗi sai:</h4>
                           {mistakes.map((m, i) => (
                               <div key={i} className="text-base text-slate-700 bg-white p-4 rounded-xl shadow-sm border border-slate-100">
                                   <strong className="text-indigo-600 text-lg block mb-1">{m.word}:</strong> 
@@ -1521,12 +1524,11 @@ function GameContainer({ type, vocabList, language, onBack, onFinish, playSound 
         <button onClick={onBack} className="flex items-center gap-2 text-slate-500 hover:text-indigo-600 font-bold">
           <ChevronLeft size={20} /> Quay lại
         </button>
-        {/* THANH TIẾN ĐỘ XANH ĐỎ CHỈ HIỂN THỊ KHI KHÔNG PHẢI GAME MATCHING */}
         {type !== 'matching' && (
           <div className="flex gap-2 flex-1 max-w-sm mx-4">
             {gameVocabs.map((_, i) => {
                let bgColor = "bg-slate-200";
-               if (i < step) {
+               if (i < step || (type === 'flashcards' && i === step)) {
                    bgColor = answerHistory[i] === 'correct' ? "bg-emerald-500" : "bg-red-500";
                } else if (i === step) {
                    bgColor = "bg-indigo-400 animate-pulse";
@@ -1543,7 +1545,7 @@ function GameContainer({ type, vocabList, language, onBack, onFinish, playSound 
           <motion.div key={step} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
             <FlashcardGame 
               vocab={currentVocab} 
-              onNext={() => { handleAnswer(false, ''); handleNextStep(); }} 
+              onNext={() => { handleAnswer(true, ''); handleNextStep(); }} 
               onPrev={() => setStep(s => s > 0 ? s - 1 : s)} 
               language={language} 
               step={step} 
@@ -1758,28 +1760,20 @@ function FlashcardGame({ vocab, onNext, onPrev, language, step, totalSteps }: { 
   );
 }
 
-// ------------------------------------------------------------------------------------
-// THUẬT TOÁN BỐC ĐÁP ÁN NHANH TRONG QUIZ (Không gọi API AI)
-// ------------------------------------------------------------------------------------
 function QuizGame({ vocab, allVocabs, onAnswer, onNextStep, language }: { vocab: Vocabulary, allVocabs: Vocabulary[], onAnswer: (c: boolean, ans: string) => void, onNextStep: () => void, language: Language }) {
   const [options, setOptions] = useState<string[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
 
   useEffect(() => {
-    // 1. Lọc tất cả các từ khác trong bài học
     let others = allVocabs.filter(v => v.word.toLowerCase() !== vocab.word.toLowerCase());
-    
-    // 2. Đảo ngẫu nhiên các từ khác
     others = others.sort(() => 0.5 - Math.random());
     
-    // 3. Nhặt 3 nghĩa của 3 từ khác để làm mồi nhử (nếu bài học quá ngắn thì lấy thêm từ AI tạo mẫu)
     let distractors = others.slice(0, 3).map(v => v.vietnamese_meaning || v.meaning);
     let i = 1;
     while (distractors.length < 3) {
-       distractors.push("Đáp án phụ trợ số " + i++); // Trường hợp dự phòng nếu file siêu ngắn
+       distractors.push("Đáp án phụ trợ số " + i++); 
     }
 
-    // 4. Trộn đáp án đúng và mồi nhử
     const all = [vocab.vietnamese_meaning || vocab.meaning, ...distractors].sort(() => 0.5 - Math.random());
     setOptions(all);
     setSelected(null);
@@ -1787,7 +1781,6 @@ function QuizGame({ vocab, allVocabs, onAnswer, onNextStep, language }: { vocab:
 
   return (
     <div className="space-y-6">
-      {/* Khung giao diện thu nhỏ, chữ 3xl */}
       <div className="bg-white p-6 md:p-8 rounded-[2rem] shadow-xl text-center border border-slate-100">
         <span className="text-slate-400 font-bold uppercase tracking-widest text-xs mb-2 block">Chọn nghĩa đúng của</span>
         <div className="flex items-center justify-center gap-4">
@@ -1798,7 +1791,6 @@ function QuizGame({ vocab, allVocabs, onAnswer, onNextStep, language }: { vocab:
         </div>
       </div>
 
-      {/* Lưới đáp án 2x2, có khả năng giãn nở chiều cao */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {options.map((opt, i) => (
           <button 
@@ -1807,15 +1799,13 @@ function QuizGame({ vocab, allVocabs, onAnswer, onNextStep, language }: { vocab:
             onClick={() => {
               setSelected(opt);
               const isCorrect = opt === (vocab.vietnamese_meaning || vocab.meaning);
-              // Lập tức đánh dấu xanh đỏ thanh tiến độ
               onAnswer(isCorrect, opt);
-              // Chờ 1 giây để người chơi nhìn thấy kết quả rồi chuyển câu
               setTimeout(onNextStep, 1000);
             }}
             className={cn(
               "p-6 rounded-3xl text-left font-bold text-lg transition-all border-2 flex items-center h-full min-h-[100px]",
               selected === opt 
-                ? (opt === (vocab.vietnamese_meaning || vocab.meaning) ? "bg-emerald-50 border-emerald-500 text-emerald-700" : "bg-red-50 border-red-500 text-red-700")
+                ? (opt === (vocab.vietnamese_meaning || vocab.meaning) ? "bg-[#009900] border-[#009900] text-white" : "bg-red-500 border-red-500 text-white")
                 : "bg-white border-slate-100 hover:border-indigo-300 hover:bg-indigo-50 hover:shadow-md"
             )}
           >
@@ -1827,9 +1817,6 @@ function QuizGame({ vocab, allVocabs, onAnswer, onNextStep, language }: { vocab:
   );
 }
 
-// ------------------------------------------------------------------------------------
-// MATCHING GAME TÍCH HỢP TỔNG KẾT
-// ------------------------------------------------------------------------------------
 function MatchingGame({ vocabs, onCompleteGame, playSound }: { vocabs: Vocabulary[], onCompleteGame: (score: number, mistakes: any[]) => void, playSound: (t: 'correct' | 'wrong') => void }) {
   const [words, setWords] = useState(() => [...vocabs].sort(() => 0.5 - Math.random()));
   const [meanings, setMeanings] = useState(() => [...vocabs].sort(() => 0.5 - Math.random()));
@@ -1838,7 +1825,6 @@ function MatchingGame({ vocabs, onCompleteGame, playSound }: { vocabs: Vocabular
   const [matches, setMatches] = useState<string[]>([]);
   const [wrong, setWrong] = useState<[string, string] | null>(null);
   
-  // Ghi chép lỗi của người chơi
   const [mistakesLog, setMistakesLog] = useState<any[]>([]);
   const [errorCount, setErrorCount] = useState(0);
 
@@ -1859,12 +1845,7 @@ function MatchingGame({ vocabs, onCompleteGame, playSound }: { vocabs: Vocabular
         setWrong([selectedWord, selectedMeaning]);
         playSound('wrong');
         setErrorCount(e => e + 1);
-        setMistakesLog(prev => [...prev, {
-            word: selectedWord,
-            userAnswer: selectedMeaning,
-            correctAnswer: correctAnswer
-        }]);
-
+        setMistakesLog(prev => [...prev, { word: selectedWord, userAnswer: selectedMeaning, correctAnswer: correctAnswer }]);
         setTimeout(() => {
           setWrong(null);
           setSelectedWord(null);
@@ -1884,7 +1865,7 @@ function MatchingGame({ vocabs, onCompleteGame, playSound }: { vocabs: Vocabular
             onClick={() => setSelectedWord(v.word)}
             className={cn(
               "w-full p-6 rounded-2xl font-bold text-lg border-2 transition-all",
-              matches.includes(v.word) ? "bg-emerald-500 text-white border-emerald-500 opacity-50" :
+              matches.includes(v.word) ? "bg-[#009900] text-white border-[#009900] opacity-50" :
               selectedWord === v.word ? "bg-indigo-600 text-white border-indigo-600" :
               wrong?.[0] === v.word ? "bg-red-500 text-white border-red-500" :
               "bg-white border-slate-100 hover:border-indigo-300 hover:shadow-md"
@@ -1902,7 +1883,7 @@ function MatchingGame({ vocabs, onCompleteGame, playSound }: { vocabs: Vocabular
             onClick={() => setSelectedMeaning(v.vietnamese_meaning || v.meaning)}
             className={cn(
               "w-full p-6 rounded-2xl font-bold text-lg border-2 transition-all",
-              matches.some(m => vocabs.find(voc => voc.word === m)?.meaning === (v.vietnamese_meaning || v.meaning) || vocabs.find(voc => voc.word === m)?.vietnamese_meaning === (v.vietnamese_meaning || v.meaning)) ? "bg-emerald-500 text-white border-emerald-500 opacity-50" :
+              matches.some(m => vocabs.find(voc => voc.word === m)?.meaning === (v.vietnamese_meaning || v.meaning) || vocabs.find(voc => voc.word === m)?.vietnamese_meaning === (v.vietnamese_meaning || v.meaning)) ? "bg-[#009900] text-white border-[#009900] opacity-50" :
               selectedMeaning === (v.vietnamese_meaning || v.meaning) ? "bg-indigo-600 text-white border-indigo-600" :
               wrong?.[1] === (v.vietnamese_meaning || v.meaning) ? "bg-red-500 text-white border-red-500" :
               "bg-white border-slate-100 hover:border-indigo-300 hover:shadow-md"
@@ -1919,6 +1900,7 @@ function MatchingGame({ vocabs, onCompleteGame, playSound }: { vocabs: Vocabular
 function WritingGame({ vocab, onAnswer, onNextStep, language }: { vocab: Vocabulary, onAnswer: (c: boolean, ans: string) => void, onNextStep: () => void, language: Language }) {
   const [input, setInput] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [isCorrectVal, setIsCorrectVal] = useState(false);
 
   useEffect(() => {
     handleSpeak(vocab.word, language);
@@ -1927,8 +1909,11 @@ function WritingGame({ vocab, onAnswer, onNextStep, language }: { vocab: Vocabul
   const check = () => {
     setSubmitted(true);
     const isCorrect = input.toLowerCase().trim() === vocab.word.toLowerCase().trim();
+    setIsCorrectVal(isCorrect);
     onAnswer(isCorrect, input || 'Không gõ gì');
-    setTimeout(onNextStep, 1500);
+    
+    // Nếu ĐÚNG thì chờ 0.8s đi tiếp. Nếu SAI thì đợi 2.5s để xem kết quả.
+    setTimeout(onNextStep, isCorrect ? 800 : 2500);
   };
 
   return (
@@ -1951,12 +1936,14 @@ function WritingGame({ vocab, onAnswer, onNextStep, language }: { vocab: Vocabul
           disabled={submitted}
           className={cn(
             "w-full bg-white border-4 rounded-3xl px-8 py-6 text-3xl font-black text-center focus:outline-none transition-all shadow-sm",
-            submitted ? (input.toLowerCase().trim() === vocab.word.toLowerCase().trim() ? "border-emerald-500 text-emerald-600" : "border-red-500 text-red-600") : "border-slate-100 focus:border-indigo-500"
+            submitted ? (isCorrectVal ? "border-[#009900] text-[#009900] bg-green-50" : "border-red-500 text-red-600 bg-red-50") : "border-slate-100 focus:border-indigo-500"
           )}
           placeholder="..."
         />
-        {submitted && input.toLowerCase().trim() !== vocab.word.toLowerCase().trim() && (
-          <p className="text-center font-bold text-emerald-600 text-lg">Đáp án đúng: {vocab.word}</p>
+        {submitted && !isCorrectVal && (
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="text-center font-medium text-slate-600 text-lg bg-red-50 py-3 rounded-2xl border border-red-100">
+            Đáp án đúng là: <span className="font-bold text-emerald-600">{vocab.word}</span>
+          </motion.div>
         )}
       </div>
     </div>
@@ -1967,11 +1954,11 @@ function FillGame({ vocab, onAnswer, onNextStep, language }: { vocab: Vocabulary
   const [sentence, setSentence] = useState('');
   const [input, setInput] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [isCorrectVal, setIsCorrectVal] = useState(false);
 
   const exampleText = language === 'en' ? (vocab.example_english || vocab.example) : (vocab.example_german || vocab.example);
 
   useEffect(() => {
-    // Nếu từ có sẵn câu ví dụ gốc thì lấy, nếu không thì xài AI sinh ra (như cũ)
     if (exampleText) {
         setSentence(exampleText);
     } else {
@@ -1988,15 +1975,23 @@ function FillGame({ vocab, onAnswer, onNextStep, language }: { vocab: Vocabulary
   const check = () => {
     setSubmitted(true);
     const isCorrect = input.toLowerCase().trim() === vocab.word.toLowerCase().trim();
-    // Gửi báo cáo lỗi tuỳ chỉnh: Trả lời sai "abc", đáp án đúng là "từ tiếng Anh", word hiển thị là "Nghĩa tiếng Việt"
+    setIsCorrectVal(isCorrect);
+    
+    // Gửi báo cáo lỗi tuỳ chỉnh cho màn hình Report
     onAnswer(isCorrect, input || 'Không gõ gì', vocab.vietnamese_meaning || vocab.meaning, vocab.word);
-    setTimeout(onNextStep, 1500);
+    
+    if (isCorrect) handleSpeak(vocab.word, language);
+    // Nếu đúng: 0.8s, nếu sai: 2.5s
+    setTimeout(onNextStep, isCorrect ? 800 : 2500);
   };
 
   return (
     <div className="space-y-8">
-      <div className="bg-white p-12 rounded-[3rem] shadow-xl border border-slate-100">
-        <h3 className="text-2xl md:text-3xl font-medium leading-loose text-slate-700 text-center">
+      <div className="bg-white p-10 md:p-12 rounded-[3rem] shadow-xl border border-slate-100 relative">
+        <button onClick={() => handleSpeak(sentence, language)} className="absolute top-6 right-6 p-4 bg-indigo-50 text-indigo-600 rounded-2xl hover:bg-indigo-100 transition-colors shadow-sm" title="Nghe cả câu">
+            <Volume2 size={24} />
+        </button>
+        <h3 className="text-2xl md:text-3xl font-medium leading-loose text-slate-700 text-center mt-8">
           {parts.map((p, i) => 
             p.toLowerCase() === vocab.word.toLowerCase() ? (
               <span key={i} className="inline-block min-w-[120px] border-b-4 border-indigo-300 mx-2 text-indigo-600 font-bold bg-indigo-50/50 px-2 rounded-t-lg">
@@ -2018,12 +2013,14 @@ function FillGame({ vocab, onAnswer, onNextStep, language }: { vocab: Vocabulary
           disabled={submitted}
           className={cn(
             "w-full bg-white border-4 rounded-3xl px-8 py-6 text-2xl font-bold text-center focus:outline-none transition-all shadow-sm",
-            submitted ? (input.toLowerCase().trim() === vocab.word.toLowerCase().trim() ? "border-emerald-500 text-emerald-600" : "border-red-500 text-red-600") : "border-slate-100 focus:border-indigo-500"
+            submitted ? (isCorrectVal ? "border-[#009900] text-[#009900] bg-green-50" : "border-red-500 text-red-600 bg-red-50") : "border-slate-100 focus:border-indigo-500"
           )}
           placeholder="Nhập từ còn thiếu bằng tiếng gốc..."
         />
-         {submitted && input.toLowerCase().trim() !== vocab.word.toLowerCase().trim() && (
-          <p className="text-center font-bold text-emerald-600 text-lg">Đáp án đúng: {vocab.word}</p>
+        {submitted && !isCorrectVal && (
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="text-center font-medium text-slate-600 text-lg bg-red-50 py-3 rounded-2xl border border-red-100">
+            Đáp án đúng là: <span className="font-bold text-emerald-600">{vocab.word}</span>
+          </motion.div>
         )}
       </div>
     </div>
@@ -2032,51 +2029,46 @@ function FillGame({ vocab, onAnswer, onNextStep, language }: { vocab: Vocabulary
 
 // --- REPORT VIEW ---
 
-function ReportView({ results, language }: { results: GameResult[], language: Language }) {
-  const [analysis, setAnalysis] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  const filteredResults = results.filter(r => r.language === language);
-
-  useEffect(() => {
-    if (filteredResults.length === 0) return;
-    const runAnalysis = async () => {
-      setLoading(true);
-      const feedback = await analyzePerformance(filteredResults, language);
-      setAnalysis(feedback);
-      setLoading(false);
-    };
-    runAnalysis();
-  }, [filteredResults, language]);
-
-  const chartData = filteredResults.map((r, i) => ({
-    name: `Game ${i + 1}`,
+function ReportView({ results, language, activeLessonId }: { results: GameResult[], language: Language, activeLessonId: string }) {
+  // Lọc kết quả của bài học HIỆN TẠI đang chơi
+  const currentSessionResults = results.filter(r => r.lessonId === activeLessonId && r.language === language);
+  
+  const chartData = currentSessionResults.map((r, i) => ({
+    name: getGameTitle(r.gameType),
     score: r.score,
     total: r.total
   }));
 
-  const totalScore = filteredResults.reduce((acc, r) => acc + r.score, 0);
-  const totalPossible = filteredResults.reduce((acc, r) => acc + r.total, 0);
+  const totalScore = currentSessionResults.reduce((acc, r) => acc + r.score, 0);
+  const totalPossible = currentSessionResults.reduce((acc, r) => acc + r.total, 0);
   const accuracy = totalPossible > 0 ? Math.round((totalScore / totalPossible) * 100) : 0;
+
+  // Render nhận xét tĩnh dựa trên điểm số (Tránh API 403 gây giật màn hình)
+  const getStaticFeedback = (acc: number) => {
+      if (acc >= 90) return "AIBTeM nhận thấy bạn đã nắm vững gần như toàn bộ từ vựng trong bài học này! Phản xạ xuất sắc. Bạn hoàn toàn có thể chuyển sang bài học mới khó hơn.";
+      if (acc >= 70) return "Kết quả rất khả quan! Bạn đã nhớ được phần lớn từ vựng. Hãy thử chơi lại game 'Nối từ' hoặc 'Luyện viết' một lần nữa để đạt điểm tuyệt đối nhé.";
+      if (acc >= 50) return "Bạn đang ở mức trung bình. Có vẻ một số từ vựng vẫn chưa thực sự in sâu vào trí nhớ. AIBTeM khuyên bạn nên sử dụng tính năng 'Flashcard' lướt qua lại 2-3 vòng trước khi làm trắc nghiệm.";
+      return "Đừng nản chí! Việc học ngôn ngữ cần sự lặp lại liên tục. Hãy quay lại học kỹ từng thẻ Flashcard, nghe phát âm và tự nhẩm lại theo trước khi bắt đầu chơi game.";
+  };
 
   return (
     <div className="w-full space-y-8 pb-20">
       <div className="text-center">
-        <h2 className="text-3xl font-bold mb-2">Kết quả học tập</h2>
-        <p className="text-slate-500">Phân tích chi tiết quá trình rèn luyện của bạn.</p>
+        <h2 className="text-3xl font-bold mb-2">Báo cáo Tổng hợp Bài học</h2>
+        <p className="text-slate-500">Chi tiết kết quả 5 trò chơi bạn vừa hoàn thành.</p>
       </div>
 
       <div className="grid md:grid-cols-2 gap-8">
         <div className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100">
           <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-            <BarChart3 className="text-indigo-600" /> Tiến độ gần đây
+            <BarChart3 className="text-indigo-600" /> Biểu đồ kỹ năng
           </h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10 }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} domain={[0, 'dataMax']} />
                 <Tooltip 
                   contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
                   cursor={{ fill: '#f8fafc' }}
@@ -2087,30 +2079,26 @@ function ReportView({ results, language }: { results: GameResult[], language: La
           </div>
         </div>
 
-        <div className="bg-indigo-600 p-8 rounded-[2.5rem] shadow-xl text-white flex flex-col justify-center items-center text-center">
+        <div className="bg-indigo-600 p-8 rounded-[2.5rem] shadow-xl text-white flex flex-col justify-center items-center text-center relative overflow-hidden">
           <Trophy size={64} className="mb-4 text-indigo-200" />
           <h3 className="text-2xl font-bold mb-2">Tổng điểm tích lũy</h3>
-          <div className="text-6xl font-black mb-4">{totalScore}</div>
-          <div className="bg-indigo-500/50 px-6 py-2 rounded-full font-bold">
+          <div className="text-6xl font-black mb-4">{totalScore} <span className="text-3xl text-indigo-300">/ {totalPossible}</span></div>
+          <div className="bg-indigo-500/50 px-8 py-3 rounded-full font-bold text-xl">
             Độ chính xác: {accuracy}%
           </div>
+          <div className="absolute -right-10 -bottom-10 opacity-10"><BarChart3 size={200} /></div>
         </div>
       </div>
 
-      <div className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100">
-        <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+      <div className="bg-white p-8 md:p-10 rounded-[2.5rem] shadow-xl border border-slate-100">
+        <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
           <BrainCircuit className="text-indigo-600" /> AIBTeM Nhận xét & Khuyên dùng
         </h3>
-        {loading ? (
-          <div className="flex flex-col items-center py-8">
-            <RefreshCw className="animate-spin text-indigo-600 mb-4" size={32} />
-            <p className="text-slate-500 font-medium italic">AIBTeM đang phân tích kết quả của bạn...</p>
-          </div>
-        ) : (
-          <div className="prose prose-slate max-w-none">
-            <p className="text-slate-700 leading-relaxed whitespace-pre-wrap">{analysis || "Bắt đầu chơi để nhận nhận xét từ AIBTeM!"}</p>
-          </div>
-        )}
+        <div className="prose prose-slate max-w-none bg-slate-50 p-6 rounded-3xl border border-slate-100">
+            <p className="text-slate-700 text-lg leading-relaxed font-medium">
+                {currentSessionResults.length === 0 ? "Bắt đầu chơi các trò chơi để nhận phân tích từ AIBTeM!" : getStaticFeedback(accuracy)}
+            </p>
+        </div>
       </div>
     </div>
   );

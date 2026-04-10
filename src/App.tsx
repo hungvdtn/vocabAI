@@ -190,9 +190,9 @@ const PRAISE_MESSAGES = {
 // BỔ SUNG: Từ điển khích lệ khi điểm dưới 50%
 const ENCOURAGEMENT_MESSAGES = {
   en: [
-    "Don't give up! Cố gắng lên nhé!",
-    "Keep practicing! Đừng bỏ cuộc!",
-    "You can do this! Luyện tập thêm chút nữa nhé!",
+    "Don't give up! Đừng bỏ cuộc!",
+    "Keep practicing! Hãy tiếp tục luyện tập nhé!",
+    "You can do this! Cố lên, bạn có thể làm được mà!",
     "Every mistake is a lesson! Sai sót là để học hỏi!"
   ],
   de: [
@@ -1304,15 +1304,15 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
           <div key={index} className="group relative">
             <div className="flex flex-col md:flex-row gap-4 p-6 bg-white rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-md hover:border-indigo-100 transition-all relative">
               <div className="hidden md:flex items-center justify-center w-10 font-bold text-slate-300 text-xl group-hover:text-indigo-200 transition-colors">{index + 1}</div>
-              <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
+             <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Thuật ngữ ({language.toUpperCase()})</label>
-                  <input type="text" value={row.word} onChange={(e) => updateRow(index, 'word', e.target.value)} onBlur={() => handleAutoTranslate(index, language)} className="w-full bg-slate-50 border-2 border-transparent rounded-2xl px-5 py-4 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all text-lg font-medium placeholder:text-slate-300" placeholder="Nhập từ..." />
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Thuật ngữ ({language.toUpperCase()})</label>
+                  <input type="text" value={row.word} onChange={(e) => updateRow(index, 'word', e.target.value)} onBlur={() => handleAutoTranslate(index, language)} className="w-full bg-slate-100 border-2 border-transparent rounded-2xl px-5 py-4 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all text-lg font-medium text-slate-800 placeholder:text-slate-400" placeholder="Nhập từ..." />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Định nghĩa (Tiếng Việt)</label>
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Định nghĩa (Tiếng Việt)</label>
                   <div className="relative">
-                    <input type="text" value={row.meaning} onChange={(e) => updateRow(index, 'meaning', e.target.value)} onKeyDown={(e) => { if (e.key === 'Tab' && !e.shiftKey && index === rows.length - 1) addRow(); }} className="w-full bg-slate-50 border-2 border-transparent rounded-2xl px-5 py-4 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all text-lg font-medium placeholder:text-slate-300" placeholder="Nhập nghĩa..." />
+                    <input type="text" value={row.meaning} onChange={(e) => updateRow(index, 'meaning', e.target.value)} onKeyDown={(e) => { if (e.key === 'Tab' && !e.shiftKey && index === rows.length - 1) addRow(); }} className="w-full bg-slate-100 border-2 border-transparent rounded-2xl px-5 py-4 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all text-lg font-medium text-slate-800 placeholder:text-slate-400" placeholder="Nhập nghĩa..." />
                     {row.loading && <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2 bg-white/80 backdrop-blur-sm px-2 py-1 rounded-lg border border-slate-100"><Loader2 className="animate-spin text-indigo-500 w-4 h-4" /><span className="text-[10px] font-bold text-indigo-500 uppercase tracking-tighter">AIBTeM đang dịch...</span></div>}
                   </div>
                   {(() => {

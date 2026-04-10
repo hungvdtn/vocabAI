@@ -164,27 +164,49 @@ const Confetti = () => {
 };
 
 // ------------------------------------------------------------------------------------
-// HỆ THỐNG TỪ ĐIỂN KHEN NGỢI NGẪU NHIÊN CHỐNG NHÀM CHÁN
+// HỆ THỐNG TỪ ĐIỂN KHEN NGỢI SONG NGỮ
 // ------------------------------------------------------------------------------------
-const PRAISE_MESSAGES = [
-  "Keep up the good work! Tuyệt vời!",
-  "Thật xuất sắc! Bạn đang làm rất tốt!",
-  "Phong độ đỉnh cao! Cứ thế phát huy nhé!",
-  "Quá ấn tượng! Điểm số nói lên tất cả!",
-  "Tuyệt cú mèo! Bạn thực sự là một cao thủ!",
-  "Không thể tin nổi! Quá nhanh và quá nguy hiểm!",
-  "Perfect! Bạn sắp thông thạo ngôn ngữ này rồi đấy!"
-];
+const PRAISE_MESSAGES = {
+  en: [
+    "Keep up the good work! Tuyệt vời!",
+    "Excellent! Bạn đang làm rất tốt!",
+    "Outstanding! Cứ thế phát huy nhé!",
+    "Impressive! Điểm số nói lên tất cả!",
+    "Brilliant! Bạn thực sự là một cao thủ!",
+    "Unbelievable! Quá nhanh và quá nguy hiểm!",
+    "Perfect! Bạn sắp thông thạo tiếng Anh rồi đấy!"
+  ],
+  de: [
+    "Weiter so! Tuyệt vời!",
+    "Ausgezeichnet! Bạn đang làm rất tốt!",
+    "Hervorragend! Cứ thế phát huy nhé!",
+    "Beeindruckend! Điểm số nói lên tất cả!",
+    "Wunderbar! Bạn thực sự là một cao thủ!",
+    "Unglaublich! Quá nhanh và quá nguy hiểm!",
+    "Perfekt! Bạn sắp thông thạo tiếng Đức rồi đấy!"
+  ]
+};
 
-const getRandomPraise = () => PRAISE_MESSAGES[Math.floor(Math.random() * PRAISE_MESSAGES.length)];
+const getRandomPraise = (lang: Language) => {
+  const messages = PRAISE_MESSAGES[lang] || PRAISE_MESSAGES.en;
+  return messages[Math.floor(Math.random() * messages.length)];
+};
+
+// ------------------------------------------------------------------------------------
+// THUẬT TOÁN KIỂM TRA ĐÁP ÁN THÔNG MINH (CHỐNG LỖI DẤU CÂU/KHOẢNG TRẮNG)
+// ------------------------------------------------------------------------------------
+const checkMatch = (val1: string, val2: string) => {
+  if (!val1 || !val2) return false;
+  // Lột bỏ mọi dấu câu, dấu chấm phẩy, khoảng trắng thừa để so sánh chính xác cốt lõi
+  const clean = (s: string) => s.toLowerCase().replace(/[.,!?;:'"()[\]{}]/g, '').replace(/\s+/g, ' ').trim();
+  return clean(val1) === clean(val2);
+};
 
 // ------------------------------------------------------------------------------------
 // HỆ THỐNG ÂM THANH GAME & NATIVE TTS
 // ------------------------------------------------------------------------------------
-
 const playGameSound = (type: 'correct' | 'wrong' | 'success') => {
   let audioSrc = '';
-  // Hệ thống sẽ tìm các file âm thanh trong thư mục public/assets/ của dự án
   if (type === 'correct') audioSrc = '/assets/correct.mp3'; 
   else if (type === 'wrong') audioSrc = '/assets/error-3.mp3';
   else if (type === 'success') audioSrc = '/assets/great-success.mp3';
@@ -196,10 +218,7 @@ const playGameSound = (type: 'correct' | 'wrong' | 'success') => {
 };
 
 const handleSpeak = (text: string, lang: Language) => {
-  if (!('speechSynthesis' in window)) {
-    console.warn("Trình duyệt không hỗ trợ âm thanh.");
-    return;
-  }
+  if (!('speechSynthesis' in window)) return;
   window.speechSynthesis.cancel();
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = lang === 'en' ? 'en-US' : 'de-DE';
@@ -215,9 +234,14 @@ const handleSpeak = (text: string, lang: Language) => {
 
 const highlightWordInSentence = (sentence: string, targetWord: string) => {
   if (!sentence || !targetWord) return sentence;
-  const regex = new RegExp(`(${targetWord})`, 'gi');
-  const parts = sentence.split(regex);
-  return parts.map((part, i) => regex.test(part) ? <span key={i} className="text-blue-600 font-bold">{part}</span> : part);
+  try {
+    const escapedWord = targetWord.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`(${escapedWord})`, 'gi');
+    const parts = sentence.split(regex);
+    return parts.map((part, i) => regex.test(part) ? <span key={i} className="text-blue-600 font-bold">{part}</span> : part);
+  } catch (e) {
+    return sentence;
+  }
 };
 
 const renderPhonetic = (rawPhonetic?: string) => {
@@ -364,7 +388,6 @@ export default function App() {
     }
   };
 
-  // LOGIC THEO DÕI & TỰ ĐỘNG CHUYỂN SANG BÁO CÁO KHI CHƠI ĐỦ 5 GAME
   const handleGameComplete = async (res: GameResult) => {
     const newResults = [...gameResults, { ...res, language }];
     setGameResults(newResults);
@@ -1437,16 +1460,6 @@ function GameContainer({ type, vocabList, language, onBack, onFinish, playSound,
      }
   }, [step, type]);
 
-  // Hook âm thanh chiến thắng (đặt ở top-level component, không bao giờ vi phạm rules of hook)
-  useEffect(() => {
-      if (isFinished && type !== 'flashcards') {
-          const percentage = Math.round((score / gameVocabs.length) * 100);
-          if (percentage >= 80) {
-              playSound('success');
-          }
-      }
-  }, [isFinished, score, gameVocabs.length, type, playSound]);
-
   const handleAnswer = (correct: boolean, userAnswer: string, customMistakeWord?: string, customCorrectAns?: string) => {
       const newHistory = [...answerHistory];
       newHistory[step] = correct ? 'correct' : 'wrong';
@@ -1472,9 +1485,9 @@ function GameContainer({ type, vocabList, language, onBack, onFinish, playSound,
           setStep(s => s + 1);
       } else {
           if (type === 'flashcards') {
-              onFinish(score); // Flashcard xong thì về thẳng Lib/Games View
+              onFinish(score); 
           } else {
-              setIsFinished(true); // Các game khác vào trang tổng kết riêng
+              setIsFinished(true); 
           }
       }
   };
@@ -1484,6 +1497,11 @@ function GameContainer({ type, vocabList, language, onBack, onFinish, playSound,
       const percentage = Math.round((score / gameVocabs.length) * 100);
       const isGood = percentage >= 80; 
 
+      // Bật âm thanh chúc mừng 1 lần duy nhất khi vừa vào màn hình này
+      useEffect(() => {
+          if (isGood) playSound('success');
+      }, [isGood, playSound]);
+      
       return (
           <div className="w-full max-w-3xl mx-auto">
               {isGood && <Confetti />}
@@ -1491,7 +1509,7 @@ function GameContainer({ type, vocabList, language, onBack, onFinish, playSound,
                   <img src={isGood ? "https://api.dicebear.com/7.x/fun-emoji/svg?seed=MochiHappy" : "https://api.dicebear.com/7.x/fun-emoji/svg?seed=MochiSad"} alt="Mochi" className="w-40 h-40 mx-auto mb-6 bg-indigo-50 rounded-full p-4 border-4 border-white shadow-lg" />
                   
                   <h2 className="text-3xl md:text-4xl font-black text-slate-800 mb-4">
-                      {isGood ? getRandomPraise() : "Cố gắng lên nhé! Đừng bỏ cuộc!"}
+                      {isGood ? getRandomPraise(language) : "Cố gắng lên nhé! Đừng bỏ cuộc!"}
                   </h2>
                   <p className="text-lg md:text-xl text-slate-600 mb-8 font-medium">
                       Tổng số có <strong className="text-indigo-600">{gameVocabs.length}</strong> câu, bạn đã làm đúng <strong className="text-emerald-600">{score}</strong> câu; sai <strong className="text-red-500">{gameVocabs.length - score}</strong> câu!
@@ -1695,6 +1713,11 @@ function QuizGame({ vocab, allVocabs, onAnswer, onNextStep, language }: { vocab:
   const [options, setOptions] = useState<string[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
 
+  // Tự động phát âm thanh khi hiển thị câu hỏi mới
+  useEffect(() => {
+    handleSpeak(vocab.word, language);
+  }, [vocab, language]);
+
   useEffect(() => {
     let others = allVocabs.filter(v => v.word.toLowerCase() !== vocab.word.toLowerCase());
     others = others.sort(() => 0.5 - Math.random());
@@ -1723,7 +1746,10 @@ function QuizGame({ vocab, allVocabs, onAnswer, onNextStep, language }: { vocab:
               onAnswer(isCorrect, opt);
               setTimeout(onNextStep, 1000);
             }}
-            className={cn("p-6 rounded-3xl text-left font-bold text-lg transition-all border-2 flex items-center h-full min-h-[100px]", selected === opt ? (opt === (vocab.vietnamese_meaning || vocab.meaning) ? "bg-[#009900] border-[#009900] text-white" : "bg-red-500 border-red-500 text-white") : "bg-white border-slate-100 hover:border-indigo-300 hover:bg-indigo-50 hover:shadow-md")}
+            className={cn("p-6 rounded-3xl text-left font-bold text-lg transition-all border-2 flex items-center h-full min-h-[100px]", 
+              selected === opt 
+              ? (opt === (vocab.vietnamese_meaning || vocab.meaning) ? "bg-green-50 border-[#009900] text-[#009900]" : "bg-red-50 border-red-500 text-red-600") 
+              : "bg-white border-slate-100 hover:border-indigo-300 hover:bg-indigo-50 hover:shadow-md")}
           >
             {opt}
           </button>
@@ -1752,7 +1778,7 @@ function MatchingGame({ vocabs, onCompleteGame, playSound, language }: { vocabs:
       if (correctAnswer === selectedMeaning) {
         setMatches(prev => [...prev, selectedWord]);
         playSound('correct');
-        handleSpeak(selectedWord, language); 
+        // KHÔNG CÒN GỌI hàm handleSpeak(selectedWord) khi nối đúng nữa
         setSelectedWord(null);
         setSelectedMeaning(null);
         if (matches.length + 1 === vocabs.length) {
@@ -1772,14 +1798,24 @@ function MatchingGame({ vocabs, onCompleteGame, playSound, language }: { vocabs:
     <div className="grid grid-cols-2 gap-8">
       <div className="space-y-4">
         {words.map(v => (
-          <button key={v.word} disabled={matches.includes(v.word)} onClick={() => setSelectedWord(v.word)} className={cn("w-full p-6 rounded-2xl font-bold text-lg border-2 transition-all", matches.includes(v.word) ? "bg-[#009900] text-white border-[#009900]" : selectedWord === v.word ? "bg-indigo-600 text-white border-indigo-600" : wrong?.[0] === v.word ? "bg-red-500 text-white border-red-500" : "bg-white border-slate-100 hover:border-indigo-300 hover:shadow-md")}>
+          <button key={v.word} disabled={matches.includes(v.word)} onClick={() => setSelectedWord(v.word)} 
+            className={cn("w-full p-6 rounded-2xl font-bold text-lg border-2 transition-all", 
+              matches.includes(v.word) ? "bg-green-50 text-[#009900] border-[#009900] opacity-50" : 
+              selectedWord === v.word ? "bg-indigo-50 text-indigo-600 border-indigo-600" : 
+              wrong?.[0] === v.word ? "bg-red-50 text-red-600 border-red-500" : 
+              "bg-white border-slate-100 hover:border-indigo-300 hover:shadow-md")}>
             {v.word}
           </button>
         ))}
       </div>
       <div className="space-y-4">
         {meanings.map(v => (
-          <button key={v.meaning} disabled={matches.some(m => vocabs.find(voc => voc.word === m)?.meaning === v.meaning || vocabs.find(voc => voc.word === m)?.vietnamese_meaning === v.meaning)} onClick={() => setSelectedMeaning(v.vietnamese_meaning || v.meaning)} className={cn("w-full p-6 rounded-2xl font-bold text-lg border-2 transition-all", matches.some(m => vocabs.find(voc => voc.word === m)?.meaning === (v.vietnamese_meaning || v.meaning) || vocabs.find(voc => voc.word === m)?.vietnamese_meaning === (v.vietnamese_meaning || v.meaning)) ? "bg-[#009900] text-white border-[#009900]" : selectedMeaning === (v.vietnamese_meaning || v.meaning) ? "bg-indigo-600 text-white border-indigo-600" : wrong?.[1] === (v.vietnamese_meaning || v.meaning) ? "bg-red-500 text-white border-red-500" : "bg-white border-slate-100 hover:border-indigo-300 hover:shadow-md")}>
+          <button key={v.meaning} disabled={matches.some(m => vocabs.find(voc => voc.word === m)?.meaning === v.meaning || vocabs.find(voc => voc.word === m)?.vietnamese_meaning === v.meaning)} onClick={() => setSelectedMeaning(v.vietnamese_meaning || v.meaning)} 
+            className={cn("w-full p-6 rounded-2xl font-bold text-lg border-2 transition-all", 
+              matches.some(m => vocabs.find(voc => voc.word === m)?.meaning === (v.vietnamese_meaning || v.meaning) || vocabs.find(voc => voc.word === m)?.vietnamese_meaning === (v.vietnamese_meaning || v.meaning)) ? "bg-green-50 text-[#009900] border-[#009900] opacity-50" : 
+              selectedMeaning === (v.vietnamese_meaning || v.meaning) ? "bg-indigo-50 text-indigo-600 border-indigo-600" : 
+              wrong?.[1] === (v.vietnamese_meaning || v.meaning) ? "bg-red-50 text-red-600 border-red-500" : 
+              "bg-white border-slate-100 hover:border-indigo-300 hover:shadow-md")}>
             {v.vietnamese_meaning || v.meaning}
           </button>
         ))}
@@ -1797,7 +1833,7 @@ function WritingGame({ vocab, onAnswer, onNextStep, language }: { vocab: Vocabul
 
   const check = () => {
     setSubmitted(true);
-    const isCorrect = input.toLowerCase().trim() === vocab.word.toLowerCase().trim();
+    const isCorrect = checkMatch(input, vocab.word);
     setIsCorrectVal(isCorrect);
     onAnswer(isCorrect, input || 'Không gõ gì');
     setTimeout(onNextStep, isCorrect ? 800 : 2500); 
@@ -1838,14 +1874,21 @@ function FillGame({ vocab, onAnswer, onNextStep, language }: { vocab: Vocabulary
     }
   }, [vocab, exampleText, language]);
 
-  const parts = sentence.split(new RegExp(`(${vocab.word})`, 'gi'));
+  // KIỂM TRA XEM TỪ VỰNG GỐC CÓ NẰM TRONG CÂU HAY KHÔNG 
+  let parts: string[] = [sentence];
+  let hasMatch = false;
+  try {
+      const escapedWord = vocab.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      parts = sentence.split(new RegExp(`(${escapedWord})`, 'gi'));
+      hasMatch = parts.length > 1; 
+  } catch(e) {}
 
   const check = () => {
     setSubmitted(true);
-    const isCorrect = input.toLowerCase().trim() === vocab.word.toLowerCase().trim();
+    const isCorrect = checkMatch(input, vocab.word);
     setIsCorrectVal(isCorrect);
+    
     onAnswer(isCorrect, input || 'Không gõ gì', vocab.vietnamese_meaning || vocab.meaning, vocab.word);
-    if (isCorrect) handleSpeak(vocab.word, language);
     setTimeout(onNextStep, isCorrect ? 800 : 2500);
   };
 
@@ -1854,13 +1897,16 @@ function FillGame({ vocab, onAnswer, onNextStep, language }: { vocab: Vocabulary
       <div className="bg-white p-10 md:p-12 rounded-[3rem] shadow-xl border border-slate-100 relative">
         <button onClick={() => handleSpeak(sentence, language)} className="absolute top-6 right-6 p-4 bg-indigo-50 text-indigo-600 rounded-2xl hover:bg-indigo-100 transition-colors shadow-sm" title="Nghe cả câu"><Volume2 size={24} /></button>
         <h3 className="text-2xl md:text-3xl font-medium leading-loose text-slate-700 text-center mt-8">
-          {parts.map((p, i) => 
+          
+          {/* NẾU TÌM THẤY TỪ THÌ CẮT THÀNH Ô TRỐNG. NẾU KHÔNG THÌ IN RA CẢ CÂU VÍ DỤ */}
+          {hasMatch ? parts.map((p, i) => 
             p.toLowerCase() === vocab.word.toLowerCase() ? (
-              <span key={i} className={cn("inline-block min-w-[120px] border-b-4 mx-2 font-bold px-2 rounded-t-lg transition-colors", submitted ? (isCorrectVal ? "border-[#009900] text-[#009900]" : "border-red-500 text-red-600") : "border-indigo-300 text-indigo-600 bg-indigo-50/50")}>
+              <span key={i} className={cn("inline-block min-w-[120px] border-b-4 mx-2 font-bold px-2 rounded-t-lg transition-colors", submitted ? (isCorrectVal ? "border-[#009900] text-[#009900] bg-green-50" : "border-red-500 text-red-600 bg-red-50") : "border-indigo-300 text-indigo-600 bg-indigo-50/50")}>
                 {submitted ? (isCorrectVal ? p : (input || '...')) : (input || '...')}
               </span>
-            ) : p
-          )}
+            ) : <span key={i}>{p}</span>
+          ) : <span>{sentence}</span>}
+          
         </h3>
         <p className="text-center text-slate-500 mt-8 font-bold text-lg">Điền từ có nghĩa là: <span className="text-indigo-600">{vocab.vietnamese_meaning || vocab.meaning}</span></p>
       </div>
@@ -1892,6 +1938,7 @@ function ReportView({ results, language, activeLessonId }: { results: GameResult
   const totalPossible = currentSessionResults.reduce((acc, r) => acc + r.total, 0);
   const accuracy = totalPossible > 0 ? Math.round((totalScore / totalPossible) * 100) : 0;
 
+  // Nhận xét tĩnh không phụ thuộc vào Gemini API
   const getStaticFeedback = (acc: number) => {
       if (acc >= 90) return "AIBTeM nhận thấy bạn đã nắm vững gần như toàn bộ từ vựng trong bài học này! Phản xạ xuất sắc. Bạn hoàn toàn có thể chuyển sang bài học mới khó hơn.";
       if (acc >= 70) return "Kết quả rất khả quan! Bạn đã nhớ được phần lớn từ vựng. Hãy thử chơi lại game 'Nối từ' hoặc 'Luyện viết' một lần nữa để đạt điểm tuyệt đối nhé.";

@@ -85,7 +85,7 @@ import deDictDataRaw from './data/de_3000.json';
 // Types
 type Language = 'en' | 'de';
 type View = 'home' | 'topics' | 'input' | 'library' | 'games' | 'report' | 'dictionary';
-type GameType = 'flashcards' | 'quiz' | 'matching' | 'writing' | 'fill';
+type GameType = 'flashcards' | 'quiz' | 'matching' | 'writing' | 'fill' | 'roleplay';
 
 interface Vocabulary {
   id?: string;
@@ -310,6 +310,7 @@ const getGameTitle = (type: GameType) => {
     case 'matching': return 'Nối từ';
     case 'writing': return 'Luyện viết';
     case 'fill': return 'Điền từ';
+    case 'roleplay': return 'Giao tiếp AI';
     default: return '';
   }
 };
@@ -1443,6 +1444,7 @@ function GamesView({ vocabList, language, onComplete, activeGame, setActiveGame,
         <GameCard title="Nối từ" desc="Thử thách phản xạ nhanh." icon={<RefreshCw />} colorClass="bg-orange-500" onClick={() => setActiveGame('matching')} />
         <GameCard title="Luyện viết" desc="Nghe và viết lại chính xác." icon={<Volume2 />} colorClass="bg-emerald-500" onClick={() => setActiveGame('writing')} />
         <GameCard title="Điền từ" desc="Sử dụng từ trong ngữ cảnh AIBTeM." icon={<ChevronRight />} colorClass="bg-pink-500" onClick={() => setActiveGame('fill')} />
+        <GameCard title="Giao tiếp AI" desc="Thực hành đàm thoại thực tế với AIBTeM." icon={<Mic />} colorClass="bg-rose-500" onClick={() => setActiveGame('roleplay')} />
       </div>
     </div>
   );

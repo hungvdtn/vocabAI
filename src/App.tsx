@@ -399,10 +399,31 @@ export default function App() {
     }
   };
 
-  const handleGameComplete = async (res: GameResult) => {
+ const handleGameComplete = async (res: GameResult) => {
     const newResults = [...gameResults, { ...res, language }];
     setGameResults(newResults);
     
+    // 1. Kiểm tra điều kiện chuyển view trước
+    let isReportNext = false;
+    if (activeLessonId) {
+       const gamesPlayedOfThisLesson = newResults.filter(r => r.lessonId === activeLessonId).map(r => r.gameType);
+       const uniqueGamesPlayed = new Set(gamesPlayedOfThisLesson);
+       if (uniqueGamesPlayed.size >= 5) {
+          isReportNext = true;
+       }
+    }
+
+    // 2. Cập nhật Giao diện (UI) ngay lập tức để tránh độ trễ
+    if (isReportNext) {
+       playGameSound('success');
+       setView('report');
+       // Trì hoãn unmount để mượt mà với hiệu ứng AnimatePresence
+       setTimeout(() => setActiveGame(null), 300);
+    } else {
+       setActiveGame(null); 
+    }
+
+    // 3. Cập nhật Database chạy ngầm (Background), không làm nghẽn UI
     if (activeLessonId && !isTestMode) {
       try {
         const lessonRef = doc(db, 'lessons', activeLessonId);
@@ -411,18 +432,6 @@ export default function App() {
       } catch (error) {
         console.error("Lỗi cập nhật lịch sử:", error);
       }
-    }
-    
-    setActiveGame(null); 
-    
-    if (activeLessonId) {
-       const gamesPlayedOfThisLesson = newResults.filter(r => r.lessonId === activeLessonId).map(r => r.gameType);
-       const uniqueGamesPlayed = new Set(gamesPlayedOfThisLesson);
-       
-       if (uniqueGamesPlayed.size >= 5) {
-          playGameSound('success');
-          setView('report');
-       }
     }
   };
 
@@ -1471,14 +1480,26 @@ function GameContainer({ type, vocabList, language, onBack, onFinish, playSound,
      }
   }, [step, type]);
 
-  useEffect(() => {
-      if (isFinished && type !== 'flashcards') {
-          const percentage = Math.round((score / gameVocabs.length) * 100);
-          if (percentage >= 80) {
-              playSound('success');
+ useEffect(() => {
+      if (isFinished) {
+          if (type !== 'flashcards') {
+              const percentage = Math.round((score / gameVocabs.length) * 100);
+              if (percentage >= 80) {
+                  playSound('success');
+              }
           }
+          
+          // Lắng nghe sự kiện nhấn phím Enter
+          const handleKeyDown = (e: KeyboardEvent) => {
+              if (e.key === 'Enter') {
+                  e.preventDefault(); 
+                  onFinish(score);
+              }
+          };
+          window.addEventListener('keydown', handleKeyDown);
+          return () => window.removeEventListener('keydown', handleKeyDown);
       }
-  }, [isFinished, score, gameVocabs.length, type, playSound]);
+  }, [isFinished, score, gameVocabs.length, type, playSound, onFinish]);
 
   const handleAnswer = (correct: boolean, userAnswer: string, customMistakeWord?: string, customCorrectAns?: string) => {
       const newHistory = [...answerHistory];
@@ -1543,7 +1564,7 @@ function GameContainer({ type, vocabList, language, onBack, onFinish, playSound,
                       </div>
                   )}
 
-                  <button onClick={() => onFinish(score)} className="bg-indigo-600 text-white px-10 py-5 rounded-2xl font-bold text-xl hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200 hover:scale-105 active:scale-95">
+                  <button autoFocus onClick={() => onFinish(score)} className="bg-indigo-600 text-white px-10 py-5 rounded-2xl font-bold text-xl hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200 hover:scale-105 active:scale-95">
                       Hoàn thành & Nhận điểm
                   </button>
               </motion.div>

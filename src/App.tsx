@@ -477,7 +477,17 @@ export default function App() {
             <NavButton active={view === 'dictionary'} onClick={() => setView('dictionary')} icon={<BookOpen size={18} />} label="Từ điển" />
           </div>
 
-          <div className="flex items-center gap-3 lg:gap-4">
+          <div className="flex items-center gap-2 lg:gap-4">
+            
+            {/* BỔ SUNG: Nút Từ điển hiển thị trên thanh Header của Điện thoại */}
+            <button 
+              onClick={() => setView('dictionary')} 
+              className={cn("md:hidden w-8 h-8 rounded-full transition-all flex items-center justify-center", view === 'dictionary' ? "bg-indigo-100 text-indigo-600" : "bg-slate-50 text-slate-500 hover:text-indigo-600")}
+              title="Từ điển"
+            >
+              <BookOpen size={18} />
+            </button>
+
             <div className="flex bg-slate-100 p-1 rounded-xl">
               <button 
                 onClick={() => { setLanguage('en'); setEditingLesson(null); setPlayVocabList([]); setActiveLessonId(null); setGameResults([]); }}
@@ -595,11 +605,11 @@ export default function App() {
         </AnimatePresence>
       </main>
 
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around p-2 z-50">
+     <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around p-2 z-50">
         <MobileNavButton active={view === 'topics'} onClick={() => setView('topics')} icon={<LayoutGrid />} />
         <MobileNavButton active={view === 'input'} onClick={() => setView('input')} icon={<PlusCircle />} />
+        <MobileNavButton active={view === 'library'} onClick={() => setView('library')} icon={<FileText />} />
         <MobileNavButton active={view === 'games'} onClick={() => setView('games')} icon={<Gamepad2 />} />
-        <MobileNavButton active={view === 'dictionary'} onClick={() => setView('dictionary')} icon={<BookOpen />} />
         <MobileNavButton active={view === 'home'} onClick={() => { setView('home'); setActiveGame(null); }} icon={<Home />} />
       </div>
     
@@ -647,7 +657,7 @@ function HomeView({ setView, language, user, lessons }: { setView: (v: View) => 
 
       <div className="bg-indigo-600 rounded-[2.5rem] p-8 md:p-12 text-white relative overflow-hidden shadow-2xl">
         <div className="relative z-10 max-w-2xl">
-          <h2 className="text-4xl md:text-5xl font-bold mb-4 leading-tight">Chào mừng, {user.displayName?.split(' ')[0]}!</h2>
+          <h2 className="text-4xl md:text-5xl font-bold mb-4 leading-tight">Chào bạn, {user.displayName?.split(' ')[0]}!</h2>
           <p className="text-indigo-100 text-lg mb-8 opacity-90">Bạn đã sẵn sàng chinh phục {language === 'en' ? 'Tiếng Anh' : 'Tiếng Đức'} hôm nay chưa?</p>
           <div className="flex flex-wrap gap-4">
             <button onClick={() => setView('topics')} className="bg-white text-indigo-600 px-8 py-4 rounded-2xl font-bold hover:bg-indigo-50 transition-all flex items-center gap-2 shadow-lg">

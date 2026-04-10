@@ -450,7 +450,7 @@ export default function App() {
           </button>
           <button onClick={enterTestMode} className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-4 rounded-2xl transition-all flex items-center justify-center gap-3">
             <Gamepad2 size={20} className="text-indigo-600" />
-            Vào thẳng không cần đăng nhập (Test Mode)
+            Không đăng nhập
           </button>
         </motion.div>
       </div>

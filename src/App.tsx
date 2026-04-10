@@ -1787,7 +1787,7 @@ function QuizGame({ vocab, allVocabs, onAnswer, onNextStep, language }: { vocab:
   );
 }
 
-function MatchingGame({ vocabs, onCompleteGame, playSound, language }: { vocabs: Vocabulary[], onCompleteGame: (score: number, mistakes: any[]) => void, playSound: (t: 'correct' | 'wrong') => void, language: Language }) {
+function MatchingGame({ vocabs, onCompleteGame, playSound, language, onPairResolved }: { vocabs: Vocabulary[], onCompleteGame: (score: number, mistakes: any[]) => void, playSound: (t: 'correct' | 'wrong') => void, language: Language, onPairResolved: (status: 'correct'|'wrong') => void }) {
   const [words, setWords] = useState(() => [...vocabs].sort(() => 0.5 - Math.random()));
   const [meanings, setMeanings] = useState(() => [...vocabs].sort(() => 0.5 - Math.random()));
   const [selectedWord, setSelectedWord] = useState<string | null>(null);
@@ -1796,7 +1796,10 @@ function MatchingGame({ vocabs, onCompleteGame, playSound, language }: { vocabs:
   const [wrong, setWrong] = useState<[string, string] | null>(null);
   
   const [mistakesLog, setMistakesLog] = useState<any[]>([]);
-  const [errorCount, setErrorCount] = useState(0);
+
+  // Sử dụng useRef để quản lý trạng thái đếm lỗi và điểm số mà không gây re-render dư thừa
+  const wordAttempts = useRef<Record<string, number>>({});
+  const matchingScore = useRef(0);
 
   useEffect(() => {
     if (selectedWord && selectedMeaning) {
@@ -1806,16 +1809,26 @@ function MatchingGame({ vocabs, onCompleteGame, playSound, language }: { vocabs:
       if (correctAnswer === selectedMeaning) {
         setMatches(prev => [...prev, selectedWord]);
         playSound('correct');
-        // Đã Gỡ bỏ tính năng phát âm thanh từ ngữ (handleSpeak) khi đúng
+        
+        const hasError = (wordAttempts.current[selectedWord] || 0) > 0;
+        if (!hasError) matchingScore.current += 1;
+
+        // Báo cáo kết quả của cặp từ này lên thanh tiến độ
+        onPairResolved(hasError ? 'wrong' : 'correct');
+
         setSelectedWord(null);
         setSelectedMeaning(null);
+
         if (matches.length + 1 === vocabs.length) {
-          setTimeout(() => onCompleteGame(vocabs.length - errorCount, mistakesLog), 1000);
+          setTimeout(() => onCompleteGame(matchingScore.current, mistakesLog), 1000);
         }
       } else {
         setWrong([selectedWord, selectedMeaning]);
         playSound('wrong');
-        setErrorCount(e => e + 1);
+        
+        // Ghi nhận từ này đã bị chọn sai ít nhất 1 lần
+        wordAttempts.current[selectedWord] = (wordAttempts.current[selectedWord] || 0) + 1;
+
         setMistakesLog(prev => [...prev, { word: selectedWord, userAnswer: selectedMeaning, correctAnswer: correctAnswer }]);
         setTimeout(() => { setWrong(null); setSelectedWord(null); setSelectedMeaning(null); }, 1000);
       }
@@ -1826,7 +1839,10 @@ function MatchingGame({ vocabs, onCompleteGame, playSound, language }: { vocabs:
     <div className="grid grid-cols-2 gap-8">
       <div className="space-y-4">
         {words.map(v => (
-          <button key={v.word} disabled={matches.includes(v.word)} onClick={() => setSelectedWord(v.word)} 
+          <button key={v.word} disabled={matches.includes(v.word)} onClick={() => {
+              setSelectedWord(v.word);
+              handleSpeak(v.word, language); // Tự động phát âm thanh khi chọn từ
+          }} 
             className={cn("w-full p-6 rounded-2xl font-bold text-lg border-2 transition-all", 
               matches.includes(v.word) ? "bg-green-50 text-[#009900] border-[#009900] opacity-50" : 
               selectedWord === v.word ? "bg-indigo-50 text-indigo-600 border-indigo-600" : 
@@ -1976,7 +1992,9 @@ function ReportView({ results, language, activeLessonId }: { results: GameResult
   // Nhận xét tĩnh không phụ thuộc vào Gemini API
   const getStaticFeedback = (acc: number) => {
       if (acc >= 90) return "AIBTeM nhận thấy bạn đã nắm vững gần như toàn bộ từ vựng trong bài học này! Phản xạ xuất sắc. Bạn hoàn toàn có thể chuyển sang bài học mới khó hơn.";
-      if (acc >= 70) return "Kết quả rất khả quan! Bạn đã nhớ được phần lớn từ vựng. Hãy thử chơi lại game 'Nối từ' hoặc 'Luyện viết' một lần nữa để đạt điểm tuyệt đối nhé.";
+      if (acc >= 80) return "Thành tích rất tốt! Bạn đã ghi nhớ được hầu hết các từ vựng. Chỉ cần ôn tập lại một chút để đạt điểm tuyệt đối nhé.";
+      if (acc >= 70) return "Kết quả rất khả quan! Bạn đã nhớ được phần lớn từ vựng. Hãy thử chơi lại game 'Nối từ' hoặc 'Luyện viết' một lần nữa.";
+      if (acc >= 60) return "Bạn đang tiến bộ! Kết quả ở mức khá, tuy nhiên vẫn còn một số từ gây nhầm lẫn. Hãy tiếp tục luyện tập nhé.";
       if (acc >= 50) return "Bạn đang ở mức trung bình. Có vẻ một số từ vựng vẫn chưa thực sự in sâu vào trí nhớ. AIBTeM khuyên bạn nên lướt qua thẻ Flashcard thêm 2-3 vòng trước khi làm trắc nghiệm.";
       return "Đừng nản chí! Việc học ngôn ngữ cần sự lặp lại. Hãy quay lại học kỹ từng thẻ Flashcard, nghe phát âm và tự nhẩm lại theo trước khi bắt đầu chơi game.";
   };

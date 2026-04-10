@@ -187,8 +187,29 @@ const PRAISE_MESSAGES = {
   ]
 };
 
+// BỔ SUNG: Từ điển khích lệ khi điểm dưới 50%
+const ENCOURAGEMENT_MESSAGES = {
+  en: [
+    "Don't give up! Cố gắng lên nhé!",
+    "Keep practicing! Đừng bỏ cuộc!",
+    "You can do this! Luyện tập thêm chút nữa nhé!",
+    "Every mistake is a lesson! Sai sót là để học hỏi!"
+  ],
+  de: [
+    "Gib nicht auf! Cố gắng lên nhé!",
+    "Übe weiter! Đừng bỏ cuộc!",
+    "Du schaffst das! Luyện tập thêm chút nữa nhé!",
+    "Aus Fehlern lernt man! Sai sót là để học hỏi!"
+  ]
+};
+
 const getRandomPraise = (lang: Language) => {
   const messages = PRAISE_MESSAGES[lang] || PRAISE_MESSAGES.en;
+  return messages[Math.floor(Math.random() * messages.length)];
+};
+
+const getRandomEncouragement = (lang: Language) => {
+  const messages = ENCOURAGEMENT_MESSAGES[lang] || ENCOURAGEMENT_MESSAGES.en;
   return messages[Math.floor(Math.random() * messages.length)];
 };
 
@@ -1491,9 +1512,10 @@ function GameContainer({ type, vocabList, language, onBack, onFinish, playSound,
       }
   };
 
-  if (isFinished) {
+ if (isFinished) {
       const percentage = Math.round((score / gameVocabs.length) * 100);
       const isGood = percentage >= 80; 
+      const isNeedsImprovement = percentage < 50;
 
       return (
           <div className="w-full max-w-3xl mx-auto">
@@ -1502,7 +1524,7 @@ function GameContainer({ type, vocabList, language, onBack, onFinish, playSound,
                   <img src={isGood ? "https://api.dicebear.com/7.x/fun-emoji/svg?seed=MochiHappy" : "https://api.dicebear.com/7.x/fun-emoji/svg?seed=MochiSad"} alt="Mochi" className="w-40 h-40 mx-auto mb-6 bg-indigo-50 rounded-full p-4 border-4 border-white shadow-lg" />
                   
                   <h2 className="text-3xl md:text-4xl font-black text-slate-800 mb-4">
-                      {isGood ? getRandomPraise(language) : "Cố gắng lên nhé! Đừng bỏ cuộc!"}
+                      {isGood ? getRandomPraise(language) : (isNeedsImprovement ? getRandomEncouragement(language) : "Cố gắng lên nhé! Đừng bỏ cuộc!")}
                   </h2>
                   <p className="text-lg md:text-xl text-slate-600 mb-8 font-medium">
                       Tổng số có <strong className="text-indigo-600">{gameVocabs.length}</strong> câu, bạn đã làm đúng <strong className="text-emerald-600">{score}</strong> câu; sai <strong className="text-red-500">{gameVocabs.length - score}</strong> câu!
@@ -1529,26 +1551,28 @@ function GameContainer({ type, vocabList, language, onBack, onFinish, playSound,
       );
   }
 
-  return (
+ return (
     <div className="w-full mx-auto">
       <div className="flex items-center justify-between mb-8">
         <button onClick={onBack} className="flex items-center gap-2 text-slate-500 hover:text-indigo-600 font-bold">
           <ChevronLeft size={20} /> Quay lại
         </button>
-        {type !== 'matching' && (
-          <div className="flex gap-2 flex-1 max-w-sm mx-4">
-            {gameVocabs.map((_, i) => {
-               let bgColor = "bg-slate-200";
-               if (i < step || (type === 'flashcards' && i === step)) {
-                   bgColor = answerHistory[i] === 'correct' ? "bg-[#009900]" : "bg-red-500";
-               } else if (i === step) {
-                   bgColor = "bg-indigo-400 animate-pulse";
-               }
-               return <div key={i} className={cn("h-2 rounded-full transition-all flex-1", bgColor)} />
-            })}
-          </div>
-        )}
-        <div className="font-bold text-indigo-600">Từ {step + 1}/{gameVocabs.length}</div>
+        
+        {/* Đã gỡ bỏ điều kiện ẩn thanh tiến độ của game Nối từ */}
+        <div className="flex gap-2 flex-1 max-w-sm mx-4">
+          {gameVocabs.map((_, i) => {
+             let bgColor = "bg-slate-200";
+             if (i < step || (type === 'flashcards' && i === step)) {
+                 bgColor = answerHistory[i] === 'correct' ? "bg-[#009900]" : "bg-red-500";
+             } else if (i === step) {
+                 bgColor = "bg-indigo-400 animate-pulse";
+             }
+             return <div key={i} className={cn("h-2 rounded-full transition-all flex-1", bgColor)} />
+          })}
+        </div>
+        
+        {/* Hàm Math.min đảm bảo không hiển thị vượt quá tổng số câu */}
+        <div className="font-bold text-indigo-600">Từ {Math.min(step + 1, gameVocabs.length)}/{gameVocabs.length}</div>
       </div>
 
       <AnimatePresence mode="wait">
@@ -1564,7 +1588,18 @@ function GameContainer({ type, vocabList, language, onBack, onFinish, playSound,
         )}
         {type === 'matching' && (
           <motion.div key="matching" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <MatchingGame vocabs={gameVocabs} onCompleteGame={(finalScore, finalMistakes) => { setScore(finalScore); setMistakes(finalMistakes); setIsFinished(true); }} playSound={playSound} language={language} />
+            <MatchingGame 
+                vocabs={gameVocabs} 
+                onCompleteGame={(finalScore, finalMistakes) => { setScore(finalScore); setMistakes(finalMistakes); setIsFinished(true); }} 
+                playSound={playSound} 
+                language={language}
+                onPairResolved={(status) => {
+                   const newHistory = [...answerHistory];
+                   newHistory[step] = status;
+                   setAnswerHistory(newHistory);
+                   setStep(s => s + 1);
+                }} 
+            />
           </motion.div>
         )}
         {type === 'writing' && (

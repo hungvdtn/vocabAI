@@ -1474,7 +1474,7 @@ const [gameVocabs] = useState(() => {
     const enriched = vocabList.map(v => {
         const dictEntry = currentDict.find(d => d.word.toLowerCase() === v.word.toLowerCase());
         if (dictEntry) {
-            return { ...v, part_of_speech: v.part_of_speech || dictEntry.part_of_speech || dictEntry.type, phonetic: v.phonetic || dictEntry.phonetic, english_definition: v.english_definition || dictEntry.english_definition || dictEntry.definition, german_definition: v.german_definition || dictEntry.german_definition || dictEntry.definition, example: v.example || dictEntry.example, example_english: v.example_english || dictEntry.example_english, example_german: v.example_german || dictEntry.example_german, example_vietnamese: v.example_vietnamese || dictEntry.example_vietnamese, level: v.level || dictEntry.level };
+            return { ...v, part_of_speech: v.part_of_speech || dictEntry.part_of_speech || dictEntry.type, phonetic: v.phonetic || dictEntry.phonetic, english_definition: v.english_definition || dictEntry.english_definition || dictEntry.definition, german_definition: v.german_definition || dictEntry.german_definition || dictEntry.definition, example: v.example || dictEntry.example, example_english: v.example_english || dictEntry.example_english, example_german: v.example_german || dictEntry.example_german, example_vietnamese: v.example_vietnamese || dictEntry.example_vietnamese, level: v.level || (dictEntry as any).level };
         return v;
     });
     // BỎ GIỚI HẠN .slice(0, 5) ĐỂ GAME LẤY TOÀN BỘ TỪ TRONG BÀI HỌC VÀ TRỘN NGẪU NHIÊN

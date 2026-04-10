@@ -1426,9 +1426,9 @@ function GamesView({ vocabList, language, onComplete, activeGame, setActiveGame,
     );
   }
 
-  if (activeGame) {
+ if (activeGame) {
     return (
-      <GameContainer type={activeGame} vocabList={vocabList} language={language} activeLessonId={activeLessonId} onBack={() => setActiveGame(null)} onFinish={(score) => { onComplete({ lessonId: activeLessonId, gameType: activeGame, score, total: activeGame === 'flashcards' ? vocabList.length : 5, timestamp: Date.now(), language }); }} playSound={playSound} />
+      <GameContainer type={activeGame} vocabList={vocabList} language={language} activeLessonId={activeLessonId} onBack={() => setActiveGame(null)} onFinish={(score) => { onComplete({ lessonId: activeLessonId, gameType: activeGame, score, total: vocabList.length, timestamp: Date.now(), language }); }} playSound={playSound} />
     );
   }
 
@@ -1468,7 +1468,7 @@ function GameCard({ title, desc, icon, onClick, colorClass }: { title: string, d
 
 function GameContainer({ type, vocabList, language, onBack, onFinish, playSound, activeLessonId }: { type: GameType, vocabList: Vocabulary[], language: Language, onBack: () => void, onFinish: (score: number) => void, playSound: (t: 'correct' | 'wrong' | 'success') => void, activeLessonId: string }) {
   
-  const [gameVocabs] = useState(() => {
+const [gameVocabs] = useState(() => {
     const currentDict = language === 'en' ? enDictDataRaw : deDictDataRaw;
     const enriched = vocabList.map(v => {
         const dictEntry = currentDict.find(d => d.word.toLowerCase() === v.word.toLowerCase());
@@ -1477,7 +1477,8 @@ function GameContainer({ type, vocabList, language, onBack, onFinish, playSound,
         }
         return v;
     });
-    return type === 'flashcards' ? enriched : [...enriched].sort(() => 0.5 - Math.random()).slice(0, 5);
+    // BỎ GIỚI HẠN .slice(0, 5) ĐỂ GAME LẤY TOÀN BỘ TỪ TRONG BÀI HỌC VÀ TRỘN NGẪU NHIÊN
+    return type === 'flashcards' ? enriched : [...enriched].sort(() => 0.5 - Math.random());
   });
 
   const [step, setStep] = useState(0);

@@ -1649,6 +1649,11 @@ function GameContainer({ type, vocabList, language, onBack, onFinish, playSound,
             <FillGame vocab={currentVocab} onAnswer={handleAnswer} onNextStep={handleNextStep} language={language} />
           </motion.div>
         )}
+        {type === 'roleplay' && (
+          <motion.div key="roleplay" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
+            <RoleplayGame vocabs={gameVocabs} language={language} onComplete={() => onFinish(gameVocabs.length)} />
+          </motion.div>
+        )}
       </AnimatePresence>
     </div>
   );
@@ -2010,7 +2015,150 @@ function FillGame({ vocab, onAnswer, onNextStep, language }: { vocab: Vocabulary
     </div>
   );
 }
+// --- ROLEPLAY GAME (AI CONVERSATION) ---
 
+function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], language: Language, onComplete: () => void }) {
+  const [messages, setMessages] = useState<{role: 'user' | 'ai', text: string}[]>([]);
+  const [input, setInput] = useState('');
+  const [isRecording, setIsRecording] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  const targetWords = vocabs.map(v => v.word);
+
+  // Tự động cuộn xuống tin nhắn mới nhất
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  // Lời chào mở đầu của AI
+  useEffect(() => {
+     const initialMsg = language === 'en' 
+        ? `Hello! I am AIBTeM. Let's practice. Try to use these words in our conversation: ${targetWords.join(', ')}. Are you ready?`
+        : `Hallo! Ich bin AIBTeM. Lass uns üben. Bitte versuche, diese Wörter zu verwenden: ${targetWords.join(', ')}. Bist du bereit?`;
+     setMessages([{ role: 'ai', text: initialMsg }]);
+     handleSpeak(initialMsg, language);
+  }, [language]);
+
+  const handleSend = async (textToSend: string) => {
+     if (!textToSend.trim()) return;
+     const newMessages = [...messages, { role: 'user' as const, text: textToSend }];
+     setMessages(newMessages);
+     setInput('');
+     setIsLoading(true);
+
+     try {
+        // LƯU Ý: TIẾN SĨ DÁN API KEY LẤY TỪ GOOGLE AI STUDIO VÀO ĐÂY
+        // Ví dụ: const apiKey = "AIzaSyB-xxxxxxxxx";
+        const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "NHẬP_API_KEY_CỦA_BẠN_VÀO_ĐÂY"; 
+        
+        const systemPrompt = `Bạn là AIBTeM, một giáo viên ngôn ngữ thân thiện. Học viên đang ôn tập các từ vựng: ${targetWords.join(', ')}. Ngôn ngữ giao tiếp: ${language === 'en' ? 'Tiếng Anh' : 'Tiếng Đức'}. 
+        Yêu cầu nghiêm ngặt:
+        1. Phản hồi tự nhiên, ngắn gọn (chỉ 1-2 câu).
+        2. NẾU học viên sai ngữ pháp, bạn phải sửa lỗi nhẹ nhàng trong ngoặc đơn ở đầu câu trả lời.
+        3. Hãy đặt câu hỏi mở có sử dụng từ vựng trong danh sách để dẫn dắt học viên trả lời.
+        4. Bạn chỉ được phép trả lời bằng ${language === 'en' ? 'Tiếng Anh' : 'Tiếng Đức'}.`;
+
+        const reqBody = {
+            contents: [
+                { role: 'user', parts: [{ text: `[Lệnh hệ thống: ${systemPrompt}]\n\nBắt đầu hội thoại!` }] },
+                { role: 'model', parts: [{ text: "Đã hiểu! Tôi đã sẵn sàng hỗ trợ." }] },
+                ...newMessages.map(m => ({
+                    role: m.role === 'ai' ? 'model' : 'user',
+                    parts: [{ text: m.text }]
+                }))
+            ],
+            generationConfig: { temperature: 0.7, maxOutputTokens: 150 }
+        };
+
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(reqBody)
+        });
+
+        const data = await res.json();
+        if (data.candidates && data.candidates[0].content.parts[0].text) {
+            let reply = data.candidates[0].content.parts[0].text;
+            reply = reply.replace(/\*/g, ''); // Lọc bỏ dấu * markdown
+            setMessages(prev => [...prev, { role: 'ai', text: reply }]);
+            handleSpeak(reply, language);
+        } else {
+            throw new Error("Lỗi API");
+        }
+     } catch (error) {
+         console.error("Lỗi gọi Gemini:", error);
+         setMessages(prev => [...prev, { role: 'ai', text: "Lỗi kết nối AI. Vui lòng kiểm tra lại API Key hoặc mạng lưới." }]);
+     } finally {
+         setIsLoading(false);
+     }
+  };
+
+  const startListening = () => {
+     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+     if (!SpeechRecognition) {
+         alert("Trình duyệt không hỗ trợ nhận diện giọng nói. Vui lòng dùng Chrome, Edge hoặc Safari."); return;
+     }
+     const recognition = new SpeechRecognition();
+     recognition.lang = language === 'en' ? 'en-US' : 'de-DE';
+     recognition.interimResults = false;
+     
+     recognition.onstart = () => setIsRecording(true);
+     recognition.onresult = (event: any) => {
+         const transcript = event.results[0][0].transcript;
+         handleSend(transcript);
+     };
+     recognition.onerror = () => setIsRecording(false);
+     recognition.onend = () => setIsRecording(false);
+     
+     recognition.start();
+  };
+
+  return (
+    <div className="w-full bg-white rounded-[2.5rem] shadow-xl border border-slate-100 overflow-hidden flex flex-col h-[650px] max-h-[85vh]">
+      <div className="bg-slate-50 p-6 border-b border-slate-100 flex items-center justify-between z-10">
+         <div>
+            <h3 className="font-bold text-slate-800 flex items-center gap-2"><BrainCircuit className="text-indigo-600" /> AIBTeM Roleplay</h3>
+            <p className="text-sm text-slate-500 mt-1">Từ cần dùng: <strong className="text-indigo-600">{targetWords.join(', ')}</strong></p>
+         </div>
+         <button onClick={onComplete} className="bg-red-50 text-red-600 px-4 py-2 rounded-xl text-sm font-bold hover:bg-red-100 transition-all">Kết thúc trò chuyện</button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/50">
+        {messages.map((m, i) => (
+          <div key={i} className={cn("flex max-w-[85%]", m.role === 'user' ? "ml-auto justify-end" : "mr-auto")}>
+            <div className={cn("p-4 md:p-5 rounded-3xl text-lg shadow-sm leading-relaxed", m.role === 'user' ? "bg-indigo-600 text-white rounded-tr-sm" : "bg-white border border-slate-200 text-slate-800 rounded-tl-sm")}>
+              {m.text}
+            </div>
+            {m.role === 'ai' && (
+              <button onClick={() => handleSpeak(m.text, language)} className="ml-2 self-end text-slate-400 hover:text-indigo-600 transition-colors p-3 bg-white rounded-full shadow-sm shrink-0 border border-slate-100"><Volume2 size={18} /></button>
+            )}
+          </div>
+        ))}
+        {isLoading && (
+          <div className="flex max-w-[85%] mr-auto">
+            <div className="p-4 rounded-3xl bg-white border border-slate-200 text-slate-500 rounded-tl-sm shadow-sm flex items-center gap-2 font-medium">
+              <Loader2 className="animate-spin text-indigo-500" size={18} /> AIBTeM đang phản hồi...
+            </div>
+          </div>
+        )}
+        <div ref={messagesEndRef} />
+      </div>
+
+      <div className="p-4 bg-white border-t border-slate-100 shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.05)]">
+        <div className="flex items-center gap-3 relative">
+          <button onClick={startListening} disabled={isLoading || isRecording} title="Ghi âm giọng nói" className={cn("p-4 rounded-2xl transition-all shadow-sm shrink-0", isRecording ? "bg-red-500 text-white animate-pulse" : "bg-indigo-50 text-indigo-600 hover:bg-indigo-100")}>
+            <Mic size={24} />
+          </button>
+          <input type="text" value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSend(input)} disabled={isLoading || isRecording} placeholder={isRecording ? "Đang lắng nghe..." : "Gõ hoặc đọc câu trả lời của bạn..."} className="flex-1 bg-slate-50 border-transparent focus:bg-white focus:border-indigo-500 rounded-2xl px-6 py-4 text-lg outline-none transition-all border-2 placeholder:text-slate-400 font-medium text-slate-800" />
+          <button onClick={() => handleSend(input)} disabled={!input.trim() || isLoading} className="p-4 bg-indigo-600 text-white rounded-2xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md shrink-0">
+            <ChevronRight size={24} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 // --- REPORT VIEW ---
 
 function ReportView({ results, language, activeLessonId }: { results: GameResult[], language: Language, activeLessonId: string }) {

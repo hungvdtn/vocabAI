@@ -107,6 +107,7 @@ interface Vocabulary {
   synonym?: string; 
   synonyms?: string; 
   topic?: string;
+  level?: string;
   language: Language;
   userId: string;
   createdAt: any;
@@ -1473,8 +1474,7 @@ const [gameVocabs] = useState(() => {
     const enriched = vocabList.map(v => {
         const dictEntry = currentDict.find(d => d.word.toLowerCase() === v.word.toLowerCase());
         if (dictEntry) {
-            return { ...v, part_of_speech: v.part_of_speech || dictEntry.part_of_speech || dictEntry.type, phonetic: v.phonetic || dictEntry.phonetic, english_definition: v.english_definition || dictEntry.english_definition || dictEntry.definition, german_definition: v.german_definition || dictEntry.german_definition || dictEntry.definition, example: v.example || dictEntry.example, example_english: v.example_english || dictEntry.example_english, example_german: v.example_german || dictEntry.example_german, example_vietnamese: v.example_vietnamese || dictEntry.example_vietnamese };
-        }
+            return { ...v, part_of_speech: v.part_of_speech || dictEntry.part_of_speech || dictEntry.type, phonetic: v.phonetic || dictEntry.phonetic, english_definition: v.english_definition || dictEntry.english_definition || dictEntry.definition, german_definition: v.german_definition || dictEntry.german_definition || dictEntry.definition, example: v.example || dictEntry.example, example_english: v.example_english || dictEntry.example_english, example_german: v.example_german || dictEntry.example_german, example_vietnamese: v.example_vietnamese || dictEntry.example_vietnamese, level: v.level || dictEntry.level };
         return v;
     });
     // BỎ GIỚI HẠN .slice(0, 5) ĐỂ GAME LẤY TOÀN BỘ TỪ TRONG BÀI HỌC VÀ TRỘN NGẪU NHIÊN
@@ -2025,18 +2025,35 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
+  // 1. Phân tích ngữ cảnh: Tìm chủ đề phổ biến nhất trong bài học
+  const topics = vocabs.map(v => v.topic || 'other');
+  const dominantTopic = topics.sort((a,b) => topics.filter(v => v===a).length - topics.filter(v => v===b).length).pop() || 'other';
+
+  // 2. Gán vai trò cho AI dựa trên chủ đề
+  const getRoleContext = (topic: string, lang: Language) => {
+      if (topic === 'education_and_learning') return lang === 'en' ? 'a strict but dedicated Teacher in a classroom' : 'ein strenger, aber engagierter Lehrer in einem Klassenzimmer';
+      if (topic === 'work_and_business') return lang === 'en' ? 'a tough Job Interviewer or Business Partner' : 'ein strenger Personalvermittler oder Geschäftspartner';
+      if (topic === 'travel_and_transport') return lang === 'en' ? 'a Customs Officer, Hotel Receptionist, or Tour Guide' : 'ein Zollbeamter, Hotelrezeptionist oder Reiseleiter';
+      if (topic === 'health_and_body') return lang === 'en' ? 'a Doctor or Nutritionist in a clinic' : 'ein Arzt oder Ernährungsberater in einer Klinik';
+      if (topic === 'daily_life') return lang === 'en' ? 'a friendly Neighbor, a Waiter, or a close Friend' : 'ein freundlicher Nachbar, ein Kellner oder ein enger Freund';
+      return lang === 'en' ? 'a friendly Native Speaker' : 'ein freundlicher Muttersprachler';
+  };
+  const aiRole = getRoleContext(dominantTopic, language);
+
+  // 3. Phân tích từ vựng kèm Trình độ (CEFR Level)
+  const targetWordsWithLevel = vocabs.map(v => `${v.word} (Level: ${v.level || 'A2'})`);
   const targetWords = vocabs.map(v => v.word);
 
-  // Tự động cuộn xuống tin nhắn mới nhất
+  // Tự động cuộn xuống
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Lời chào mở đầu của AI
+  // Lời chào mở đầu của AI (Tùy biến theo vai trò)
   useEffect(() => {
      const initialMsg = language === 'en' 
-        ? `Hello! I am AIBTeM. Let's practice. Try to use these words in our conversation: ${targetWords.join(', ')}. Are you ready?`
-        : `Hallo! Ich bin AIBTeM. Lass uns üben. Bitte versuche, diese Wörter zu verwenden: ${targetWords.join(', ')}. Bist du bereit?`;
+        ? `Hello! I will be acting as ${aiRole}. I will ask you questions or give you situations, and you need to answer using these words: ${targetWords.join(', ')}. Let's start! Tell me, how are you today?`
+        : `Hallo! Ich werde als ${aiRole} agieren. Ich werde dir Fragen stellen und du musst diese Wörter verwenden: ${targetWords.join(', ')}. Lass uns anfangen! Wie geht es dir heute?`;
      setMessages([{ role: 'ai', text: initialMsg }]);
      handleSpeak(initialMsg, language);
   }, [language]);
@@ -2049,27 +2066,27 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
      setIsLoading(true);
 
      try {
-        // LƯU Ý: TIẾN SĨ DÁN API KEY LẤY TỪ GOOGLE AI STUDIO VÀO ĐÂY
-        // Ví dụ: const apiKey = "AIzaSyB-xxxxxxxxx";
-        const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "NHẬP_API_KEY_CỦA_BẠN_VÀO_ĐÂY"; 
+        const apiKey = import.meta.env.VITE_GEMINI_API_KEY || ""; 
         
-        const systemPrompt = `Bạn là AIBTeM, một giáo viên ngôn ngữ thân thiện. Học viên đang ôn tập các từ vựng: ${targetWords.join(', ')}. Ngôn ngữ giao tiếp: ${language === 'en' ? 'Tiếng Anh' : 'Tiếng Đức'}. 
-        Yêu cầu nghiêm ngặt:
-        1. Phản hồi tự nhiên, ngắn gọn (chỉ 1-2 câu).
-        2. NẾU học viên sai ngữ pháp, bạn phải sửa lỗi nhẹ nhàng trong ngoặc đơn ở đầu câu trả lời.
-        3. Hãy đặt câu hỏi mở có sử dụng từ vựng trong danh sách để dẫn dắt học viên trả lời.
-        4. Bạn chỉ được phép trả lời bằng ${language === 'en' ? 'Tiếng Anh' : 'Tiếng Đức'}.`;
+        // 4. KỊCH BẢN (SYSTEM PROMPT) MỚI: Chủ động, Đóng vai, Phân loại độ khó
+        const systemPrompt = `Bạn đang đóng vai: ${aiRole}. Ngôn ngữ giao tiếp: ${language === 'en' ? 'Tiếng Anh' : 'Tiếng Đức'}. 
+        Mục tiêu: Đặt câu hỏi hoặc tạo tình huống để ép học viên sử dụng các từ vựng sau: ${targetWordsWithLevel.join(', ')}.
+        Quy tắc NGHIÊM NGẶT:
+        1. BẠN LÀ NGƯỜI CHỦ ĐỘNG: Liên tục đặt câu hỏi mở hoặc đưa ra tình huống giao tiếp. Tuyệt đối không để cuộc hội thoại rơi vào bế tắc.
+        2. ĐIỀU CHỈNH ĐỘ KHÓ THEO TỪ: Nếu từ cần học có Level A1/A2, hãy đặt câu hỏi trực diện, đời thường, dễ hiểu. Nếu từ cần học có Level B1/B2, hãy tạo ra tình huống phức tạp, mang tính học thuật, suy luận hoặc yêu cầu học viên giải quyết vấn đề.
+        3. SỬA LỖI NGAY LẬP TỨC: Nếu câu trả lời của học viên sai ngữ pháp, dùng từ không tự nhiên, BẮT BUỘC sửa lỗi trong dấu ngoặc đơn (...) ở ngay đầu câu phản hồi của bạn.
+        4. KHÔNG BAO GIỜ tự trả lời hộ phần có chứa từ vựng của học viên. Phản hồi phải ngắn gọn, tự nhiên (tối đa 2-3 câu).`;
 
         const reqBody = {
             contents: [
                 { role: 'user', parts: [{ text: `[Lệnh hệ thống: ${systemPrompt}]\n\nBắt đầu hội thoại!` }] },
-                { role: 'model', parts: [{ text: "Đã hiểu! Tôi đã sẵn sàng hỗ trợ." }] },
+                { role: 'model', parts: [{ text: "Đã hiểu kịch bản và vai trò! Tôi sẽ chủ động đặt câu hỏi." }] },
                 ...newMessages.map(m => ({
                     role: m.role === 'ai' ? 'model' : 'user',
                     parts: [{ text: m.text }]
                 }))
             ],
-            generationConfig: { temperature: 0.7, maxOutputTokens: 150 }
+            generationConfig: { temperature: 0.7, maxOutputTokens: 200 }
         };
 
         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
@@ -2081,7 +2098,7 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
         const data = await res.json();
         if (data.candidates && data.candidates[0].content.parts[0].text) {
             let reply = data.candidates[0].content.parts[0].text;
-            reply = reply.replace(/\*/g, ''); // Lọc bỏ dấu * markdown
+            reply = reply.replace(/\*/g, ''); // Lọc bỏ markdown
             setMessages(prev => [...prev, { role: 'ai', text: reply }]);
             handleSpeak(reply, language);
         } else {
@@ -2117,18 +2134,19 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
 
   return (
     <div className="w-full bg-white rounded-[2.5rem] shadow-xl border border-slate-100 overflow-hidden flex flex-col h-[650px] max-h-[85vh]">
-      <div className="bg-slate-50 p-6 border-b border-slate-100 flex items-center justify-between z-10">
+      <div className="bg-slate-50 p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between z-10 gap-4">
          <div>
-            <h3 className="font-bold text-slate-800 flex items-center gap-2"><BrainCircuit className="text-indigo-600" /> AIBTeM Roleplay</h3>
-            <p className="text-sm text-slate-500 mt-1">Từ cần dùng: <strong className="text-indigo-600">{targetWords.join(', ')}</strong></p>
+            <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-1"><BrainCircuit className="text-indigo-600" /> AIBTeM Roleplay</h3>
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Đang đóng vai: <span className="text-indigo-500">{aiRole}</span></p>
+            <p className="text-sm text-slate-500">Từ cần dùng: <strong className="text-indigo-600">{targetWords.join(', ')}</strong></p>
          </div>
-         <button onClick={onComplete} className="bg-red-50 text-red-600 px-4 py-2 rounded-xl text-sm font-bold hover:bg-red-100 transition-all">Kết thúc trò chuyện</button>
+         <button onClick={onComplete} className="bg-red-50 text-red-600 px-4 py-3 rounded-xl text-sm font-bold hover:bg-red-100 transition-all shrink-0">Kết thúc đàm thoại</button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/50">
+      <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 bg-slate-50/50">
         {messages.map((m, i) => (
-          <div key={i} className={cn("flex max-w-[85%]", m.role === 'user' ? "ml-auto justify-end" : "mr-auto")}>
-            <div className={cn("p-4 md:p-5 rounded-3xl text-lg shadow-sm leading-relaxed", m.role === 'user' ? "bg-indigo-600 text-white rounded-tr-sm" : "bg-white border border-slate-200 text-slate-800 rounded-tl-sm")}>
+          <div key={i} className={cn("flex max-w-[90%] md:max-w-[85%]", m.role === 'user' ? "ml-auto justify-end" : "mr-auto")}>
+            <div className={cn("p-4 md:p-5 rounded-3xl text-base md:text-lg shadow-sm leading-relaxed", m.role === 'user' ? "bg-indigo-600 text-white rounded-tr-sm" : "bg-white border border-slate-200 text-slate-800 rounded-tl-sm")}>
               {m.text}
             </div>
             {m.role === 'ai' && (
@@ -2139,7 +2157,7 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
         {isLoading && (
           <div className="flex max-w-[85%] mr-auto">
             <div className="p-4 rounded-3xl bg-white border border-slate-200 text-slate-500 rounded-tl-sm shadow-sm flex items-center gap-2 font-medium">
-              <Loader2 className="animate-spin text-indigo-500" size={18} /> AIBTeM đang phản hồi...
+              <Loader2 className="animate-spin text-indigo-500" size={18} /> Đang suy nghĩ...
             </div>
           </div>
         )}
@@ -2151,7 +2169,7 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
           <button onClick={startListening} disabled={isLoading || isRecording} title="Ghi âm giọng nói" className={cn("p-4 rounded-2xl transition-all shadow-sm shrink-0", isRecording ? "bg-red-500 text-white animate-pulse" : "bg-indigo-50 text-indigo-600 hover:bg-indigo-100")}>
             <Mic size={24} />
           </button>
-          <input type="text" value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSend(input)} disabled={isLoading || isRecording} placeholder={isRecording ? "Đang lắng nghe..." : "Gõ hoặc đọc câu trả lời của bạn..."} className="flex-1 bg-slate-50 border-transparent focus:bg-white focus:border-indigo-500 rounded-2xl px-6 py-4 text-lg outline-none transition-all border-2 placeholder:text-slate-400 font-medium text-slate-800" />
+          <input type="text" value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSend(input)} disabled={isLoading || isRecording} placeholder={isRecording ? "Đang lắng nghe..." : "Gõ hoặc đọc câu trả lời của bạn..."} className="flex-1 bg-slate-50 border-transparent focus:bg-white focus:border-indigo-500 rounded-2xl px-4 md:px-6 py-4 text-base md:text-lg outline-none transition-all border-2 placeholder:text-slate-400 font-medium text-slate-800" />
           <button onClick={() => handleSend(input)} disabled={!input.trim() || isLoading} className="p-4 bg-indigo-600 text-white rounded-2xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md shrink-0">
             <ChevronRight size={24} />
           </button>

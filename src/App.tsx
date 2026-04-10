@@ -602,7 +602,7 @@ export default function App() {
         <MobileNavButton active={view === 'dictionary'} onClick={() => setView('dictionary')} icon={<BookOpen />} />
         <MobileNavButton active={view === 'home'} onClick={() => { setView('home'); setActiveGame(null); }} icon={<Home />} />
       </div>
-      <Footer />
+    
     </div>
   );
 }
@@ -2058,7 +2058,7 @@ function ReportView({ results, language, activeLessonId }: { results: GameResult
 
       <div className="bg-white p-8 md:p-10 rounded-[2.5rem] shadow-xl border border-slate-100">
         <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-          <BrainCircuit className="text-indigo-600" /> AIBTeM Nhận xét & Khuyên dùng
+          <BrainCircuit className="text-indigo-600" /> AIBTeM Nhận xét, đánh giá
         </h3>
         <div className="prose prose-slate max-w-none bg-slate-50 p-6 rounded-3xl border border-slate-100">
             <p className="text-slate-700 text-lg leading-relaxed font-medium">
@@ -2067,22 +2067,5 @@ function ReportView({ results, language, activeLessonId }: { results: GameResult
         </div>
       </div>
     </div>
-  );
-}
-
-function Footer() {
-  return (
-    <footer className="bg-slate-900 text-white py-4 mt-auto border-t border-slate-800">
-      <div className="max-w-7xl mx-auto px-4 md:px-8 flex flex-wrap items-center gap-x-6 gap-y-2 text-slate-400 text-xs md:text-sm">
-        <div className="flex items-center gap-2">
-          <img src="/chan_trang.PNG" alt="AIBTeM Logo" className="h-6 object-contain" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
-          <span className="font-bold text-white tracking-wider">AIBTeM</span>
-        </div>
-        <p>© 2026 Vũ Xuân Hùng | Vocab AIBTeM. All Rights Reserved.</p>
-        <div className="flex items-center gap-2 hover:text-white transition-colors">
-          <Mail size={14} className="text-indigo-400" /><span>hungvdtnai@gmail.com</span>
-        </div>
-      </div>
-    </footer>
   );
 }

@@ -488,18 +488,22 @@ export default function App() {
               <BookOpen size={18} />
             </button>
 
-            <div className="flex bg-slate-100 p-1 rounded-xl">
+           <div className="flex bg-slate-100 p-1 rounded-xl">
               <button 
                 onClick={() => { setLanguage('en'); setEditingLesson(null); setPlayVocabList([]); setActiveLessonId(null); setGameResults([]); }}
-                className={cn("px-2 lg:px-3 py-1 rounded-lg text-sm font-medium transition-all", language === 'en' ? "bg-white shadow-sm text-indigo-600" : "text-slate-500")}
+                className={cn("px-2 lg:px-3 py-1.5 rounded-lg text-sm font-bold transition-all flex items-center gap-2", language === 'en' ? "bg-white shadow-sm text-indigo-600" : "text-slate-500 hover:text-indigo-600")}
+                title="Tiếng Anh"
               >
-                EN
+                <img src="https://flagcdn.com/w20/gb.png" width="20" alt="English" className={cn("rounded-[2px] shadow-sm transition-all", language !== 'en' && "grayscale opacity-50")} />
+                <span className="hidden sm:block">EN</span>
               </button>
               <button 
                 onClick={() => { setLanguage('de'); setEditingLesson(null); setPlayVocabList([]); setActiveLessonId(null); setGameResults([]); }}
-                className={cn("px-2 lg:px-3 py-1 rounded-lg text-sm font-medium transition-all", language === 'de' ? "bg-white shadow-sm text-indigo-600" : "text-slate-500")}
+                className={cn("px-2 lg:px-3 py-1.5 rounded-lg text-sm font-bold transition-all flex items-center gap-2", language === 'de' ? "bg-white shadow-sm text-indigo-600" : "text-slate-500 hover:text-indigo-600")}
+                title="Tiếng Đức"
               >
-                DE
+                <img src="https://flagcdn.com/w20/de.png" width="20" alt="Deutsch" className={cn("rounded-[2px] shadow-sm transition-all", language !== 'de' && "grayscale opacity-50")} />
+                <span className="hidden sm:block">DE</span>
               </button>
             </div>
             

@@ -1466,10 +1466,9 @@ function GameCard({ title, desc, icon, onClick, colorClass }: { title: string, d
 }
 
 // --- GAME LOGIC (CHỐNG NHẢY TỪ TUYỆT ĐỐI) ---
-
 function GameContainer({ type, vocabList, language, onBack, onFinish, playSound, activeLessonId }: { type: GameType, vocabList: Vocabulary[], language: Language, onBack: () => void, onFinish: (score: number) => void, playSound: (t: 'correct' | 'wrong' | 'success') => void, activeLessonId: string }) {
   
-const [gameVocabs] = useState(() => {
+  const [gameVocabs] = useState(() => {
     const currentDict = language === 'en' ? enDictDataRaw : deDictDataRaw;
     const enriched = vocabList.map(v => {
         const dictEntry = currentDict.find(d => d.word.toLowerCase() === v.word.toLowerCase());
@@ -1478,7 +1477,6 @@ const [gameVocabs] = useState(() => {
         }
         return v;
     });
-    // BỎ GIỚI HẠN .slice(0, 5) ĐỂ GAME LẤY TOÀN BỘ TỪ TRONG BÀI HỌC VÀ TRỘN NGẪU NHIÊN
     return type === 'flashcards' ? enriched : [...enriched].sort(() => 0.5 - Math.random());
   });
 
@@ -1498,7 +1496,7 @@ const [gameVocabs] = useState(() => {
      }
   }, [step, type]);
 
- useEffect(() => {
+  useEffect(() => {
       if (isFinished) {
           if (type !== 'flashcards') {
               const percentage = Math.round((score / gameVocabs.length) * 100);
@@ -1507,7 +1505,6 @@ const [gameVocabs] = useState(() => {
               }
           }
           
-          // Lắng nghe sự kiện nhấn phím Enter
           const handleKeyDown = (e: KeyboardEvent) => {
               if (e.key === 'Enter') {
                   e.preventDefault(); 
@@ -1550,6 +1547,7 @@ const [gameVocabs] = useState(() => {
           }
       }
   };
+
   // Hàm xử lý lùi lại cho Flashcard
   const handlePrevStep = () => {
       if (step > 0) {
@@ -1557,7 +1555,7 @@ const [gameVocabs] = useState(() => {
       }
   };
 
- if (isFinished) {
+  if (isFinished) {
       const percentage = Math.round((score / gameVocabs.length) * 100);
       const isGood = percentage >= 80; 
       const isNeedsImprovement = percentage < 50;
@@ -1596,14 +1594,13 @@ const [gameVocabs] = useState(() => {
       );
   }
 
- return (
+  return (
     <div className="w-full mx-auto">
       <div className="flex items-center justify-between mb-8">
         <button onClick={onBack} className="flex items-center gap-2 text-slate-500 hover:text-indigo-600 font-bold">
           <ChevronLeft size={20} /> Quay lại
         </button>
         
-        {/* Đã gỡ bỏ điều kiện ẩn thanh tiến độ của game Nối từ */}
         <div className="flex gap-2 flex-1 max-w-sm mx-4">
           {gameVocabs.map((_, i) => {
              let bgColor = "bg-slate-200";
@@ -1616,7 +1613,6 @@ const [gameVocabs] = useState(() => {
           })}
         </div>
         
-        {/* Hàm Math.min đảm bảo không hiển thị vượt quá tổng số câu */}
         <div className="font-bold text-indigo-600">Từ {Math.min(step + 1, gameVocabs.length)}/{gameVocabs.length}</div>
       </div>
 
@@ -2227,26 +2223,27 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
   );
 }
 // --- REPORT VIEW ---
-
-const chartData = currentSessionResults.map((r, i) => ({
+function ReportView({ results, language, activeLessonId }: { results: GameResult[], language: Language, activeLessonId: string }) {
+  const currentSessionResults = results.filter(r => r.lessonId === activeLessonId && r.language === language);
+  
+  const chartData = currentSessionResults.map((r, i) => ({
     name: getGameTitle(r.gameType),
     score: r.score,
     total: r.total,
-    type: r.gameType // THÊM DÒNG NÀY: Để biểu đồ biết đây là game gì mà tô màu
+    type: r.gameType
   }));
 
   const totalScore = currentSessionResults.reduce((acc, r) => acc + r.score, 0);
   const totalPossible = currentSessionResults.reduce((acc, r) => acc + r.total, 0);
   const accuracy = totalPossible > 0 ? Math.round((totalScore / totalPossible) * 100) : 0;
 
-  // Nhận xét tĩnh không phụ thuộc vào Gemini API
   const getStaticFeedback = (acc: number) => {
-      if (acc >= 90) return "AIBTeM nhận thấy bạn đã nắm vững gần như toàn bộ từ vựng trong bài học này! Phản xạ xuất sắc. Bạn hoàn toàn có thể chuyển sang bài học mới khó hơn.";
-      if (acc >= 80) return "Thành tích rất tốt! Bạn đã ghi nhớ được hầu hết các từ vựng. Chỉ cần ôn tập lại một chút để đạt điểm tuyệt đối nhé.";
-      if (acc >= 70) return "Kết quả rất khả quan! Bạn đã nhớ được phần lớn từ vựng. Hãy thử chơi lại game 'Nối từ' hoặc 'Luyện viết' một lần nữa.";
-      if (acc >= 60) return "Bạn đang tiến bộ! Kết quả ở mức khá, tuy nhiên vẫn còn một số từ gây nhầm lẫn. Hãy tiếp tục luyện tập nhé.";
-      if (acc >= 50) return "Bạn đang ở mức trung bình. Có vẻ một số từ vựng vẫn chưa thực sự in sâu vào trí nhớ. AIBTeM khuyên bạn nên lướt qua thẻ Flashcard thêm 2-3 vòng trước khi làm trắc nghiệm.";
-      return "Đừng nản chí! Việc học ngôn ngữ cần sự lặp lại. Hãy quay lại học kỹ từng thẻ Flashcard, nghe phát âm và tự nhẩm lại theo trước khi bắt đầu chơi game.";
+      if (acc >= 90) return "AIBTeM nhận thấy bạn đã nắm vững gần như toàn bộ từ vựng trong bài học này! Phản xạ xuất sắc.";
+      if (acc >= 80) return "Thành tích rất tốt! Bạn đã ghi nhớ được hầu hết các từ vựng. Chỉ cần ôn tập lại một chút nhé.";
+      if (acc >= 70) return "Kết quả rất khả quan! Bạn đã nhớ được phần lớn từ vựng.";
+      if (acc >= 60) return "Bạn đang tiến bộ! Kết quả ở mức khá, tuy nhiên vẫn còn một số từ gây nhầm lẫn.";
+      if (acc >= 50) return "Bạn đang ở mức trung bình. AIBTeM khuyên bạn nên lướt qua thẻ Flashcard thêm 2-3 vòng nữa.";
+      return "Đừng nản chí! Hãy quay lại học kỹ từng thẻ Flashcard trước khi bắt đầu chơi game nhé.";
   };
 
   return (
@@ -2266,18 +2263,13 @@ const chartData = currentSessionResults.map((r, i) => ({
               <BarChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10 }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} domain={[0, 'dataMax']} />
-                <Tooltip contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} cursor={{ fill: '#f8fafc' }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                <Tooltip contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
                 <Bar dataKey="score" radius={[6, 6, 0, 0]}>
                   {chartData.map((entry: any, index: number) => {
-                    // Định nghĩa màu theo đúng màu của các GameCard
                     const colorMap: Record<string, string> = {
-                      'flashcards': '#3b82f6', // blue
-                      'quiz': '#6366f1',       // indigo
-                      'matching': '#f97316',   // orange
-                      'writing': '#10b981',    // emerald
-                      'fill': '#ec4899',       // pink
-                      'roleplay': '#f43f5e'    // rose
+                      'flashcards': '#3b82f6', 'quiz': '#6366f1', 'matching': '#f97316',
+                      'writing': '#10b981', 'fill': '#ec4899', 'roleplay': '#f43f5e'
                     };
                     return <Cell key={`cell-${index}`} fill={colorMap[entry.type] || '#cbd5e1'} />;
                   })}
@@ -2291,9 +2283,7 @@ const chartData = currentSessionResults.map((r, i) => ({
           <Trophy size={64} className="mb-4 text-indigo-200" />
           <h3 className="text-2xl font-bold mb-2">Tổng điểm tích lũy</h3>
           <div className="text-6xl font-black mb-4">{totalScore} <span className="text-3xl text-indigo-300">/ {totalPossible}</span></div>
-          <div className="bg-indigo-500/50 px-8 py-3 rounded-full font-bold text-xl">
-            Độ chính xác: {accuracy}%
-          </div>
+          <div className="bg-indigo-500/50 px-8 py-3 rounded-full font-bold text-xl">Độ chính xác: {accuracy}%</div>
           <div className="absolute -right-10 -bottom-10 opacity-10"><BarChart3 size={200} /></div>
         </div>
       </div>
@@ -2304,7 +2294,7 @@ const chartData = currentSessionResults.map((r, i) => ({
         </h3>
         <div className="prose prose-slate max-w-none bg-slate-50 p-6 rounded-3xl border border-slate-100">
             <p className="text-slate-700 text-lg leading-relaxed font-medium">
-                {currentSessionResults.length === 0 ? "Bạn chưa hoàn thành trò chơi nào để AIBTeM có thể đánh giá." : getStaticFeedback(accuracy)}
+                {currentSessionResults.length === 0 ? "Bạn chưa hoàn thành trò chơi nào." : getStaticFeedback(accuracy)}
             </p>
         </div>
       </div>

@@ -1488,13 +1488,23 @@ function GameContainer({ type, vocabList, language, onBack, onFinish, playSound,
   
   const [answerHistory, setAnswerHistory] = useState<('correct'|'wrong'|null)[]>(new Array(gameVocabs.length).fill(null));
 
-  useEffect(() => {
-     if (type === 'flashcards') {
-         const newHistory = [...answerHistory];
-         newHistory[step] = 'correct'; 
-         setAnswerHistory(newHistory);
-     }
-  }, [step, type]);
+  // TÚI GIỮ ĐIỂM FLASHCARD: Không bị mất đi khi thẻ lật chuyển hiệu ứng
+  const scoredStepsRef = useRef<Set<number>>(new Set());
+
+  // HÀM NHẬN TÍN HIỆU TỪ FLASHCARD
+  const handleFlashcardFlipped = () => {
+      if (!scoredStepsRef.current.has(step)) {
+          scoredStepsRef.current.add(step);
+          setScore(scoredStepsRef.current.size); // Cập nhật tổng điểm
+          
+          // Thắp sáng thanh tiến độ màu xanh ngay lập tức
+          setAnswerHistory(prev => {
+              const newHistory = [...prev];
+              newHistory[step] = 'correct';
+              return newHistory;
+          });
+      }
+  };
 
   useEffect(() => {
       if (isFinished) {
@@ -1547,8 +1557,7 @@ function GameContainer({ type, vocabList, language, onBack, onFinish, playSound,
           }
       }
   };
-
-  // Hàm xử lý lùi lại cho Flashcard
+  
   const handlePrevStep = () => {
       if (step > 0) {
           setStep(s => s - 1);
@@ -1605,7 +1614,7 @@ function GameContainer({ type, vocabList, language, onBack, onFinish, playSound,
           {gameVocabs.map((_, i) => {
              let bgColor = "bg-slate-200";
              if (i < step || (type === 'flashcards' && i === step)) {
-                 bgColor = answerHistory[i] === 'correct' ? "bg-[#009900]" : "bg-red-500";
+                 bgColor = answerHistory[i] === 'correct' ? "bg-[#009900]" : "bg-slate-200";
              } else if (i === step) {
                  bgColor = "bg-indigo-400 animate-pulse";
              }
@@ -1619,7 +1628,7 @@ function GameContainer({ type, vocabList, language, onBack, onFinish, playSound,
       <AnimatePresence mode="wait">
         {type === 'flashcards' && (
           <motion.div key={step} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-            <FlashcardGame vocab={currentVocab} onNext={handleNextStep} onPrev={handlePrevStep} language={language} step={step} totalSteps={gameVocabs.length} onFinish={onFinish} />
+            <FlashcardGame vocab={currentVocab} onNext={handleNextStep} onPrev={handlePrevStep} language={language} step={step} totalSteps={gameVocabs.length} onFinish={() => onFinish(scoredStepsRef.current.size)} onFullyFlipped={handleFlashcardFlipped} />
           </motion.div>
         )}
         {type === 'quiz' && (
@@ -1663,31 +1672,30 @@ function GameContainer({ type, vocabList, language, onBack, onFinish, playSound,
   );
 }
 
-function FlashcardGame({ vocab, onNext, onPrev, language, step, totalSteps, onFinish }: any) {
+function FlashcardGame({ vocab, onNext, onPrev, language, step, totalSteps, onFinish, onFullyFlipped }: any) {
   const [side, setSide] = useState(0); 
   const [showReportModal, setShowReportModal] = useState(false);
   const [errorText, setErrorText] = useState('');
   const [showThankYou, setShowThankYou] = useState(false);
 
-  // THÊM: Biến theo dõi điểm số và mặt đã lật
-  const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
   const [viewedSides, setViewedSides] = useState<Set<number>>(new Set([0]));
 
   useEffect(() => {
     setSide(0);
     setShowReportModal(false); setErrorText(''); setShowThankYou(false);
-    // Reset bộ đếm mặt khi chuyển sang thẻ mới
     setViewedSides(new Set([0]));
   }, [vocab, step]);
 
-  // THÊM: Thuật toán cộng điểm khi lật đủ 3 mặt (0, 1, 2)
+  // THUẬT TOÁN ĐẢM BẢO CHÍNH XÁC: Gửi tín hiệu lật thẻ lên GameContainer
   useEffect(() => {
-    const newViewed = new Set(viewedSides).add(side);
-    setViewedSides(newViewed);
-    if (newViewed.size >= 3) {
-      setCompletedSteps(prev => new Set(prev).add(step));
-    }
-  }, [side, step]);
+    setViewedSides(prev => {
+      const newSet = new Set(prev).add(side);
+      if (newSet.size >= 3 && onFullyFlipped) {
+        onFullyFlipped();
+      }
+      return newSet;
+    });
+  }, [side, onFullyFlipped]);
 
   useEffect(() => {
     if (side === 2) handleSpeak(vocab.word, language);
@@ -1761,9 +1769,7 @@ function FlashcardGame({ vocab, onNext, onPrev, language, step, totalSteps, onFi
          <button 
             onClick={() => {
               if (step === totalSteps - 1) {
-                // Nếu là thẻ cuối cùng, gửi tổng điểm lên hệ thống Báo cáo
-                if (onFinish) onFinish(completedSteps.size);
-                else onNext();
+                if (onFinish) onFinish();
               } else {
                 onNext();
               }

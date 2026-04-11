@@ -1617,7 +1617,7 @@ const [gameVocabs] = useState(() => {
       <AnimatePresence mode="wait">
         {type === 'flashcards' && (
           <motion.div key={step} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-            <FlashcardGame vocab={currentVocab} onNext={() => { handleNextStep(); }} onPrev={() => setStep(s => s > 0 ? s - 1 : s)} language={language} step={step} totalSteps={gameVocabs.length} />
+            <FlashcardGame vocab={currentVocab} onNext={handleNextStep} onPrev={handlePrevStep} language={language} step={step} totalSteps={gameVocabs.length} onFinish={onFinish} />
           </motion.div>
         )}
         {type === 'quiz' && (
@@ -1661,16 +1661,31 @@ const [gameVocabs] = useState(() => {
   );
 }
 
-function FlashcardGame({ vocab, onNext, onPrev, language, step, totalSteps }: { vocab: Vocabulary, onNext: () => void, onPrev: () => void, language: Language, step: number, totalSteps: number }) {
+function FlashcardGame({ vocab, onNext, onPrev, language, step, totalSteps, onFinish }: any) {
   const [side, setSide] = useState(0); 
   const [showReportModal, setShowReportModal] = useState(false);
   const [errorText, setErrorText] = useState('');
   const [showThankYou, setShowThankYou] = useState(false);
 
+  // THÊM: Biến theo dõi điểm số và mặt đã lật
+  const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
+  const [viewedSides, setViewedSides] = useState<Set<number>>(new Set([0]));
+
   useEffect(() => {
     setSide(0);
     setShowReportModal(false); setErrorText(''); setShowThankYou(false);
-  }, [vocab]);
+    // Reset bộ đếm mặt khi chuyển sang thẻ mới
+    setViewedSides(new Set([0]));
+  }, [vocab, step]);
+
+  // THÊM: Thuật toán cộng điểm khi lật đủ 3 mặt (0, 1, 2)
+  useEffect(() => {
+    const newViewed = new Set(viewedSides).add(side);
+    setViewedSides(newViewed);
+    if (newViewed.size >= 3) {
+      setCompletedSteps(prev => new Set(prev).add(step));
+    }
+  }, [side, step]);
 
   useEffect(() => {
     if (side === 2) handleSpeak(vocab.word, language);
@@ -1741,7 +1756,18 @@ function FlashcardGame({ vocab, onNext, onPrev, language, step, totalSteps }: { 
          <button onClick={() => setShowReportModal(true)} className="flex-1 py-4 rounded-2xl font-bold text-lg bg-orange-50 border-2 border-orange-100 text-orange-600 hover:bg-orange-100 hover:border-orange-200 transition-all flex items-center justify-center gap-2">
            <AlertCircle size={20} /> Báo lỗi
          </button>
-         <button onClick={onNext} className="flex-1 py-4 rounded-2xl font-bold text-lg bg-indigo-600 text-white hover:bg-indigo-700 hover:scale-[1.02] active:scale-95 shadow-xl shadow-indigo-200 transition-all flex items-center justify-center gap-2">
+         <button 
+            onClick={() => {
+              if (step === totalSteps - 1) {
+                // Nếu là thẻ cuối cùng, gửi tổng điểm lên hệ thống Báo cáo
+                if (onFinish) onFinish(completedSteps.size);
+                else onNext();
+              } else {
+                onNext();
+              }
+            }} 
+            className="flex-1 py-4 rounded-2xl font-bold text-lg bg-indigo-600 text-white hover:bg-indigo-700 hover:scale-[1.02] active:scale-95 shadow-xl shadow-indigo-200 transition-all flex items-center justify-center gap-2"
+         >
            {step === totalSteps - 1 ? 'Hoàn thành' : 'Tiếp theo'} {step !== totalSteps - 1 && <ChevronRight size={20} />}
          </button>
       </div>
@@ -2069,13 +2095,13 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
      try {
         const apiKey = import.meta.env.VITE_GEMINI_API_KEY || ""; 
         
-        const systemPrompt = `Bạn đang đóng vai: ${aiRole}. Ngôn ngữ giao tiếp: ${language === 'en' ? 'Tiếng Anh' : 'Tiếng Đức'}. 
-        Mục tiêu: Đặt câu hỏi hoặc tạo tình huống để ép học viên sử dụng các từ vựng sau: ${targetWordsWithLevel.join(', ')}.
-        Quy tắc NGHIÊM NGẶT:
-        1. BẠN LÀ NGƯỜI CHỦ ĐỘNG: Liên tục đặt câu hỏi mở hoặc đưa ra tình huống giao tiếp. Tuyệt đối không để cuộc hội thoại rơi vào bế tắc.
-        2. ĐIỀU CHỈNH ĐỘ KHÓ THEO TỪ: Nếu từ cần học có Level A1/A2, hãy đặt câu hỏi trực diện, đời thường, dễ hiểu. Nếu từ cần học có Level B1/B2, hãy tạo ra tình huống phức tạp, mang tính học thuật, suy luận hoặc yêu cầu học viên giải quyết vấn đề.
-        3. SỬA LỖI NGAY LẬP TỨC: Nếu câu trả lời của học viên sai ngữ pháp, dùng từ không tự nhiên, BẮT BUỘC sửa lỗi trong dấu ngoặc đơn (...) ở ngay đầu câu phản hồi của bạn.
-        4. KHÔNG BAO GIỜ tự trả lời hộ phần có chứa từ vựng của học viên. Phản hồi phải ngắn gọn, tự nhiên (tối đa 2-3 câu).`;
+        const systemPrompt = `Bạn đang đóng vai: ${aiRole}. Ngôn ngữ: ${language === 'en' ? 'Tiếng Anh' : 'Tiếng Đức'}. 
+        Mục tiêu: Ép học viên dùng các từ: ${targetWordsWithLevel.join(', ')}.
+        Quy tắc bắt buộc:
+        1. LUÔN LUÔN KẾT THÚC BẰNG MỘT CÂU HỎI: Sau khi nhận xét câu trả lời của học viên, bạn phải đặt ngay một câu hỏi mới hoặc tạo ra một tình huống tiếp nối. TUYỆT ĐỐI không được chỉ xác nhận rồi im lặng.
+        2. VAI TRÒ CHỦ ĐỘNG: Bạn là người dẫn dắt câu chuyện. Nếu học viên trả lời ngắn, hãy gợi ý thêm hoặc hỏi sâu hơn để họ phải dùng từ vựng mục tiêu.
+        3. SỬA LỖI: Luôn sửa lỗi ngữ pháp trong ngoặc đơn (...) ở đầu phản hồi nếu học viên nói sai.
+        4. ĐỘ KHÓ: Điều chỉnh câu hỏi theo trình độ (A1-B2) của từ vựng đang học.`;
 
         const reqBody = {
             contents: [

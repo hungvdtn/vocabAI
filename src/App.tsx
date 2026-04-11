@@ -1610,19 +1610,40 @@ function GameContainer({ type, vocabList, language, onBack, onFinish, playSound,
           <ChevronLeft size={20} /> Quay lại
         </button>
         
-        <div className="flex gap-2 flex-1 max-w-sm mx-4">
-          {gameVocabs.map((_, i) => {
-             let bgColor = "bg-slate-200";
-             if (i < step || (type === 'flashcards' && i === step)) {
-                 bgColor = answerHistory[i] === 'correct' ? "bg-[#009900]" : "bg-slate-200";
-             } else if (i === step) {
-                 bgColor = "bg-indigo-400 animate-pulse";
-             }
-             return <div key={i} className={cn("h-2 rounded-full transition-all flex-1", bgColor)} />
-          })}
-        </div>
-        
-        <div className="font-bold text-indigo-600">Từ {Math.min(step + 1, gameVocabs.length)}/{gameVocabs.length}</div>
+        {/* ẨN TOÀN BỘ THANH TIẾN ĐỘ VÀ SỐ CÂU NẾU LÀ GAME GIAO TIẾP AI */}
+        {type !== 'roleplay' && (
+          <>
+            <div className="flex gap-2 flex-1 max-w-sm mx-4">
+              {gameVocabs.map((_, i) => {
+                 let bgColor = "bg-slate-200"; // Mặc định là xám
+                 
+                 if (i < step) {
+                     if (type === 'flashcards') {
+                         // Flashcard: Đã lật đủ 3 mặt (Xanh), Chưa lật đủ (Xám)
+                         bgColor = answerHistory[i] === 'correct' ? "bg-[#009900]" : "bg-slate-200";
+                     } else {
+                         // Game khác: Làm đúng (Xanh), Làm sai (Đỏ)
+                         bgColor = answerHistory[i] === 'correct' ? "bg-[#009900]" : "bg-red-500";
+                     }
+                 } else if (i === step) {
+                     // Nếu đang ở bước hiện tại mà đã trả lời xong, hiển thị luôn kết quả
+                     if (answerHistory[i] === 'correct') {
+                         bgColor = "bg-[#009900]";
+                     } else if (answerHistory[i] === 'wrong') {
+                         bgColor = "bg-red-500";
+                     } else {
+                         // Chưa trả lời thì màu tím nhạt nhấp nháy
+                         bgColor = "bg-indigo-400 animate-pulse";
+                     }
+                 }
+
+                 return <div key={i} className={cn("h-2 rounded-full transition-all flex-1", bgColor)} />
+              })}
+            </div>
+            
+            <div className="font-bold text-indigo-600">Từ {Math.min(step + 1, gameVocabs.length)}/{gameVocabs.length}</div>
+          </>
+        )}
       </div>
 
       <AnimatePresence mode="wait">

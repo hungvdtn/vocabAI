@@ -1550,6 +1550,12 @@ const [gameVocabs] = useState(() => {
           }
       }
   };
+  // Hàm xử lý lùi lại cho Flashcard
+  const handlePrevStep = () => {
+      if (step > 0) {
+          setStep(s => s - 1);
+      }
+  };
 
  if (isFinished) {
       const percentage = Math.round((score / gameVocabs.length) * 100);
@@ -2222,13 +2228,11 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
 }
 // --- REPORT VIEW ---
 
-function ReportView({ results, language, activeLessonId }: { results: GameResult[], language: Language, activeLessonId: string }) {
-  const currentSessionResults = results.filter(r => r.lessonId === activeLessonId && r.language === language);
-  
-  const chartData = currentSessionResults.map((r, i) => ({
+const chartData = currentSessionResults.map((r, i) => ({
     name: getGameTitle(r.gameType),
     score: r.score,
-    total: r.total
+    total: r.total,
+    type: r.gameType // THÊM DÒNG NÀY: Để biểu đồ biết đây là game gì mà tô màu
   }));
 
   const totalScore = currentSessionResults.reduce((acc, r) => acc + r.score, 0);
@@ -2264,7 +2268,20 @@ function ReportView({ results, language, activeLessonId }: { results: GameResult
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10 }} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} domain={[0, 'dataMax']} />
                 <Tooltip contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} cursor={{ fill: '#f8fafc' }} />
-                <Bar dataKey="score" fill="#4f46e5" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="score" radius={[6, 6, 0, 0]}>
+                  {chartData.map((entry: any, index: number) => {
+                    // Định nghĩa màu theo đúng màu của các GameCard
+                    const colorMap: Record<string, string> = {
+                      'flashcards': '#3b82f6', // blue
+                      'quiz': '#6366f1',       // indigo
+                      'matching': '#f97316',   // orange
+                      'writing': '#10b981',    // emerald
+                      'fill': '#ec4899',       // pink
+                      'roleplay': '#f43f5e'    // rose
+                    };
+                    return <Cell key={`cell-${index}`} fill={colorMap[entry.type] || '#cbd5e1'} />;
+                  })}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>

@@ -1430,7 +1430,17 @@ function GamesView({ vocabList, language, onComplete, activeGame, setActiveGame,
 
  if (activeGame) {
     return (
-      <GameContainer type={activeGame} vocabList={vocabList} language={language} activeLessonId={activeLessonId} onBack={() => setActiveGame(null)} onFinish={(score) => { onComplete({ lessonId: activeLessonId, gameType: activeGame, score, total: vocabList.length, timestamp: Date.now(), language }); }} playSound={playSound} />
+      <GameContainer 
+        type={activeGame} 
+        vocabList={vocabList} 
+        language={language} 
+        activeLessonId={activeLessonId} 
+        onBack={() => setActiveGame(null)} 
+        onFinish={(score, mistakes) => { 
+            onComplete({ lessonId: activeLessonId, gameType: activeGame, score, total: vocabList.length, timestamp: Date.now(), language, mistakes }); 
+        }} 
+        playSound={playSound} 
+      />
     );
   }
 
@@ -1463,67 +1473,6 @@ function GameCard({ title, desc, icon, onClick, colorClass }: { title: string, d
       <div className="absolute top-8 right-8 opacity-0 group-hover:opacity-100 transition-opacity"><ChevronRight className="text-slate-300" /></div>
       <div className={cn("absolute -bottom-6 -right-6 w-24 h-24 rounded-full opacity-5 group-hover:scale-150 transition-transform", colorClass)}></div>
     </motion.button>
-  );
-}
-
-// --- GAME LOGIC (CHỐNG NHẢY TỪ TUYỆT ĐỐI) ---
-function GamesView({ vocabList, language, onComplete, activeGame, setActiveGame, onGoToLibrary, onGoToTopics, onGoToInput, hasLessons, activeLessonId, playSound }: { vocabList: Vocabulary[], language: Language, onComplete: (res: GameResult) => void, activeGame: GameType | null, setActiveGame: (g: GameType | null) => void, onGoToLibrary: () => void, onGoToTopics: () => void, onGoToInput: () => void, hasLessons: boolean, activeLessonId: string, playSound: (t: 'correct'|'wrong'|'success')=>void }) {
-  
-  if (vocabList.length < 5) {
-    if (!hasLessons) {
-      return (
-        <div className="text-center py-20 bg-white rounded-[3rem] shadow-xl border border-slate-100 w-full">
-          <RobotAnimation type="thinking" />
-          <h3 className="text-2xl font-bold mt-6">Chưa có bài học nào được tạo</h3>
-          <p className="text-slate-500 mt-2 mb-8">Vui lòng tạo bài học từ Chủ đề hoặc Nhập liệu trực tiếp để bắt đầu học.</p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 px-4">
-            <button onClick={onGoToTopics} className="w-full sm:w-auto bg-indigo-50 text-indigo-600 px-8 py-4 rounded-2xl font-bold hover:bg-indigo-100 transition-all flex items-center justify-center gap-2"><LayoutGrid size={20} /> Đến Chủ đề</button>
-            <button onClick={onGoToInput} className="w-full sm:w-auto bg-indigo-600 text-white px-8 py-4 rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg flex items-center justify-center gap-2"><PlusCircle size={20} /> Đến Nhập liệu</button>
-          </div>
-        </div>
-      );
-    }
-    return (
-      <div className="text-center py-20 bg-white rounded-[3rem] shadow-xl border border-slate-100 w-full">
-        <RobotAnimation type="sad" />
-        <h3 className="text-2xl font-bold mt-6">Chưa có bài học nào được chọn</h3>
-        <p className="text-slate-500 mt-2 mb-8">Vui lòng chọn một Bài học để bắt đầu chơi.</p>
-        <button onClick={onGoToLibrary} className="bg-indigo-600 text-white px-8 py-4 rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg flex items-center gap-2 mx-auto"><BookOpen size={20} /> Đến Thư viện ngay</button>
-      </div>
-    );
-  }
-
- if (activeGame) {
-    return (
-      <GameContainer 
-        type={activeGame} 
-        vocabList={vocabList} 
-        language={language} 
-        activeLessonId={activeLessonId} 
-        onBack={() => setActiveGame(null)} 
-        onFinish={(score, mistakes) => { 
-            onComplete({ lessonId: activeLessonId, gameType: activeGame, score, total: vocabList.length, timestamp: Date.now(), language, mistakes }); 
-        }} 
-        playSound={playSound} 
-      />
-    );
-  }
-
-  return (
-    <div className="w-full">
-      <div className="mb-8 bg-indigo-50 border border-indigo-100 p-4 rounded-2xl flex items-center justify-between">
-        <span className="text-indigo-800 font-medium">Đang sử dụng gói từ vựng: <strong className="text-indigo-600">{vocabList.length} từ</strong></span>
-        <button onClick={onGoToLibrary} className="text-sm font-bold text-indigo-600 bg-white px-4 py-2 rounded-xl shadow-sm hover:shadow-md transition-all">Đổi gói khác</button>
-      </div>
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-        <GameCard title="Flashcards" desc="Thẻ lật 3 mặt giúp ghi nhớ sâu." icon={<BrainCircuit />} colorClass="bg-blue-500" onClick={() => setActiveGame('flashcards')} />
-        <GameCard title="Trắc nghiệm" desc="AIBTeM tạo từ nhiễu thông minh." icon={<CheckCircle2 />} colorClass="bg-indigo-500" onClick={() => setActiveGame('quiz')} />
-        <GameCard title="Nối từ" desc="Thử thách phản xạ nhanh." icon={<RefreshCw />} colorClass="bg-orange-500" onClick={() => setActiveGame('matching')} />
-        <GameCard title="Luyện viết" desc="Nghe và viết lại chính xác." icon={<Volume2 />} colorClass="bg-emerald-500" onClick={() => setActiveGame('writing')} />
-        <GameCard title="Điền từ" desc="Sử dụng từ trong ngữ cảnh AIBTeM." icon={<ChevronRight />} colorClass="bg-pink-500" onClick={() => setActiveGame('fill')} />
-        <GameCard title="Giao tiếp AI" desc="Thực hành đàm thoại thực tế với AIBTeM." icon={<Mic />} colorClass="bg-rose-500" onClick={() => setActiveGame('roleplay')} />
-      </div>
-    </div>
   );
 }
 

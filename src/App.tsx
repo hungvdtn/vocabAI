@@ -335,6 +335,21 @@ export default function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
+  // CẢM BIẾN NHẬN DIỆN BÀN PHÍM ĐIỆN THOẠI
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+  useEffect(() => {
+    const handleFocusIn = (e: any) => {
+      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) setIsKeyboardOpen(true);
+    };
+    const handleFocusOut = () => setIsKeyboardOpen(false);
+    window.addEventListener('focusin', handleFocusIn);
+    window.addEventListener('focusout', handleFocusOut);
+    return () => {
+      window.removeEventListener('focusin', handleFocusIn);
+      window.removeEventListener('focusout', handleFocusOut);
+    };
+  }, []);
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (u) => setUser(u));
     if ('speechSynthesis' in window) window.speechSynthesis.getVoices();
@@ -556,7 +571,7 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      <main className="max-w-7xl mx-auto px-4 md:px-8 pt-8 pb-28 md:py-8 flex-grow w-full flex flex-col">
+      <main className={cn("max-w-7xl mx-auto px-4 md:px-8 pt-8 flex-grow w-full flex flex-col transition-all", isKeyboardOpen ? "pb-4 md:py-8" : "pb-28 md:py-8")}>
         <AnimatePresence mode="wait">
           {view === 'home' && (
             <motion.div key="home" className="w-full" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
@@ -612,7 +627,7 @@ export default function App() {
         </AnimatePresence>
       </main>
 
-     <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around p-2 z-[100]" style={{ paddingBottom: 'calc(0.5rem + env(safe-area-inset-bottom, 1rem))' }}>
+     <div className={cn("md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around p-2 z-[100] transition-all duration-300", isKeyboardOpen ? "translate-y-full opacity-0 pointer-events-none" : "translate-y-0 opacity-100")} style={{ paddingBottom: 'calc(0.5rem + env(safe-area-inset-bottom, 1rem))' }}>
         <MobileNavButton active={view === 'topics'} onClick={() => setView('topics')} icon={<LayoutGrid />} />
         <MobileNavButton active={view === 'input'} onClick={() => setView('input')} icon={<PlusCircle />} />
         <MobileNavButton active={view === 'library'} onClick={() => setView('library')} icon={<FileText />} />

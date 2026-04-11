@@ -461,7 +461,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans flex flex-col">
+    <div className="min-h-[100dvh] bg-slate-50 text-slate-900 font-sans flex flex-col relative">
       <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 md:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => { setView('home'); setActiveGame(null); }}>
@@ -556,7 +556,7 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      <main className="max-w-7xl mx-auto px-4 md:px-8 py-8 flex-grow w-full flex flex-col">
+      <main className="max-w-7xl mx-auto px-4 md:px-8 pt-8 pb-28 md:py-8 flex-grow w-full flex flex-col">
         <AnimatePresence mode="wait">
           {view === 'home' && (
             <motion.div key="home" className="w-full" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
@@ -612,7 +612,7 @@ export default function App() {
         </AnimatePresence>
       </main>
 
-     <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around p-2 z-50">
+     <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around p-2 z-[100]" style={{ paddingBottom: 'calc(0.5rem + env(safe-area-inset-bottom, 1rem))' }}>
         <MobileNavButton active={view === 'topics'} onClick={() => setView('topics')} icon={<LayoutGrid />} />
         <MobileNavButton active={view === 'input'} onClick={() => setView('input')} icon={<PlusCircle />} />
         <MobileNavButton active={view === 'library'} onClick={() => setView('library')} icon={<FileText />} />
@@ -2180,7 +2180,7 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
   };
 
   return (
-    <div className="w-full bg-white rounded-[2.5rem] shadow-xl border border-slate-100 overflow-hidden flex flex-col h-[650px] max-h-[85vh]">
+    <div className="w-full bg-white rounded-[2.5rem] shadow-xl border border-slate-100 overflow-hidden flex flex-col h-[650px] max-h-[70dvh] md:max-h-[85vh]">
       <div className="bg-slate-50 p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-start justify-between z-10 gap-4">
          <div className="flex-1">
             <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-1"><BrainCircuit className="text-indigo-600" /> AIBTeM Roleplay</h3>

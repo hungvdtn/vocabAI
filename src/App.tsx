@@ -1653,7 +1653,7 @@ const [gameVocabs] = useState(() => {
         )}
         {type === 'roleplay' && (
           <motion.div key="roleplay" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
-            <RoleplayGame vocabs={gameVocabs} language={language} onComplete={() => onFinish(gameVocabs.length)} />
+           <RoleplayGame vocabs={gameVocabs} language={language} onComplete={(score) => onFinish(score)} />
           </motion.div>
         )}
       </AnimatePresence>
@@ -2019,18 +2019,16 @@ function FillGame({ vocab, onAnswer, onNextStep, language }: { vocab: Vocabulary
 }
 // --- ROLEPLAY GAME (AI CONVERSATION) ---
 
-function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], language: Language, onComplete: () => void }) {
+function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], language: Language, onComplete: (score: number) => void }) {
   const [messages, setMessages] = useState<{role: 'user' | 'ai', text: string}[]>([]);
   const [input, setInput] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
-  // 1. Phân tích ngữ cảnh: Tìm chủ đề phổ biến nhất trong bài học
   const topics = vocabs.map(v => v.topic || 'other');
   const dominantTopic = topics.sort((a,b) => topics.filter(v => v===a).length - topics.filter(v => v===b).length).pop() || 'other';
 
-  // 2. Gán vai trò cho AI dựa trên chủ đề
   const getRoleContext = (topic: string, lang: Language) => {
       if (topic === 'education_and_learning') return lang === 'en' ? 'a strict but dedicated Teacher in a classroom' : 'ein strenger, aber engagierter Lehrer in einem Klassenzimmer';
       if (topic === 'work_and_business') return lang === 'en' ? 'a tough Job Interviewer or Business Partner' : 'ein strenger Personalvermittler oder Geschäftspartner';
@@ -2041,16 +2039,18 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
   };
   const aiRole = getRoleContext(dominantTopic, language);
 
-  // 3. Phân tích từ vựng kèm Trình độ (CEFR Level)
   const targetWordsWithLevel = vocabs.map(v => `${v.word} (Level: ${v.level || 'A2'})`);
   const targetWords = vocabs.map(v => v.word);
 
-  // Tự động cuộn xuống
+  // THUẬT TOÁN TÍNH ĐIỂM: Quét tìm các từ đã được người dùng gõ/đọc thành công
+  const usedWords = targetWords.filter(word => 
+    messages.some(m => m.role === 'user' && m.text.toLowerCase().includes(word.toLowerCase()))
+  );
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Lời chào mở đầu của AI (Tùy biến theo vai trò)
   useEffect(() => {
      const initialMsg = language === 'en' 
         ? `Hello! I will be acting as ${aiRole}. I will ask you questions or give you situations, and you need to answer using words of our lesson. Let's start! Tell me, how are you today?`
@@ -2069,7 +2069,6 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
      try {
         const apiKey = import.meta.env.VITE_GEMINI_API_KEY || ""; 
         
-        // 4. KỊCH BẢN (SYSTEM PROMPT) MỚI: Chủ động, Đóng vai, Phân loại độ khó
         const systemPrompt = `Bạn đang đóng vai: ${aiRole}. Ngôn ngữ giao tiếp: ${language === 'en' ? 'Tiếng Anh' : 'Tiếng Đức'}. 
         Mục tiêu: Đặt câu hỏi hoặc tạo tình huống để ép học viên sử dụng các từ vựng sau: ${targetWordsWithLevel.join(', ')}.
         Quy tắc NGHIÊM NGẶT:
@@ -2099,7 +2098,7 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
         const data = await res.json();
         if (data.candidates && data.candidates[0].content.parts[0].text) {
             let reply = data.candidates[0].content.parts[0].text;
-            reply = reply.replace(/\*/g, ''); // Lọc bỏ markdown
+            reply = reply.replace(/\*/g, ''); 
             setMessages(prev => [...prev, { role: 'ai', text: reply }]);
             handleSpeak(reply, language);
         } else {
@@ -2107,7 +2106,7 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
         }
      } catch (error) {
          console.error("Lỗi gọi Gemini:", error);
-         setMessages(prev => [...prev, { role: 'ai', text: "Lỗi kết nối AI. Vui lòng kiểm tra lại API Key hoặc mạng lưới." }]);
+         setMessages(prev => [...prev, { role: 'ai', text: "Lỗi kết nối AI. Vui lòng tải lại và thử lại." }]);
      } finally {
          setIsLoading(false);
      }
@@ -2116,7 +2115,7 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
   const startListening = () => {
      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
      if (!SpeechRecognition) {
-         alert("Trình duyệt không hỗ trợ nhận diện giọng nói. Vui lòng dùng Chrome, Edge hoặc Safari."); return;
+         alert("Trình duyệt không hỗ trợ nhận diện giọng nói."); return;
      }
      const recognition = new SpeechRecognition();
      recognition.lang = language === 'en' ? 'en-US' : 'de-DE';
@@ -2135,13 +2134,29 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
 
   return (
     <div className="w-full bg-white rounded-[2.5rem] shadow-xl border border-slate-100 overflow-hidden flex flex-col h-[650px] max-h-[85vh]">
-      <div className="bg-slate-50 p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between z-10 gap-4">
-         <div>
+      <div className="bg-slate-50 p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-start justify-between z-10 gap-4">
+         <div className="flex-1">
             <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-1"><BrainCircuit className="text-indigo-600" /> AIBTeM Roleplay</h3>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Đang đóng vai: <span className="text-indigo-500">{aiRole}</span></p>
-            <p className="text-sm text-slate-500">Từ cần dùng: <strong className="text-indigo-600">{targetWords.join(', ')}</strong></p>
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Đang đóng vai: <span className="text-indigo-500">{aiRole}</span></p>
+            
+            {/* GIAO DIỆN GAMIFICATION: Từ vựng đổi màu khi sử dụng thành công */}
+            <div className="flex flex-wrap gap-2 items-center">
+              <span className="text-sm text-slate-500 font-medium mr-1">Mục tiêu:</span>
+              {targetWords.map((w, idx) => {
+                const isUsed = usedWords.includes(w);
+                return (
+                  <span key={idx} className={cn("px-2.5 py-1 rounded-lg text-xs font-bold transition-all duration-500", isUsed ? "bg-emerald-100 text-emerald-600 line-through scale-95 opacity-70" : "bg-white border border-indigo-100 text-indigo-600 shadow-sm")}>
+                    {w}
+                  </span>
+                )
+              })}
+            </div>
          </div>
-         <button onClick={onComplete} className="bg-red-50 text-red-600 px-4 py-3 rounded-xl text-sm font-bold hover:bg-red-100 transition-all shrink-0">Kết thúc đàm thoại</button>
+
+         {/* NÚT KẾT THÚC: Sẽ trả về số lượng từ đã được đổi màu */}
+         <button onClick={() => onComplete(usedWords.length)} className="bg-red-50 text-red-600 px-5 py-3 rounded-xl text-sm font-bold hover:bg-red-100 transition-all shrink-0 shadow-sm border border-red-100 flex items-center gap-2">
+            Kết thúc đàm thoại
+         </button>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 bg-slate-50/50">

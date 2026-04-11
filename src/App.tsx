@@ -2053,8 +2053,8 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
   // Lời chào mở đầu của AI (Tùy biến theo vai trò)
   useEffect(() => {
      const initialMsg = language === 'en' 
-        ? `Hello! I will be acting as ${aiRole}. I will ask you questions or give you situations, and you need to answer using these words: ${targetWords.join(', ')}. Let's start! Tell me, how are you today?`
-        : `Hallo! Ich werde als ${aiRole} agieren. Ich werde dir Fragen stellen und du musst diese Wörter verwenden: ${targetWords.join(', ')}. Lass uns anfangen! Wie geht es dir heute?`;
+        ? `Hello! I will be acting as ${aiRole}. I will ask you questions or give you situations, and you need to answer using words of our lesson. Let's start! Tell me, how are you today?`
+        : `Hallo! Ich werde als ${aiRole} agieren. Ich werde dir Fragen stellen oder Situationen vorgeben, und du musst mit den Wörtern aus unserer Lektion antworten. Lass uns anfangen! Wie geht es dir heute?`;
      setMessages([{ role: 'ai', text: initialMsg }]);
      handleSpeak(initialMsg, language);
   }, [language]);

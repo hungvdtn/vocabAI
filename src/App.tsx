@@ -134,6 +134,7 @@ interface GameResult {
   total: number;
   timestamp: number;
   language: Language;
+  mistakes?: {word: string, userAnswer: string, correctAnswer: string}[];
 }
 
 // ------------------------------------------------------------------------------------
@@ -1466,7 +1467,68 @@ function GameCard({ title, desc, icon, onClick, colorClass }: { title: string, d
 }
 
 // --- GAME LOGIC (CHỐNG NHẢY TỪ TUYỆT ĐỐI) ---
-function GameContainer({ type, vocabList, language, onBack, onFinish, playSound, activeLessonId }: { type: GameType, vocabList: Vocabulary[], language: Language, onBack: () => void, onFinish: (score: number) => void, playSound: (t: 'correct' | 'wrong' | 'success') => void, activeLessonId: string }) {
+function GamesView({ vocabList, language, onComplete, activeGame, setActiveGame, onGoToLibrary, onGoToTopics, onGoToInput, hasLessons, activeLessonId, playSound }: { vocabList: Vocabulary[], language: Language, onComplete: (res: GameResult) => void, activeGame: GameType | null, setActiveGame: (g: GameType | null) => void, onGoToLibrary: () => void, onGoToTopics: () => void, onGoToInput: () => void, hasLessons: boolean, activeLessonId: string, playSound: (t: 'correct'|'wrong'|'success')=>void }) {
+  
+  if (vocabList.length < 5) {
+    if (!hasLessons) {
+      return (
+        <div className="text-center py-20 bg-white rounded-[3rem] shadow-xl border border-slate-100 w-full">
+          <RobotAnimation type="thinking" />
+          <h3 className="text-2xl font-bold mt-6">Chưa có bài học nào được tạo</h3>
+          <p className="text-slate-500 mt-2 mb-8">Vui lòng tạo bài học từ Chủ đề hoặc Nhập liệu trực tiếp để bắt đầu học.</p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 px-4">
+            <button onClick={onGoToTopics} className="w-full sm:w-auto bg-indigo-50 text-indigo-600 px-8 py-4 rounded-2xl font-bold hover:bg-indigo-100 transition-all flex items-center justify-center gap-2"><LayoutGrid size={20} /> Đến Chủ đề</button>
+            <button onClick={onGoToInput} className="w-full sm:w-auto bg-indigo-600 text-white px-8 py-4 rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg flex items-center justify-center gap-2"><PlusCircle size={20} /> Đến Nhập liệu</button>
+          </div>
+        </div>
+      );
+    }
+    return (
+      <div className="text-center py-20 bg-white rounded-[3rem] shadow-xl border border-slate-100 w-full">
+        <RobotAnimation type="sad" />
+        <h3 className="text-2xl font-bold mt-6">Chưa có bài học nào được chọn</h3>
+        <p className="text-slate-500 mt-2 mb-8">Vui lòng chọn một Bài học để bắt đầu chơi.</p>
+        <button onClick={onGoToLibrary} className="bg-indigo-600 text-white px-8 py-4 rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg flex items-center gap-2 mx-auto"><BookOpen size={20} /> Đến Thư viện ngay</button>
+      </div>
+    );
+  }
+
+ if (activeGame) {
+    return (
+      <GameContainer 
+        type={activeGame} 
+        vocabList={vocabList} 
+        language={language} 
+        activeLessonId={activeLessonId} 
+        onBack={() => setActiveGame(null)} 
+        onFinish={(score, mistakes) => { 
+            onComplete({ lessonId: activeLessonId, gameType: activeGame, score, total: vocabList.length, timestamp: Date.now(), language, mistakes }); 
+        }} 
+        playSound={playSound} 
+      />
+    );
+  }
+
+  return (
+    <div className="w-full">
+      <div className="mb-8 bg-indigo-50 border border-indigo-100 p-4 rounded-2xl flex items-center justify-between">
+        <span className="text-indigo-800 font-medium">Đang sử dụng gói từ vựng: <strong className="text-indigo-600">{vocabList.length} từ</strong></span>
+        <button onClick={onGoToLibrary} className="text-sm font-bold text-indigo-600 bg-white px-4 py-2 rounded-xl shadow-sm hover:shadow-md transition-all">Đổi gói khác</button>
+      </div>
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <GameCard title="Flashcards" desc="Thẻ lật 3 mặt giúp ghi nhớ sâu." icon={<BrainCircuit />} colorClass="bg-blue-500" onClick={() => setActiveGame('flashcards')} />
+        <GameCard title="Trắc nghiệm" desc="AIBTeM tạo từ nhiễu thông minh." icon={<CheckCircle2 />} colorClass="bg-indigo-500" onClick={() => setActiveGame('quiz')} />
+        <GameCard title="Nối từ" desc="Thử thách phản xạ nhanh." icon={<RefreshCw />} colorClass="bg-orange-500" onClick={() => setActiveGame('matching')} />
+        <GameCard title="Luyện viết" desc="Nghe và viết lại chính xác." icon={<Volume2 />} colorClass="bg-emerald-500" onClick={() => setActiveGame('writing')} />
+        <GameCard title="Điền từ" desc="Sử dụng từ trong ngữ cảnh AIBTeM." icon={<ChevronRight />} colorClass="bg-pink-500" onClick={() => setActiveGame('fill')} />
+        <GameCard title="Giao tiếp AI" desc="Thực hành đàm thoại thực tế với AIBTeM." icon={<Mic />} colorClass="bg-rose-500" onClick={() => setActiveGame('roleplay')} />
+      </div>
+    </div>
+  );
+}
+
+// --- GAME LOGIC (CHỐNG NHẢY TỪ TUYỆT ĐỐI) ---
+function GameContainer({ type, vocabList, language, onBack, onFinish, playSound, activeLessonId }: { type: GameType, vocabList: Vocabulary[], language: Language, onBack: () => void, onFinish: (score: number, mistakes?: any[]) => void, playSound: (t: 'correct' | 'wrong' | 'success') => void, activeLessonId: string }) {
   
   const [gameVocabs] = useState(() => {
     const currentDict = language === 'en' ? enDictDataRaw : deDictDataRaw;
@@ -1488,16 +1550,12 @@ function GameContainer({ type, vocabList, language, onBack, onFinish, playSound,
   
   const [answerHistory, setAnswerHistory] = useState<('correct'|'wrong'|null)[]>(new Array(gameVocabs.length).fill(null));
 
-  // TÚI GIỮ ĐIỂM FLASHCARD: Không bị mất đi khi thẻ lật chuyển hiệu ứng
   const scoredStepsRef = useRef<Set<number>>(new Set());
 
-  // HÀM NHẬN TÍN HIỆU TỪ FLASHCARD
   const handleFlashcardFlipped = () => {
       if (!scoredStepsRef.current.has(step)) {
           scoredStepsRef.current.add(step);
-          setScore(scoredStepsRef.current.size); // Cập nhật tổng điểm
-          
-          // Thắp sáng thanh tiến độ màu xanh ngay lập tức
+          setScore(scoredStepsRef.current.size); 
           setAnswerHistory(prev => {
               const newHistory = [...prev];
               newHistory[step] = 'correct';
@@ -1518,13 +1576,13 @@ function GameContainer({ type, vocabList, language, onBack, onFinish, playSound,
           const handleKeyDown = (e: KeyboardEvent) => {
               if (e.key === 'Enter') {
                   e.preventDefault(); 
-                  onFinish(score);
+                  onFinish(score, mistakes);
               }
           };
           window.addEventListener('keydown', handleKeyDown);
           return () => window.removeEventListener('keydown', handleKeyDown);
       }
-  }, [isFinished, score, gameVocabs.length, type, playSound, onFinish]);
+  }, [isFinished, score, gameVocabs.length, type, playSound, onFinish, mistakes]);
 
   const handleAnswer = (correct: boolean, userAnswer: string, customMistakeWord?: string, customCorrectAns?: string) => {
       const newHistory = [...answerHistory];
@@ -1551,7 +1609,7 @@ function GameContainer({ type, vocabList, language, onBack, onFinish, playSound,
           setStep(s => s + 1);
       } else {
           if (type === 'flashcards') {
-              onFinish(score); 
+              onFinish(score, []); 
           } else {
               setIsFinished(true); 
           }
@@ -1595,7 +1653,7 @@ function GameContainer({ type, vocabList, language, onBack, onFinish, playSound,
                       </div>
                   )}
 
-                  <button autoFocus onClick={() => onFinish(score)} className="bg-indigo-600 text-white px-10 py-5 rounded-2xl font-bold text-xl hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200 hover:scale-105 active:scale-95">
+                  <button autoFocus onClick={() => onFinish(score, mistakes)} className="bg-indigo-600 text-white px-10 py-5 rounded-2xl font-bold text-xl hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200 hover:scale-105 active:scale-95">
                       Hoàn thành & Nhận điểm
                   </button>
               </motion.div>
@@ -1610,37 +1668,22 @@ function GameContainer({ type, vocabList, language, onBack, onFinish, playSound,
           <ChevronLeft size={20} /> Quay lại
         </button>
         
-        {/* ẨN TOÀN BỘ THANH TIẾN ĐỘ VÀ SỐ CÂU NẾU LÀ GAME GIAO TIẾP AI */}
         {type !== 'roleplay' && (
           <>
             <div className="flex gap-2 flex-1 max-w-sm mx-4">
               {gameVocabs.map((_, i) => {
-                 let bgColor = "bg-slate-200"; // Mặc định là xám
-                 
+                 let bgColor = "bg-slate-200";
                  if (i < step) {
-                     if (type === 'flashcards') {
-                         // Flashcard: Đã lật đủ 3 mặt (Xanh), Chưa lật đủ (Xám)
-                         bgColor = answerHistory[i] === 'correct' ? "bg-[#009900]" : "bg-slate-200";
-                     } else {
-                         // Game khác: Làm đúng (Xanh), Làm sai (Đỏ)
-                         bgColor = answerHistory[i] === 'correct' ? "bg-[#009900]" : "bg-red-500";
-                     }
+                     if (type === 'flashcards') bgColor = answerHistory[i] === 'correct' ? "bg-[#009900]" : "bg-slate-200";
+                     else bgColor = answerHistory[i] === 'correct' ? "bg-[#009900]" : "bg-red-500";
                  } else if (i === step) {
-                     // Nếu đang ở bước hiện tại mà đã trả lời xong, hiển thị luôn kết quả
-                     if (answerHistory[i] === 'correct') {
-                         bgColor = "bg-[#009900]";
-                     } else if (answerHistory[i] === 'wrong') {
-                         bgColor = "bg-red-500";
-                     } else {
-                         // Chưa trả lời thì màu tím nhạt nhấp nháy
-                         bgColor = "bg-indigo-400 animate-pulse";
-                     }
+                     if (answerHistory[i] === 'correct') bgColor = "bg-[#009900]";
+                     else if (answerHistory[i] === 'wrong') bgColor = "bg-red-500";
+                     else bgColor = "bg-indigo-400 animate-pulse";
                  }
-
                  return <div key={i} className={cn("h-2 rounded-full transition-all flex-1", bgColor)} />
               })}
             </div>
-            
             <div className="font-bold text-indigo-600">Từ {Math.min(step + 1, gameVocabs.length)}/{gameVocabs.length}</div>
           </>
         )}
@@ -1649,7 +1692,7 @@ function GameContainer({ type, vocabList, language, onBack, onFinish, playSound,
       <AnimatePresence mode="wait">
         {type === 'flashcards' && (
           <motion.div key={step} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-            <FlashcardGame vocab={currentVocab} onNext={handleNextStep} onPrev={handlePrevStep} language={language} step={step} totalSteps={gameVocabs.length} onFinish={() => onFinish(scoredStepsRef.current.size)} onFullyFlipped={handleFlashcardFlipped} />
+            <FlashcardGame vocab={currentVocab} onNext={handleNextStep} onPrev={handlePrevStep} language={language} step={step} totalSteps={gameVocabs.length} onFinish={() => onFinish(scoredStepsRef.current.size, [])} onFullyFlipped={handleFlashcardFlipped} />
           </motion.div>
         )}
         {type === 'quiz' && (
@@ -1685,7 +1728,7 @@ function GameContainer({ type, vocabList, language, onBack, onFinish, playSound,
         )}
         {type === 'roleplay' && (
           <motion.div key="roleplay" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
-           <RoleplayGame vocabs={gameVocabs} language={language} onComplete={(score) => onFinish(score)} />
+           <RoleplayGame vocabs={gameVocabs} language={language} onComplete={(score) => onFinish(score, [])} />
           </motion.div>
         )}
       </AnimatePresence>
@@ -2264,13 +2307,35 @@ function ReportView({ results, language, activeLessonId }: { results: GameResult
   const totalPossible = currentSessionResults.reduce((acc, r) => acc + r.total, 0);
   const accuracy = totalPossible > 0 ? Math.round((totalScore / totalPossible) * 100) : 0;
 
+  // THUẬT TOÁN TỔNG HỢP & ĐẾM TẦN SUẤT LỖI SAI
+  const mistakeMap: Record<string, { count: number, correct: string, games: Set<string> }> = {};
+  currentSessionResults.forEach(r => {
+      if (r.mistakes && r.mistakes.length > 0) {
+          r.mistakes.forEach(m => {
+              if (!mistakeMap[m.word]) {
+                  mistakeMap[m.word] = { count: 0, correct: m.correctAnswer, games: new Set() };
+              }
+              mistakeMap[m.word].count += 1;
+              mistakeMap[m.word].games.add(r.gameType);
+          });
+      }
+  });
+
+  const mistakesList = Object.keys(mistakeMap).map(word => ({ word, ...mistakeMap[word] })).sort((a,b) => b.count - a.count);
+
+  const getRecommendation = (gamesSet: Set<string>) => {
+      if (gamesSet.has('writing')) return "Khuyến nghị: Chơi lại game Luyện viết hoặc Điền từ để nhớ mặt chữ.";
+      if (gamesSet.has('matching')) return "Khuyến nghị: Ôn lại bằng thẻ lật Flashcard để củng cố phản xạ.";
+      if (gamesSet.has('quiz')) return "Khuyến nghị: Đọc kỹ lại từ điển hoặc chơi Flashcard chậm lại.";
+      return "Khuyến nghị: Xem lại thẻ Flashcard.";
+  };
+
   const getStaticFeedback = (acc: number) => {
-      if (acc >= 90) return "AIBTeM nhận thấy bạn đã nắm vững gần như toàn bộ từ vựng trong bài học này! Phản xạ xuất sắc.";
-      if (acc >= 80) return "Thành tích rất tốt! Bạn đã ghi nhớ được hầu hết các từ vựng. Chỉ cần ôn tập lại một chút nhé.";
-      if (acc >= 70) return "Kết quả rất khả quan! Bạn đã nhớ được phần lớn từ vựng.";
+      if (acc >= 90) return "AIBTeM nhận thấy Tiến sĩ đã nắm vững gần như toàn bộ từ vựng trong bài học này! Phản xạ xuất sắc. Bạn hoàn toàn có thể chuyển sang bài học mới khó hơn.";
+      if (acc >= 80) return "Thành tích rất tốt! Bạn đã ghi nhớ được hầu hết các từ vựng. Chỉ cần ôn tập lại một chút để đạt điểm tuyệt đối nhé.";
+      if (acc >= 70) return "Kết quả rất khả quan! Bạn đã nhớ được phần lớn từ vựng. Hãy xem kỹ bảng tổng hợp lỗi sai bên dưới để khắc phục.";
       if (acc >= 60) return "Bạn đang tiến bộ! Kết quả ở mức khá, tuy nhiên vẫn còn một số từ gây nhầm lẫn.";
-      if (acc >= 50) return "Bạn đang ở mức trung bình. AIBTeM khuyên bạn nên lướt qua thẻ Flashcard thêm 2-3 vòng nữa.";
-      return "Đừng nản chí! Hãy quay lại học kỹ từng thẻ Flashcard trước khi bắt đầu chơi game nhé.";
+      return "Đừng nản chí! Việc học ngôn ngữ cần sự lặp lại. AIBTeM khuyên bạn nên lướt qua thẻ Flashcard thêm 2-3 vòng trước khi làm trắc nghiệm.";
   };
 
   return (
@@ -2317,13 +2382,36 @@ function ReportView({ results, language, activeLessonId }: { results: GameResult
 
       <div className="bg-white p-8 md:p-10 rounded-[2.5rem] shadow-xl border border-slate-100">
         <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-          <BrainCircuit className="text-indigo-600" /> AIBTeM Nhận xét, đánh giá
+          <BrainCircuit className="text-indigo-600" /> AIBTeM Nhận xét chung
         </h3>
-        <div className="prose prose-slate max-w-none bg-slate-50 p-6 rounded-3xl border border-slate-100">
-            <p className="text-slate-700 text-lg leading-relaxed font-medium">
+        <div className="prose prose-slate max-w-none bg-indigo-50 p-6 rounded-3xl border border-indigo-100 mb-8">
+            <p className="text-indigo-800 text-lg leading-relaxed font-medium">
                 {currentSessionResults.length === 0 ? "Bạn chưa hoàn thành trò chơi nào." : getStaticFeedback(accuracy)}
             </p>
         </div>
+
+        {/* BẢNG PHÂN TÍCH LỖI SAI CHI TIẾT */}
+        {mistakesList.length > 0 && (
+            <div>
+                <h4 className="text-lg font-bold text-red-600 mb-4 flex items-center gap-2"><AlertCircle size={20} /> Phân tích Từ vựng cần lưu ý</h4>
+                <div className="space-y-4">
+                    {mistakesList.map((item, idx) => (
+                        <div key={idx} className="bg-slate-50 border border-slate-200 p-5 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div>
+                                <div className="flex items-center gap-2 mb-1">
+                                    <strong className="text-xl text-slate-800">{item.word}</strong>
+                                    <span className="bg-red-100 text-red-600 text-xs font-bold px-2 py-0.5 rounded-full">Sai {item.count} lần</span>
+                                </div>
+                                <div className="text-emerald-600 font-medium">Nghĩa đúng: {item.correct}</div>
+                            </div>
+                            <div className="bg-white border border-orange-100 p-3 rounded-xl text-sm text-orange-700 font-medium md:max-w-xs w-full text-center shadow-sm">
+                                {getRecommendation(item.games)}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        )}
       </div>
     </div>
   );

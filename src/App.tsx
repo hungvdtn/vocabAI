@@ -727,6 +727,9 @@ function TopicLibraryView({ language, lessons, onOpenInInput }: { language: Lang
 
   const [selectedTopic, setSelectedTopic] = useState<any | null>(null);
   const [selectedWords, setSelectedWords] = useState<Set<string>>(new Set());
+  
+  // STATE MỚI: Quản lý bộ lọc trình độ
+  const [selectedLevel, setSelectedLevel] = useState<string | 'ALL'>('ALL');
 
   const learnedWordsMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -761,12 +764,14 @@ function TopicLibraryView({ language, lessons, onOpenInInput }: { language: Lang
 
   const formatToVocab = (wordsArray: any[]): Vocabulary[] => {
     return wordsArray.map(w => ({
-      word: w.word, meaning: w.vietnamese_meaning || w.meaning, type: w.part_of_speech, part_of_speech: w.part_of_speech, phonetic: w.phonetic, definition: language === 'en' ? w.english_definition : w.german_definition, english_definition: w.english_definition, german_definition: w.german_definition, example: language === 'en' ? w.example_english : w.example_german, example_english: w.example_english, example_german: w.example_german, example_vietnamese: w.example_vietnamese, article: w.article, plural: w.plural, synonyms: w.synonyms || w.synonym, topic: w.topic, language: language, userId: 'system', createdAt: Date.now()
+      word: w.word, meaning: w.vietnamese_meaning || w.meaning, type: w.part_of_speech, part_of_speech: w.part_of_speech, phonetic: w.phonetic, definition: language === 'en' ? w.english_definition : w.german_definition, english_definition: w.english_definition, german_definition: w.german_definition, example: language === 'en' ? w.example_english : w.example_german, example_english: w.example_english, example_german: w.example_german, example_vietnamese: w.example_vietnamese, article: w.article, plural: w.plural, synonyms: w.synonyms || w.synonym, topic: w.topic, level: w.level, language: language, userId: 'system', createdAt: Date.now()
     }));
   };
 
-  const generateLessonTitle = (topicName: string, prefix: 'NN' | 'TC') => {
-    const baseName = `${topicName} - ${prefix}`;
+  const generateLessonTitle = (topicName: string, prefix: 'NN' | 'TC', levelStr: string) => {
+    // Tự động thêm nhãn Trình độ vào tên bài học (VD: A1, B2)
+    const levelSuffix = levelStr === 'ALL' ? '' : ` (${levelStr})`;
+    const baseName = `${topicName}${levelSuffix} - ${prefix}`;
     const matchingLessons = lessons.filter(l => l.language === language && l.title.startsWith(baseName));
     let maxSeq = 0;
     matchingLessons.forEach(l => {
@@ -779,19 +784,18 @@ function TopicLibraryView({ language, lessons, onOpenInInput }: { language: Lang
     return `${baseName}${(maxSeq + 1).toString().padStart(2, '0')}`;
   };
 
-  const handleLearnRandom = (topicId: string, topicName: string) => {
-    const wordsInTopic = getTopicWords(topicId);
-    if (wordsInTopic.length === 0) return;
-    let unlearnedWords = wordsInTopic.filter(w => !learnedWordsMap.has(w.word));
+  const handleLearnRandom = (topicName: string, wordsToPickFrom: any[], currentLevel: string) => {
+    if (wordsToPickFrom.length === 0) return;
+    let unlearnedWords = wordsToPickFrom.filter(w => !learnedWordsMap.has(w.word));
     if (unlearnedWords.length === 0) {
-      alert("Chúc mừng! Bạn đã lưu/học toàn bộ từ vựng trong chủ đề này. Hệ thống sẽ bốc lại các từ cũ nhé.");
-      unlearnedWords = wordsInTopic; 
+      alert("Chúc mừng! Bạn đã lưu/học toàn bộ từ vựng trong danh sách này. Hệ thống sẽ bốc lại các từ cũ nhé.");
+      unlearnedWords = wordsToPickFrom; 
     }
     const shuffled = [...unlearnedWords].sort(() => 0.5 - Math.random()).slice(0, 15);
-    onOpenInInput(formatToVocab(shuffled), generateLessonTitle(topicName, 'NN'));
+    onOpenInInput(formatToVocab(shuffled), generateLessonTitle(topicName, 'NN', currentLevel));
   };
 
-  const handleLearnSelected = (topicName: string) => {
+  const handleLearnSelected = (topicName: string, currentLevel: string) => {
     if (selectedWords.size < 5) return;
     const selectedLearned = Array.from(selectedWords).filter(w => learnedWordsMap.has(w));
     if (selectedLearned.length > 0) {
@@ -800,14 +804,33 @@ function TopicLibraryView({ language, lessons, onOpenInInput }: { language: Lang
       if(!window.confirm(`Một số từ bạn chọn (${msg}) đã có trong bài "${lessonName}". Bạn vẫn muốn tiếp tục đưa vào bài học mới?`)) return;
     }
     const wordsToLearn = currentDict.filter(w => selectedWords.has(w.word));
-    onOpenInInput(formatToVocab(wordsToLearn), generateLessonTitle(topicName, 'TC'));
+    onOpenInInput(formatToVocab(wordsToLearn), generateLessonTitle(topicName, 'TC', currentLevel));
   };
 
   if (selectedTopic) {
-    const words = getTopicWords(selectedTopic.id);
+    const allTopicWords = getTopicWords(selectedTopic.id);
+    
+    // TÍNH TOÁN DANH SÁCH TRÌNH ĐỘ (ĐỘNG) - Tự quét xem có A1, B2 hay C1 không
+    const levelCounts = allTopicWords.reduce((acc, word) => {
+      const lvl = word.level ? word.level.toUpperCase() : 'Chưa rõ';
+      acc[lvl] = (acc[lvl] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const sortedLevels = Object.keys(levelCounts).sort((a, b) => {
+      if (a === 'Chưa rõ') return 1;
+      if (b === 'Chưa rõ') return -1;
+      return a.localeCompare(b);
+    });
+
+    // LỌC TỪ THEO TRÌNH ĐỘ
+    const filteredWords = selectedLevel === 'ALL' 
+      ? allTopicWords 
+      : allTopicWords.filter(w => (w.level ? w.level.toUpperCase() : 'Chưa rõ') === selectedLevel);
+
     return (
       <div className="w-full pb-32">
-        <button onClick={() => { setSelectedTopic(null); setSelectedWords(new Set()); }} className="flex items-center gap-2 text-slate-500 hover:text-indigo-600 font-bold mb-6 transition-colors">
+        <button onClick={() => { setSelectedTopic(null); setSelectedWords(new Set()); setSelectedLevel('ALL'); }} className="flex items-center gap-2 text-slate-500 hover:text-indigo-600 font-bold mb-6 transition-colors">
           <ChevronLeft size={20} /> Quay lại danh sách
         </button>
         
@@ -815,15 +838,37 @@ function TopicLibraryView({ language, lessons, onOpenInInput }: { language: Lang
           <div className="relative z-10">
             <div className="bg-white/20 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 backdrop-blur-sm"><selectedTopic.icon size={32} /></div>
             <h2 className="text-4xl font-bold mb-2">{selectedTopic.name}</h2>
-            <p className="text-white/80 text-lg mb-8">{selectedTopic.desc}</p>
+            <p className="text-white/80 text-lg mb-6">{selectedTopic.desc}</p>
+            
+            {/* THANH LỌC TRÌNH ĐỘ (LEVEL SELECTOR) */}
+            <div className="flex flex-wrap items-center gap-2 mb-8 bg-black/10 p-2 rounded-2xl border border-white/10 backdrop-blur-md w-fit">
+              <span className="text-white/90 font-bold text-sm uppercase tracking-wider ml-2 mr-3 flex items-center gap-2"><BarChart3 size={16}/> Trình độ:</span>
+              <button 
+                onClick={() => { setSelectedLevel('ALL'); setSelectedWords(new Set()); }} 
+                className={cn("px-5 py-2.5 rounded-xl text-sm font-bold transition-all border", selectedLevel === 'ALL' ? "bg-white text-slate-900 border-white shadow-lg scale-105" : "bg-transparent border-transparent text-white/80 hover:bg-white/10 hover:text-white")}
+              >
+                Tất cả ({allTopicWords.length})
+              </button>
+              {sortedLevels.map(lvl => (
+                <button 
+                  key={lvl}
+                  onClick={() => { setSelectedLevel(lvl); setSelectedWords(new Set()); }} 
+                  className={cn("px-5 py-2.5 rounded-xl text-sm font-bold transition-all border", selectedLevel === lvl ? "bg-white text-slate-900 border-white shadow-lg scale-105" : "bg-transparent border-transparent text-white/80 hover:bg-white/10 hover:text-white")}
+                >
+                  {lvl} ({levelCounts[lvl]})
+                </button>
+              ))}
+            </div>
+
             <div className="flex flex-wrap items-center gap-4">
-              <span className="bg-black/20 px-6 py-3 rounded-xl font-bold backdrop-blur-md">Tổng cộng: {words.length} từ</span>
-              <span className="bg-white/20 px-6 py-3 rounded-xl font-bold backdrop-blur-md text-emerald-100">Đã lưu: {words.filter(w => learnedWordsMap.has(w.word)).length} từ</span>
-              <button onClick={() => handleLearnRandom(selectedTopic.id, selectedTopic.name)} disabled={words.length === 0} className="bg-white text-slate-900 px-8 py-3 rounded-xl font-bold hover:scale-105 transition-transform flex items-center gap-2 shadow-lg disabled:opacity-50 disabled:hover:scale-100">
+              <span className="bg-black/20 px-6 py-3 rounded-xl font-bold backdrop-blur-md">Đang hiển thị: {filteredWords.length} từ</span>
+              <span className="bg-white/20 px-6 py-3 rounded-xl font-bold backdrop-blur-md text-emerald-100">Đã lưu: {filteredWords.filter(w => learnedWordsMap.has(w.word)).length} từ</span>
+              
+              <button onClick={() => handleLearnRandom(selectedTopic.name, filteredWords, selectedLevel)} disabled={filteredWords.length === 0} className="bg-white text-slate-900 px-8 py-3 rounded-xl font-bold hover:scale-105 transition-transform flex items-center gap-2 shadow-lg disabled:opacity-50 disabled:hover:scale-100">
                 <Shuffle size={20} className={selectedTopic.textCol} /> Học 15 từ ngẫu nhiên
               </button>
-              <button onClick={() => handleLearnSelected(selectedTopic.name)} disabled={selectedWords.size < 5} className={cn("px-8 py-3 rounded-xl font-bold transition-all flex items-center gap-2 shadow-lg", selectedWords.size >= 5 ? "bg-emerald-500 text-white hover:bg-emerald-400 hover:scale-105" : "bg-white/20 text-white/50 cursor-not-allowed")}>
-                <CheckSquare size={20} /> Học lựa chọn ({selectedWords.size} từ)
+              <button onClick={() => handleLearnSelected(selectedTopic.name, selectedLevel)} disabled={selectedWords.size < 5} className={cn("px-8 py-3 rounded-xl font-bold transition-all flex items-center gap-2 shadow-lg", selectedWords.size >= 5 ? "bg-emerald-500 text-white hover:bg-emerald-400 hover:scale-105" : "bg-black/20 text-white/50 cursor-not-allowed")}>
+                <CheckSquare size={20} /> Học từ đã chọn ({selectedWords.size})
               </button>
             </div>
             {selectedWords.size > 0 && selectedWords.size < 5 && <p className="text-sm text-orange-200 mt-3 font-medium">* Vui lòng chọn tối thiểu 5 từ để tạo bài học.</p>}
@@ -833,11 +878,11 @@ function TopicLibraryView({ language, lessons, onOpenInInput }: { language: Lang
 
         <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
           <div className="p-6 border-b border-slate-50 bg-slate-50/50 flex justify-between items-center">
-            <h3 className="font-bold text-slate-700">Danh sách từ vựng</h3>
-            {words.length > 0 && <span className="text-sm font-medium text-slate-400">Tích vào ô vuông để chọn từ.</span>}
+            <h3 className="font-bold text-slate-700">Danh sách từ vựng {selectedLevel !== 'ALL' && <span className="text-indigo-600">({selectedLevel})</span>}</h3>
+            {filteredWords.length > 0 && <span className="text-sm font-medium text-slate-400">Tích vào ô vuông để chọn từ.</span>}
           </div>
           <div className="divide-y divide-slate-50">
-            {words.length > 0 ? words.map((vocab, idx) => {
+            {filteredWords.length > 0 ? filteredWords.map((vocab, idx) => {
               const isLearned = learnedWordsMap.has(vocab.word);
               const lessonName = learnedWordsMap.get(vocab.word);
               return (
@@ -845,12 +890,15 @@ function TopicLibraryView({ language, lessons, onOpenInInput }: { language: Lang
                   <div className="flex flex-1 items-start gap-4 cursor-pointer" onClick={() => toggleWordSelection(vocab.word)}>
                     <input type="checkbox" checked={selectedWords.has(vocab.word)} readOnly className="w-5 h-5 mt-1 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer" />
                     <div>
-                      <div className="flex items-baseline gap-2 mb-1">
+                      <div className="flex items-baseline gap-2 mb-1 flex-wrap">
                         <span className={cn("font-bold text-xl transition-colors", isLearned ? "text-emerald-700" : "text-slate-900 group-hover:text-indigo-600")}>
                           {vocab.article && <span className={cn("font-normal mr-2", vocab.article.toLowerCase() === 'der' ? "text-blue-500" : vocab.article.toLowerCase() === 'die' ? "text-red-500" : "text-green-500")}>{vocab.article}</span>}
                           {vocab.word}
                         </span>
-                        {vocab.phonetic && <span className="text-sm font-mono text-slate-400">{renderPhonetic(vocab.phonetic)}</span>}
+                        {/* HIỂN THỊ BADGE TRÌNH ĐỘ BÊN CẠNH TỪ */}
+                        {vocab.level && <span className="bg-slate-100 text-slate-500 text-[10px] font-bold px-2 py-0.5 rounded-md border border-slate-200">{vocab.level.toUpperCase()}</span>}
+                        
+                        {vocab.phonetic && <span className="text-sm font-mono text-slate-400 ml-1">{renderPhonetic(vocab.phonetic)}</span>}
                       </div>
                       <div className={cn("mb-1", isLearned ? "text-emerald-600/80" : "text-slate-600")}>{vocab.vietnamese_meaning || vocab.meaning}</div>
                       {isLearned && <div className="text-xs font-bold text-emerald-500 flex items-center gap-1 mt-1"><CheckCircle2 size={12} /> Đã lưu trong bài: {lessonName}</div>}
@@ -861,7 +909,7 @@ function TopicLibraryView({ language, lessons, onOpenInInput }: { language: Lang
                   </button>
                 </div>
               );
-            }) : <div className="p-12 text-center text-slate-400">Đang cập nhật từ vựng cho chủ đề này...</div>}
+            }) : <div className="p-12 text-center text-slate-400">Không có từ vựng nào ở trình độ này.</div>}
           </div>
         </div>
       </div>
@@ -1507,7 +1555,7 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
     if (!file) return;
 
     if (file.name.toLowerCase().endsWith('.doc')) {
-      alert("Hệ thống AIBTeM chỉ hỗ trợ chuẩn lưu trữ hiện đại (.docx, .txt, .csv).\n\nĐịnh dạng .doc cũ (trước 2007) không còn được các trình duyệt web bảo mật hỗ trợ. Tiến sĩ vui lòng mở file này bằng phần mềm MS Word, sau đó chọn 'Save As' (Lưu dưới dạng) thành định dạng .docx rồi tải lên lại nhé!");
+      alert("Hệ thống AIBTeM chỉ hỗ trợ chuẩn lưu trữ hiện đại (.docx, .txt, .csv).\n\nĐịnh dạng .doc cũ (trước 2007) không còn được các trình duyệt web bảo mật hỗ trợ. Bạn vui lòng mở file này bằng phần mềm MS Word, sau đó chọn 'Save As' (Lưu dưới dạng) thành định dạng .docx rồi tải lên lại nhé!");
       e.target.value = '';
       return;
     }

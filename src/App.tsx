@@ -1170,12 +1170,10 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   
-  // STATE QUẢN LÝ GỢI Ý TỪ & PHÍM TẮT (THUẬT NGỮ)
   const [activeWordIndex, setActiveWordIndex] = useState<number | null>(null);
   const [wordSuggestions, setWordSuggestions] = useState<any[]>([]);
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
 
-  // STATE QUẢN LÝ GỢI Ý NGHĨA & PHÍM TẮT (ĐỊNH NGHĨA)
   const [activeMeaningIndex, setActiveMeaningIndex] = useState<number | null>(null);
   const [selectedMeaningSuggestionIndex, setSelectedMeaningSuggestionIndex] = useState(-1);
 
@@ -1231,8 +1229,6 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
     setWordSuggestions([]);
     setActiveWordIndex(null);
     setSelectedSuggestionIndex(-1);
-    
-    // Khởi chạy dịch nội bộ ngay lập tức với từ hoàn chỉnh
     handleAutoTranslate(index, language, wordStr);
   };
 
@@ -1258,7 +1254,6 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
     const word = cleanInputData(term, true);
     if (!word) return;
 
-    // Ưu tiên 1: Lấy từ Điển nội bộ
     const currentDict = currentLanguage === 'en' ? enDictDataRaw : deDictDataRaw;
     const localEntry = currentDict.find(item => item.word.toLowerCase() === word.toLowerCase());
     
@@ -1277,7 +1272,6 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
       return; 
     }
 
-    // Ưu tiên 2: Gọi AI nếu không có trong từ điển
     if (translationCache.current[word]) {
       lastTranslatedWords.current[index] = term; 
       setRows(prev => { const upd = [...prev]; if (upd[index]) upd[index] = { ...upd[index], suggestions: translationCache.current[word].translations }; return upd; });
@@ -1382,43 +1376,128 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
     }
   };
 
-  const parseText = (text: string) => {
+  // =========================================================================
+  // BỘ MÁY XỬ LÝ VĂN BẢN (TEXT PARSER) ĐƯỢC NÂNG CẤP MẠNH MẼ
+  // =========================================================================
+
+  const extractWordMeaning = (line: string) => {
+    // Tẩy rửa làm sạch: Cắt bỏ số thứ tự, gạch đầu dòng, ký tự lạ ở đầu câu
+    let cleanLine = line.replace(/^[\s\-\*•]+/, '').replace(/^\d+[\.\)]\s*/, '').trim();
+
+    // Định vị ký tự phân cách linh hoạt (Nhận diện Tab, Dấu hai chấm, Dấu gạch ngang, Dấu bằng)
+    const sepRegex = /(\t|:| \- | \– | \— | = )/;
+    const match = cleanLine.match(sepRegex);
+
+    if (match) {
+      const index = match.index!;
+      let word = cleanLine.substring(0, index).trim();
+      let meaning = cleanLine.substring(index + match[0].length).trim();
+      
+      // LỌC TIÊU ĐỀ: Nếu cột 'Word' chứa toàn từ tiếng Việt (có dấu) -> Đây là tiêu đề, loại bỏ!
+      const isVietnameseHeader = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i.test(word);
+      if (isVietnameseHeader) return null;
+
+      if (word) return { word, meaning };
+    }
+    return null;
+  };
+
+  const parseTextAdvanced = (text: string) => {
     const rawLines = text.split('\n').map(l => l.trim()).filter(l => l !== '');
     const newRows: any[] = [];
-    if (rawLines.some(line => /[\t,:\-–—=]/.test(line))) {
-      rawLines.forEach(line => {
-        let parts: string[] = [];
-        if (line.includes('\t')) parts = line.split('\t');
-        else if (line.includes(',')) parts = line.split(',');
-        else { const match = line.match(/[:\-–—=]/); if (match) parts = [line.substring(0, line.indexOf(match[0])), line.substring(line.indexOf(match[0]) + 1)]; }
-        if (parts.length >= 2) {
-          const word = cleanInputData(parts[0], true); const meaning = cleanInputData(parts.slice(1).join(' '), true);
-          if (word) newRows.push({ word, meaning, loading: false, suggestions: [] });
-        } else { newRows.push({ word: cleanInputData(line, true), meaning: '', loading: false, suggestions: [] }); }
-      });
+    
+    // Nếu có hơn 20% số dòng chứa ký tự phân cách -> Chuẩn "Một dòng 2 cột"
+    const hasSeparators = rawLines.filter(l => /(\t|:| \- | \– | \— | = )/.test(l)).length > rawLines.length * 0.2;
+
+    if (hasSeparators) {
+       rawLines.forEach(line => {
+          const extracted = extractWordMeaning(line);
+          if (extracted) newRows.push({ ...extracted, loading: false, suggestions: [] });
+       });
     } else {
-      for (let i = 0; i < rawLines.length; i += 2) {
-        const word = cleanInputData(rawLines[i], true); const meaning = (i + 1 < rawLines.length) ? cleanInputData(rawLines[i + 1], true) : '';
-        if (word) newRows.push({ word, meaning, loading: false, suggestions: [] });
-      }
+       // Dự phòng: Chuẩn xen kẽ "Dòng 1: Tiếng Anh, Dòng 2: Tiếng Việt"
+       for (let i = 0; i < rawLines.length; i += 2) {
+          const word = rawLines[i].replace(/^[\s\-\*•\d\.\)]+\s*/, '').trim();
+          const meaning = (i + 1 < rawLines.length) ? rawLines[i + 1].trim() : '';
+          const isVietnameseHeader = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i.test(word);
+          if (word && !isVietnameseHeader) {
+             newRows.push({ word, meaning, loading: false, suggestions: [] });
+          }
+       }
     }
     return newRows;
+  };
+
+  const parseHtmlAdvanced = (html: string) => {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    const newRows: any[] = [];
+
+    // 1. Quét CẤU TRÚC BẢNG (TABLE) trước
+    const tables = doc.querySelectorAll('table');
+    tables.forEach(table => {
+      const trs = table.querySelectorAll('tr');
+      trs.forEach(tr => {
+        const tds = tr.querySelectorAll('td, th');
+        if (tds.length >= 2) { // Có từ 2 cột trở lên
+          const word = tds[0].textContent?.replace(/^[\s\-\*•\d\.\)]+\s*/, '').trim() || '';
+          const meaning = tds[1].textContent?.trim() || ''; // CHỈ LẤY CỘT 1 VÀ CỘT 2
+          
+          // Lọc rác: Loại bỏ các hàng Header tiếng Việt hoặc cột trống
+          const isVietnameseHeader = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i.test(word);
+          const isTableTitleRow = word.toLowerCase().includes('tiếng') || word.toLowerCase().includes('từ vựng');
+          
+          if (word && meaning && !isVietnameseHeader && !isTableTitleRow) {
+             newRows.push({ word, meaning, loading: false, suggestions: [] });
+          }
+        }
+      });
+      // Xóa bảng khỏi DOM để phần Quét Văn bản không bị lặp lại dữ liệu
+      table.remove();
+    });
+
+    // 2. Quét phần VĂN BẢN TỰ DO còn lại trong trang
+    const remainingText = doc.body.textContent || '';
+    const textRows = parseTextAdvanced(remainingText);
+    
+    return [...newRows, ...textRows];
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // THUẬT TOÁN CHẶN FILE .DOC CŨ VÀ HƯỚNG DẪN NGƯỜI DÙNG
+    if (file.name.toLowerCase().endsWith('.doc')) {
+      alert("Hệ thống AIBTeM chỉ hỗ trợ chuẩn lưu trữ hiện đại (.docx, .txt, .csv).\n\nĐịnh dạng .doc cũ (trước 2007) không còn được các trình duyệt web bảo mật hỗ trợ. Tiến sĩ vui lòng mở file này bằng phần mềm MS Word, sau đó chọn 'Save As' (Lưu dưới dạng) thành định dạng .docx rồi tải lên lại nhé!");
+      e.target.value = '';
+      return;
+    }
+
     setUploading(true);
     try {
-      let text = '';
-      if (file.name.endsWith('.txt') || file.name.endsWith('.csv')) text = await file.text();
-      else if (file.name.endsWith('.docx')) { const arrayBuffer = await file.arrayBuffer(); const result = await mammoth.extractRawText({ arrayBuffer }); text = result.value; }
-      const parsedRows = parseText(text);
-      if (parsedRows.length > 0) setRows(parsedRows); else alert("Không tìm thấy từ vựng trong file. Vui lòng kiểm tra định dạng (Từ, Nghĩa).");
-    } catch (e) {
-      alert("Lỗi khi đọc file. Vui lòng thử lại với định dạng khác hoặc kiểm tra nội dung file.");
+      let parsedRows: any[] = [];
+      
+      if (file.name.endsWith('.txt') || file.name.endsWith('.csv')) {
+        const text = await file.text();
+        parsedRows = parseTextAdvanced(text);
+      } else if (file.name.endsWith('.docx')) {
+        const arrayBuffer = await file.arrayBuffer();
+        // NÂNG CẤP BẮT BUỘC: Sử dụng convertToHtml để giữ lại cấu trúc BẢNG, thay vì extractRawText
+        const result = await mammoth.convertToHtml({ arrayBuffer });
+        parsedRows = parseHtmlAdvanced(result.value);
+      }
+
+      if (parsedRows.length > 0) {
+        setRows(parsedRows);
+      } else {
+        alert("AIBTeM không tìm thấy từ vựng hợp lệ trong file. Vui lòng kiểm tra lại cấu trúc file!");
+      }
+    } catch (error) {
+      alert("Lỗi không thể đọc file. File có thể bị hỏng hoặc sai định dạng.");
     } finally {
-      setUploading(false); e.target.value = '';
+      setUploading(false);
+      e.target.value = '';
     }
   };
 
@@ -1434,8 +1513,10 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
         <div className="flex items-center gap-3">
           <label className={cn("flex items-center gap-2 bg-white border border-slate-200 px-4 py-2.5 rounded-xl cursor-pointer hover:bg-slate-50 hover:border-indigo-300 transition-all shadow-sm group", uploading && "opacity-50 cursor-not-allowed")}>
             {uploading ? <Loader2 className="animate-spin text-indigo-600 w-5 h-5" /> : <Upload className="text-indigo-600 w-5 h-5 group-hover:scale-110 transition-transform" />}
-            <span className="text-sm font-bold text-slate-700">Tải file (.txt, .docx, .csv)</span>
-            <input type="file" accept=".txt,.docx,.csv" className="hidden" onChange={handleFileUpload} disabled={uploading} />
+            
+            {/* ĐÃ CẬP NHẬT GIAO DIỆN CHẤP NHẬN BẤM CHỌN THÊM FILE .DOC */}
+            <span className="text-sm font-bold text-slate-700">Tải file (.txt, .doc, .docx, .csv)</span>
+            <input type="file" accept=".txt,.doc,.docx,.csv" className="hidden" onChange={handleFileUpload} disabled={uploading} />
           </label>
         </div>
       </div>
@@ -1473,7 +1554,6 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
                         {wordSuggestions.map((s, idx) => (
                           <div 
                             key={idx} 
-                            // SỬ DỤNG onMouseDown thay vì onClick để tránh mất tiêu điểm ô nhập liệu
                             onMouseDown={(e) => {
                               e.preventDefault();
                               handleSelectWordSuggestion(index, s.word);
@@ -1515,7 +1595,6 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
                     {row.loading && <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2 bg-white/80 backdrop-blur-sm px-2 py-1 rounded-lg border border-slate-100"><Loader2 className="animate-spin text-indigo-500 w-4 h-4" /><span className="text-[10px] font-bold text-indigo-500 uppercase tracking-tighter">AIBTeM đang dịch...</span></div>}
                   </div>
                   
-                  {/* DANH SÁCH GỢI Ý NGHĨA (CÓ PHÍM TẮT MŨI TÊN) */}
                   {(() => {
                     const shouldShowSuggestions = activeMeaningIndex === index && (row.meaning === '' || row.meaning.endsWith(', '));
                     const availableSuggestions = (row.suggestions || []).filter((s: string) => !row.meaning.includes(s));

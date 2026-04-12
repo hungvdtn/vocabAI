@@ -1170,10 +1170,14 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   
-  // STATE QUẢN LÝ GỢI Ý TỪ & PHÍM TẮT
+  // STATE QUẢN LÝ GỢI Ý TỪ & PHÍM TẮT (THUẬT NGỮ)
   const [activeWordIndex, setActiveWordIndex] = useState<number | null>(null);
   const [wordSuggestions, setWordSuggestions] = useState<any[]>([]);
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
+
+  // STATE QUẢN LÝ GỢI Ý NGHĨA & PHÍM TẮT (ĐỊNH NGHĨA)
+  const [activeMeaningIndex, setActiveMeaningIndex] = useState<number | null>(null);
+  const [selectedMeaningSuggestionIndex, setSelectedMeaningSuggestionIndex] = useState(-1);
 
   const translationCache = useRef<Record<string, any>>({});
   const abortControllers = useRef<Record<number, AbortController>>({});
@@ -1215,7 +1219,7 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
         .slice(0, 5);
       setWordSuggestions(results);
       setActiveWordIndex(index);
-      setSelectedSuggestionIndex(-1); // Reset vị trí chọn khi gõ chữ mới
+      setSelectedSuggestionIndex(-1);
     } else {
       setWordSuggestions([]);
       setActiveWordIndex(null);
@@ -1228,7 +1232,7 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
     setActiveWordIndex(null);
     setSelectedSuggestionIndex(-1);
     
-    // Sau khi chọn từ, tự động kích hoạt lấy nghĩa từ từ điển nội bộ ngay lập tức
+    // Khởi chạy dịch nội bộ ngay lập tức với từ hoàn chỉnh
     handleAutoTranslate(index, language, wordStr);
   };
 
@@ -1241,9 +1245,9 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
       }
       return newRows;
     });
+    setSelectedMeaningSuggestionIndex(-1);
   };
 
-  // CẢI TIẾN: Ưu tiên lấy dữ liệu từ điển cục bộ trước khi gọi AI
   const handleAutoTranslate = async (index: number, currentLanguage: Language, overrideWord?: string) => {
     const currentRow = rows[index];
     if (!currentRow) return;
@@ -1254,7 +1258,7 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
     const word = cleanInputData(term, true);
     if (!word) return;
 
-    // BƯỚC 1: KIỂM TRA TỪ ĐIỂN NỘI BỘ (KHÔNG GỌI AI)
+    // Ưu tiên 1: Lấy từ Điển nội bộ
     const currentDict = currentLanguage === 'en' ? enDictDataRaw : deDictDataRaw;
     const localEntry = currentDict.find(item => item.word.toLowerCase() === word.toLowerCase());
     
@@ -1270,10 +1274,10 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
         }
         return upd;
       });
-      return; // Dừng lại ở đây, không gọi AI
+      return; 
     }
 
-    // BƯỚC 2: NẾU KHÔNG CÓ TRONG TỪ ĐIỂN -> KIỂM TRA CACHE HOẶC GỌI AI
+    // Ưu tiên 2: Gọi AI nếu không có trong từ điển
     if (translationCache.current[word]) {
       lastTranslatedWords.current[index] = term; 
       setRows(prev => { const upd = [...prev]; if (upd[index]) upd[index] = { ...upd[index], suggestions: translationCache.current[word].translations }; return upd; });
@@ -1298,7 +1302,7 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
+  const handleWordKeyDown = (e: React.KeyboardEvent, index: number) => {
     if (activeWordIndex === index && wordSuggestions.length > 0) {
       if (e.key === 'ArrowDown') {
         e.preventDefault();
@@ -1306,10 +1310,40 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
         setSelectedSuggestionIndex(prev => (prev > 0 ? prev - 1 : wordSuggestions.length - 1));
-      } else if (e.key === 'Enter' && selectedSuggestionIndex >= 0) {
+      } else if (e.key === 'Enter') {
         e.preventDefault();
-        handleSelectWordSuggestion(index, wordSuggestions[selectedSuggestionIndex].word);
+        if (selectedSuggestionIndex >= 0) {
+          handleSelectWordSuggestion(index, wordSuggestions[selectedSuggestionIndex].word);
+        } else {
+          handleSelectWordSuggestion(index, wordSuggestions[0].word); 
+        }
       }
+    }
+  };
+
+  const handleMeaningKeyDown = (e: React.KeyboardEvent, index: number) => {
+    const row = rows[index];
+    const availableSuggestions = (row.suggestions || []).filter((s: string) => !row.meaning.includes(s));
+
+    if (activeMeaningIndex === index && availableSuggestions.length > 0) {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+        e.preventDefault();
+        setSelectedMeaningSuggestionIndex(prev => (prev < availableSuggestions.length - 1 ? prev + 1 : 0));
+      } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+        e.preventDefault();
+        setSelectedMeaningSuggestionIndex(prev => (prev > 0 ? prev - 1 : availableSuggestions.length - 1));
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (selectedMeaningSuggestionIndex >= 0) {
+          handleSelectSuggestion(index, availableSuggestions[selectedMeaningSuggestionIndex]);
+        } else {
+          handleSelectSuggestion(index, availableSuggestions[0]);
+        }
+      }
+    }
+
+    if (e.key === 'Tab' && !e.shiftKey && index === rows.length - 1) {
+      addRow();
     }
   };
 
@@ -1412,6 +1446,8 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
             <div className="flex flex-col md:flex-row gap-4 p-6 bg-white rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-md hover:border-indigo-100 transition-all relative">
               <div className="hidden md:flex items-center justify-center w-10 font-bold text-slate-300 text-xl group-hover:text-indigo-200 transition-colors">{index + 1}</div>
              <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
+                
+                {/* --- Ô THUẬT NGỮ --- */}
                 <div className="space-y-1 relative">
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Thuật ngữ ({language.toUpperCase()})</label>
                   <input 
@@ -1419,11 +1455,12 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
                     value={row.word} 
                     onChange={(e) => handleWordChange(index, e.target.value)} 
                     onFocus={(e) => handleWordChange(index, e.target.value)}
-                    onKeyDown={(e) => handleKeyDown(e, index)}
-                    onBlur={() => {
+                    onKeyDown={(e) => handleWordKeyDown(e, index)}
+                    onBlur={(e) => {
+                      const val = e.target.value;
                       setTimeout(() => {
                         if (activeWordIndex === index) setActiveWordIndex(null);
-                        handleAutoTranslate(index, language);
+                        handleAutoTranslate(index, language, val);
                       }, 200);
                     }} 
                     className="w-full bg-slate-100 border-2 border-transparent rounded-2xl px-5 py-4 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all text-lg font-medium text-slate-800 placeholder:text-slate-400" 
@@ -1436,7 +1473,11 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
                         {wordSuggestions.map((s, idx) => (
                           <div 
                             key={idx} 
-                            onClick={() => handleSelectWordSuggestion(index, s.word)} 
+                            // SỬ DỤNG onMouseDown thay vì onClick để tránh mất tiêu điểm ô nhập liệu
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              handleSelectWordSuggestion(index, s.word);
+                            }}
                             className={cn("px-5 py-3 cursor-pointer border-b border-slate-100 last:border-none transition-colors", selectedSuggestionIndex === idx ? "bg-indigo-600 text-white" : "hover:bg-slate-50 text-slate-800")}
                           >
                             <span className="text-lg font-bold">{s.word}</span>
@@ -1447,19 +1488,56 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
                   </AnimatePresence>
                 </div>
 
+                {/* --- Ô ĐỊNH NGHĨA --- */}
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Định nghĩa (Tiếng Việt)</label>
                   <div className="relative">
-                    <input type="text" value={row.meaning} onChange={(e) => updateRow(index, 'meaning', e.target.value)} onKeyDown={(e) => { if (e.key === 'Tab' && !e.shiftKey && index === rows.length - 1) addRow(); }} className="w-full bg-slate-100 border-2 border-transparent rounded-2xl px-5 py-4 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all text-lg font-medium text-slate-800 placeholder:text-slate-400" placeholder="Nhập nghĩa..." />
+                    <input 
+                      type="text" 
+                      value={row.meaning} 
+                      onChange={(e) => {
+                        updateRow(index, 'meaning', e.target.value);
+                        setSelectedMeaningSuggestionIndex(-1);
+                      }}
+                      onFocus={() => {
+                        setActiveMeaningIndex(index);
+                        setSelectedMeaningSuggestionIndex(-1);
+                      }}
+                      onBlur={() => {
+                        setTimeout(() => {
+                          if (activeMeaningIndex === index) setActiveMeaningIndex(null);
+                        }, 200);
+                      }}
+                      onKeyDown={(e) => handleMeaningKeyDown(e, index)}
+                      className="w-full bg-slate-100 border-2 border-transparent rounded-2xl px-5 py-4 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all text-lg font-medium text-slate-800 placeholder:text-slate-400" 
+                      placeholder="Nhập nghĩa..." 
+                    />
                     {row.loading && <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2 bg-white/80 backdrop-blur-sm px-2 py-1 rounded-lg border border-slate-100"><Loader2 className="animate-spin text-indigo-500 w-4 h-4" /><span className="text-[10px] font-bold text-indigo-500 uppercase tracking-tighter">AIBTeM đang dịch...</span></div>}
                   </div>
+                  
+                  {/* DANH SÁCH GỢI Ý NGHĨA (CÓ PHÍM TẮT MŨI TÊN) */}
                   {(() => {
-                    const shouldShowSuggestions = row.meaning === '' || row.meaning.endsWith(', ');
+                    const shouldShowSuggestions = activeMeaningIndex === index && (row.meaning === '' || row.meaning.endsWith(', '));
                     const availableSuggestions = (row.suggestions || []).filter((s: string) => !row.meaning.includes(s));
                     return shouldShowSuggestions && availableSuggestions.length > 0 && (
                       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mt-2 p-2 bg-slate-50 rounded-2xl border border-slate-100 flex flex-wrap gap-2">
                         {availableSuggestions.map((s: string, i: number) => (
-                          <button key={i} type="button" onClick={() => handleSelectSuggestion(index, s)} className="text-[15px] px-5 py-2.5 rounded-full border-2 transition-all font-medium shadow-sm bg-white border-indigo-100 text-indigo-600 hover:bg-indigo-50 hover:border-indigo-300 hover:scale-105">{s}</button>
+                          <button 
+                            key={i} 
+                            type="button" 
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              handleSelectSuggestion(index, s);
+                            }}
+                            className={cn(
+                              "text-[15px] px-5 py-2.5 rounded-full border-2 transition-all font-medium shadow-sm",
+                              selectedMeaningSuggestionIndex === i 
+                                ? "bg-indigo-600 border-indigo-600 text-white scale-105" 
+                                : "bg-white border-indigo-100 text-indigo-600 hover:bg-indigo-50 hover:border-indigo-300 hover:scale-105"
+                            )}
+                          >
+                            {s}
+                          </button>
                         ))}
                       </motion.div>
                     );

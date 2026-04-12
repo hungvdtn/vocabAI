@@ -1377,14 +1377,12 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
   };
 
   // =========================================================================
-  // BỘ MÁY XỬ LÝ VĂN BẢN (TEXT PARSER) ĐƯỢC NÂNG CẤP MẠNH MẼ
+  // BỘ MÁY XỬ LÝ VĂN BẢN (TEXT PARSER)
   // =========================================================================
 
   const extractWordMeaning = (line: string) => {
-    // Tẩy rửa làm sạch: Cắt bỏ số thứ tự, gạch đầu dòng, ký tự lạ ở đầu câu
     let cleanLine = line.replace(/^[\s\-\*•]+/, '').replace(/^\d+[\.\)]\s*/, '').trim();
 
-    // Định vị ký tự phân cách linh hoạt (Nhận diện Tab, Dấu hai chấm, Dấu gạch ngang, Dấu bằng)
     const sepRegex = /(\t|:| \- | \– | \— | = )/;
     const match = cleanLine.match(sepRegex);
 
@@ -1393,7 +1391,6 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
       let word = cleanLine.substring(0, index).trim();
       let meaning = cleanLine.substring(index + match[0].length).trim();
       
-      // LỌC TIÊU ĐỀ: Nếu cột 'Word' chứa toàn từ tiếng Việt (có dấu) -> Đây là tiêu đề, loại bỏ!
       const isVietnameseHeader = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i.test(word);
       if (isVietnameseHeader) return null;
 
@@ -1406,7 +1403,6 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
     const rawLines = text.split('\n').map(l => l.trim()).filter(l => l !== '');
     const newRows: any[] = [];
     
-    // Nếu có hơn 20% số dòng chứa ký tự phân cách -> Chuẩn "Một dòng 2 cột"
     const hasSeparators = rawLines.filter(l => /(\t|:| \- | \– | \— | = )/.test(l)).length > rawLines.length * 0.2;
 
     if (hasSeparators) {
@@ -1415,7 +1411,6 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
           if (extracted) newRows.push({ ...extracted, loading: false, suggestions: [] });
        });
     } else {
-       // Dự phòng: Chuẩn xen kẽ "Dòng 1: Tiếng Anh, Dòng 2: Tiếng Việt"
        for (let i = 0; i < rawLines.length; i += 2) {
           const word = rawLines[i].replace(/^[\s\-\*•\d\.\)]+\s*/, '').trim();
           const meaning = (i + 1 < rawLines.length) ? rawLines[i + 1].trim() : '';
@@ -1429,21 +1424,29 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
   };
 
   const parseHtmlAdvanced = (html: string) => {
+    // [VÁ LỖI DOCX TẠI ĐÂY] 
+    // Chủ động nhét thêm ký tự \n vào cuối các thẻ khối để khi trích xuất text, 
+    // các dòng văn bản không bị dính chặt vào nhau.
+    const processedHtml = html
+      .replace(/<\/p>/gi, '</p>\n')
+      .replace(/<\/li>/gi, '</li>\n')
+      .replace(/<\/h[1-6]>/gi, '</h3>\n')
+      .replace(/<br\s*\/?>/gi, '\n');
+
     const parser = new DOMParser();
-    const doc = parser.parseFromString(html, 'text/html');
+    const doc = parser.parseFromString(processedHtml, 'text/html');
     const newRows: any[] = [];
 
-    // 1. Quét CẤU TRÚC BẢNG (TABLE) trước
+    // Quét các Bảng (Table)
     const tables = doc.querySelectorAll('table');
     tables.forEach(table => {
       const trs = table.querySelectorAll('tr');
       trs.forEach(tr => {
         const tds = tr.querySelectorAll('td, th');
-        if (tds.length >= 2) { // Có từ 2 cột trở lên
+        if (tds.length >= 2) { 
           const word = tds[0].textContent?.replace(/^[\s\-\*•\d\.\)]+\s*/, '').trim() || '';
-          const meaning = tds[1].textContent?.trim() || ''; // CHỈ LẤY CỘT 1 VÀ CỘT 2
+          const meaning = tds[1].textContent?.trim() || ''; 
           
-          // Lọc rác: Loại bỏ các hàng Header tiếng Việt hoặc cột trống
           const isVietnameseHeader = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i.test(word);
           const isTableTitleRow = word.toLowerCase().includes('tiếng') || word.toLowerCase().includes('từ vựng');
           
@@ -1452,11 +1455,10 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
           }
         }
       });
-      // Xóa bảng khỏi DOM để phần Quét Văn bản không bị lặp lại dữ liệu
-      table.remove();
+      table.remove(); // Xóa bảng để tránh quét lặp ở bước sau
     });
 
-    // 2. Quét phần VĂN BẢN TỰ DO còn lại trong trang
+    // Quét Văn bản tự do (Lúc này các đoạn văn đã có sẵn \n để thuật toán cắt dòng hoạt động)
     const remainingText = doc.body.textContent || '';
     const textRows = parseTextAdvanced(remainingText);
     
@@ -1467,7 +1469,6 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // THUẬT TOÁN CHẶN FILE .DOC CŨ VÀ HƯỚNG DẪN NGƯỜI DÙNG
     if (file.name.toLowerCase().endsWith('.doc')) {
       alert("Hệ thống AIBTeM chỉ hỗ trợ chuẩn lưu trữ hiện đại (.docx, .txt, .csv).\n\nĐịnh dạng .doc cũ (trước 2007) không còn được các trình duyệt web bảo mật hỗ trợ. Tiến sĩ vui lòng mở file này bằng phần mềm MS Word, sau đó chọn 'Save As' (Lưu dưới dạng) thành định dạng .docx rồi tải lên lại nhé!");
       e.target.value = '';
@@ -1483,7 +1484,6 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
         parsedRows = parseTextAdvanced(text);
       } else if (file.name.endsWith('.docx')) {
         const arrayBuffer = await file.arrayBuffer();
-        // NÂNG CẤP BẮT BUỘC: Sử dụng convertToHtml để giữ lại cấu trúc BẢNG, thay vì extractRawText
         const result = await mammoth.convertToHtml({ arrayBuffer });
         parsedRows = parseHtmlAdvanced(result.value);
       }
@@ -1514,7 +1514,6 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
           <label className={cn("flex items-center gap-2 bg-white border border-slate-200 px-4 py-2.5 rounded-xl cursor-pointer hover:bg-slate-50 hover:border-indigo-300 transition-all shadow-sm group", uploading && "opacity-50 cursor-not-allowed")}>
             {uploading ? <Loader2 className="animate-spin text-indigo-600 w-5 h-5" /> : <Upload className="text-indigo-600 w-5 h-5 group-hover:scale-110 transition-transform" />}
             
-            {/* ĐÃ CẬP NHẬT GIAO DIỆN CHẤP NHẬN BẤM CHỌN THÊM FILE .DOC */}
             <span className="text-sm font-bold text-slate-700">Tải file (.txt, .doc, .docx, .csv)</span>
             <input type="file" accept=".txt,.doc,.docx,.csv" className="hidden" onChange={handleFileUpload} disabled={uploading} />
           </label>

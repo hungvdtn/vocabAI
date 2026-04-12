@@ -334,6 +334,9 @@ export default function App() {
   const [gameResults, setGameResults] = useState<GameResult[]>([]);
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isTestInProgress, setIsTestInProgress] = useState(false);
+  const [pendingAction, setPendingAction] = useState<{ type: 'view' | 'lang', value: any } | null>(null);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   // CẢM BIẾN NHẬN DIỆN BÀN PHÍM ĐIỆN THOẠI
@@ -393,6 +396,40 @@ export default function App() {
     } catch (error) {
       console.error("Logout Error:", error);
     }
+  };
+  const handleViewChange = (newView: View) => {
+    if (isTestInProgress) {
+      setPendingAction({ type: 'view', value: newView });
+      setShowExitConfirm(true);
+    } else {
+      setView(newView);
+      if (newView !== 'games') setActiveGame(null);
+    }
+  };
+
+  const handleLanguageChange = (newLang: Language) => {
+    if (isTestInProgress) {
+      setPendingAction({ type: 'lang', value: newLang });
+      setShowExitConfirm(true);
+    } else {
+      setLanguage(newLang);
+      setEditingLesson(null); setPlayVocabList([]); setActiveLessonId(null); setGameResults([]);
+    }
+  };
+
+  const confirmExitTest = () => {
+    if (pendingAction) {
+      if (pendingAction.type === 'view') {
+        setView(pendingAction.value);
+        if (pendingAction.value !== 'games') setActiveGame(null);
+      } else {
+        setLanguage(pendingAction.value);
+        setEditingLesson(null); setPlayVocabList([]); setActiveLessonId(null); setGameResults([]);
+      }
+    }
+    setIsTestInProgress(false);
+    setShowExitConfirm(false);
+    setPendingAction(null);
   };
 
   const enterTestMode = () => {
@@ -488,13 +525,13 @@ export default function App() {
           </div>
           
           <div className="hidden md:flex items-center gap-2 lg:gap-4 overflow-x-auto">
-            <NavButton active={view === 'topics'} onClick={() => setView('topics')} icon={<LayoutGrid size={18} />} label="Chủ đề" />
-            <NavButton active={view === 'input'} onClick={() => setView('input')} icon={<PlusCircle size={18} />} label="Nhập liệu" />
-            <NavButton active={view === 'library'} onClick={() => setView('library')} icon={<FileText size={18} />} label="Thư viện" />
-            <NavButton active={view === 'games'} onClick={() => setView('games')} icon={<Gamepad2 size={18} />} label="Trò chơi" />
-            <NavButton active={view === 'report'} onClick={() => setView('report')} icon={<BarChart3 size={18} />} label="Báo cáo" />
-            <NavButton active={view === 'dictionary'} onClick={() => setView('dictionary')} icon={<BookOpen size={18} />} label="Từ điển" />
-            <NavButton active={view === 'assessment'} onClick={() => setView('assessment')} icon={<Trophy size={18} />} label="Kiểm tra năng lực" />
+            <NavButton active={view === 'topics'} onClick={() => handleViewChange('topics')} icon={<LayoutGrid size={18} />} label="Chủ đề" />
+            <NavButton active={view === 'input'} onClick={() => handleViewChange('input')} icon={<PlusCircle size={18} />} label="Nhập liệu" />
+            <NavButton active={view === 'library'} onClick={() => handleViewChange('library')} icon={<FileText size={18} />} label="Thư viện" />
+            <NavButton active={view === 'games'} onClick={() => handleViewChange('games')} icon={<Gamepad2 size={18} />} label="Trò chơi" />
+            <NavButton active={view === 'report'} onClick={() => handleViewChange('report')} icon={<BarChart3 size={18} />} label="Báo cáo" />
+            <NavButton active={view === 'dictionary'} onClick={() => handleViewChange('dictionary')} icon={<BookOpen size={18} />} label="Từ điển" />
+            <NavButton active={view === 'assessment'} onClick={() => handleViewChange('assessment')} icon={<Trophy size={18} />} label="Kiểm tra năng lực" />
           </div>
 
           <div className="flex items-center gap-2 lg:gap-4">
@@ -510,7 +547,7 @@ export default function App() {
 
            <div className="flex bg-slate-100 p-1 rounded-xl">
               <button 
-                onClick={() => { setLanguage('en'); setEditingLesson(null); setPlayVocabList([]); setActiveLessonId(null); setGameResults([]); }}
+                onClick={() => handleLanguageChange('en')}
                 className={cn("px-2 lg:px-3 py-1.5 rounded-lg text-sm font-bold transition-all flex items-center gap-2", language === 'en' ? "bg-white shadow-sm text-indigo-600" : "text-slate-500 hover:text-indigo-600")}
                 title="Tiếng Anh"
               >
@@ -518,7 +555,7 @@ export default function App() {
                 <span className="hidden sm:block">EN</span>
               </button>
               <button 
-                onClick={() => { setLanguage('de'); setEditingLesson(null); setPlayVocabList([]); setActiveLessonId(null); setGameResults([]); }}
+                onClick={() => handleLanguageChange('de')}
                 className={cn("px-2 lg:px-3 py-1.5 rounded-lg text-sm font-bold transition-all flex items-center gap-2", language === 'de' ? "bg-white shadow-sm text-indigo-600" : "text-slate-500 hover:text-indigo-600")}
                 title="Tiếng Đức"
               >
@@ -639,6 +676,22 @@ export default function App() {
           )}
         </AnimatePresence>
       </main>
+      <AnimatePresence>
+        {showExitConfirm && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" />
+            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="relative bg-white p-8 rounded-[2.5rem] max-w-sm w-full shadow-2xl text-center">
+              <AlertCircle className="w-16 h-16 text-orange-500 mx-auto mb-4" />
+              <h3 className="text-xl font-bold mb-2">Dừng bài kiểm tra?</h3>
+              <p className="text-slate-500 mb-6 font-medium">Kết quả hiện tại sẽ không được ghi nhận nếu anh rời đi lúc này.</p>
+              <div className="flex gap-3">
+                <button onClick={() => setShowExitConfirm(false)} className="flex-1 py-3 rounded-xl font-bold bg-slate-100 text-slate-600">Làm tiếp</button>
+                <button onClick={confirmExitTest} className="flex-1 py-3 rounded-xl font-bold bg-red-500 text-white">Xác nhận dừng</button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around p-2 z-[100] transition-all duration-300" style={{ paddingBottom: isKeyboardOpen ? '0.5rem' : 'calc(0.5rem + env(safe-area-inset-bottom, 1rem))' }}>
         <MobileNavButton active={view === 'topics'} onClick={() => setView('topics')} icon={<LayoutGrid />} />

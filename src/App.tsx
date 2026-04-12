@@ -1377,12 +1377,11 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
   };
 
   // =========================================================================
-  // BỘ MÁY XỬ LÝ VĂN BẢN (TEXT PARSER)
+  // BỘ MÁY XỬ LÝ VĂN BẢN (TEXT & TABLE PARSER) - ĐÃ VÁ LỖI CỘT BẢNG
   // =========================================================================
 
   const extractWordMeaning = (line: string) => {
     let cleanLine = line.replace(/^[\s\-\*•]+/, '').replace(/^\d+[\.\)]\s*/, '').trim();
-
     const sepRegex = /(\t|:| \- | \– | \— | = )/;
     const match = cleanLine.match(sepRegex);
 
@@ -1393,7 +1392,6 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
       
       const isVietnameseHeader = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i.test(word);
       if (isVietnameseHeader) return null;
-
       if (word) return { word, meaning };
     }
     return null;
@@ -1402,7 +1400,6 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
   const parseTextAdvanced = (text: string) => {
     const rawLines = text.split('\n').map(l => l.trim()).filter(l => l !== '');
     const newRows: any[] = [];
-    
     const hasSeparators = rawLines.filter(l => /(\t|:| \- | \– | \— | = )/.test(l)).length > rawLines.length * 0.2;
 
     if (hasSeparators) {
@@ -1424,9 +1421,6 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
   };
 
   const parseHtmlAdvanced = (html: string) => {
-    // [VÁ LỖI DOCX TẠI ĐÂY] 
-    // Chủ động nhét thêm ký tự \n vào cuối các thẻ khối để khi trích xuất text, 
-    // các dòng văn bản không bị dính chặt vào nhau.
     const processedHtml = html
       .replace(/<\/p>/gi, '</p>\n')
       .replace(/<\/li>/gi, '</li>\n')
@@ -1437,28 +1431,71 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
     const doc = parser.parseFromString(processedHtml, 'text/html');
     const newRows: any[] = [];
 
-    // Quét các Bảng (Table)
+    // Hàm kiểm tra ký tự Tiếng Việt (để tìm cột Định nghĩa)
+    const hasVietnamese = (text: string) => /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i.test(text);
+
     const tables = doc.querySelectorAll('table');
     tables.forEach(table => {
       const trs = table.querySelectorAll('tr');
       trs.forEach(tr => {
-        const tds = tr.querySelectorAll('td, th');
-        if (tds.length >= 2) { 
-          const word = tds[0].textContent?.replace(/^[\s\-\*•\d\.\)]+\s*/, '').trim() || '';
-          const meaning = tds[1].textContent?.trim() || ''; 
-          
-          const isVietnameseHeader = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i.test(word);
-          const isTableTitleRow = word.toLowerCase().includes('tiếng') || word.toLowerCase().includes('từ vựng');
-          
-          if (word && meaning && !isVietnameseHeader && !isTableTitleRow) {
-             newRows.push({ word, meaning, loading: false, suggestions: [] });
-          }
+        // Lấy tất cả các cột và làm sạch khoảng trắng
+        const tds = Array.from(tr.querySelectorAll('td, th')).map(td => td.textContent?.replace(/\n/g, ' ').trim() || '');
+        
+        let wordColIndex = -1;
+        let meaningColIndex = -1;
+
+        // THUẬT TOÁN ĐỊNH VỊ CỘT THÔNG MINH
+        for (let i = 0; i < tds.length; i++) {
+           const colText = tds[i];
+           if (!colText) continue;
+
+           // Kiểm tra xem cột có phải chỉ chứa số (Ví dụ: cột STT)
+           const isNum = /^[\d\.\)\s]+$/.test(colText);
+           const isViet = hasVietnamese(colText);
+
+           // Cột "Thuật ngữ" = Cột đầu tiên KHÔNG phải Số và KHÔNG chứa Tiếng Việt
+           if (!isNum && !isViet && wordColIndex === -1) {
+              wordColIndex = i;
+           } 
+           // Cột "Định nghĩa" = Cột đầu tiên CHỨA Tiếng Việt
+           else if (isViet && meaningColIndex === -1) {
+              meaningColIndex = i;
+           }
+        }
+
+        // Kế hoạch B: Nếu không tìm thấy cột Tiếng Việt, bốc 2 cột văn bản đầu tiên
+        if (wordColIndex === -1 || meaningColIndex === -1) {
+           const textCols = [];
+           for (let i = 0; i < tds.length; i++) {
+               if (tds[i] && !/^[\d\.\)\s]+$/.test(tds[i])) {
+                   textCols.push(i);
+               }
+           }
+           if (textCols.length >= 2) {
+               wordColIndex = textCols[0];
+               meaningColIndex = textCols[1];
+           }
+        }
+
+        // Nếu đã định vị được đúng 2 cột
+        if (wordColIndex !== -1 && meaningColIndex !== -1 && wordColIndex !== meaningColIndex) {
+           let word = tds[wordColIndex].replace(/^[\s\-\*•\d\.\)]+\s*/, '').trim();
+           let meaning = tds[meaningColIndex].trim();
+           
+           // Lọc bỏ hàng Tiêu đề của bảng (như: "STT", "Tiếng Anh", "Nghĩa")
+           const isTableTitleRow = word.toLowerCase().includes('tiếng') || 
+                                   word.toLowerCase().includes('từ vựng') || 
+                                   word.toLowerCase().includes('stt') || 
+                                   meaning.toLowerCase().includes('nghĩa');
+           
+           if (word && meaning && !isTableTitleRow) {
+               newRows.push({ word, meaning, loading: false, suggestions: [] });
+           }
         }
       });
-      table.remove(); // Xóa bảng để tránh quét lặp ở bước sau
+      table.remove(); // Xóa bảng để tránh quét lặp ở đoạn văn bản tự do
     });
 
-    // Quét Văn bản tự do (Lúc này các đoạn văn đã có sẵn \n để thuật toán cắt dòng hoạt động)
     const remainingText = doc.body.textContent || '';
     const textRows = parseTextAdvanced(remainingText);
     
@@ -2557,7 +2594,7 @@ function ReportView({ results, language, activeLessonId }: { results: GameResult
   };
 
   const getStaticFeedback = (acc: number) => {
-      if (acc >= 90) return "AIBTeM nhận thấy Tiến sĩ đã nắm vững gần như toàn bộ từ vựng trong bài học này! Phản xạ xuất sắc. Bạn hoàn toàn có thể chuyển sang bài học mới khó hơn.";
+      if (acc >= 90) return "AIBTeM nhận thấy Bạn đã nắm vững gần như toàn bộ từ vựng trong bài học này! Phản xạ xuất sắc. Bạn hoàn toàn có thể chuyển sang bài học mới khó hơn.";
       if (acc >= 80) return "Thành tích rất tốt! Bạn đã ghi nhớ được hầu hết các từ vựng. Chỉ cần ôn tập lại một chút để đạt điểm tuyệt đối nhé.";
       if (acc >= 70) return "Kết quả rất khả quan! Bạn đã nhớ được phần lớn từ vựng. Hãy xem kỹ bảng tổng hợp lỗi sai bên dưới để khắc phục.";
       if (acc >= 60) return "Bạn đang tiến bộ! Kết quả ở mức khá, tuy nhiên vẫn còn một số từ gây nhầm lẫn.";

@@ -4,6 +4,7 @@ import {
   Languages, 
   PlusCircle,
   ArrowUp,
+  Target,
   Gamepad2, 
   BarChart3, 
   Volume2, 
@@ -79,11 +80,9 @@ import {
   Cell
 } from 'recharts';
 
-// IMPORT TRỰC TIẾP CƠ SỞ DỮ LIỆU TỪ ĐIỂN 3000 TỪ
 import enDictDataRaw from './data/en_3000.json';
 import deDictDataRaw from './data/de_3000.json';
 
-// Types
 type Language = 'en' | 'de';
 type View = 'home' | 'topics' | 'input' | 'library' | 'games' | 'report' | 'dictionary' | 'assessment';
 type GameType = 'flashcards' | 'quiz' | 'matching' | 'writing' | 'fill' | 'roleplay';
@@ -138,9 +137,6 @@ interface GameResult {
   mistakes?: {word: string, userAnswer: string, correctAnswer: string}[];
 }
 
-// ------------------------------------------------------------------------------------
-// HIỆU ỨNG TUNG PHÁO HOA (CONFETTI)
-// ------------------------------------------------------------------------------------
 const Confetti = () => {
   const colors = ['bg-red-500', 'bg-blue-500', 'bg-emerald-500', 'bg-yellow-400', 'bg-purple-500', 'bg-pink-500'];
   return (
@@ -166,9 +162,6 @@ const Confetti = () => {
   );
 };
 
-// ------------------------------------------------------------------------------------
-// HỆ THỐNG TỪ ĐIỂN KHEN NGỢI SONG NGỮ
-// ------------------------------------------------------------------------------------
 const PRAISE_MESSAGES = {
   en: [
     "Keep up the good work! Tuyệt vời!",
@@ -184,13 +177,12 @@ const PRAISE_MESSAGES = {
     "Ausgezeichnet! Bạn đang làm rất tốt!",
     "Hervorragend! Cứ thế phát huy nhé!",
     "Beeindruckend! Điểm số nói lên tất cả!",
-    "Wunderbar! Bạn thực sự là một cao thủ!",
+    "Wunderbar! Bạn thực sự là ein cao thủ!",
     "Unglaublich! Quá nhanh và quá nguy hiểm!",
     "Perfekt! Bạn sắp thông thạo tiếng Đức rồi đấy!"
   ]
 };
 
-// BỔ SUNG: Từ điển khích lệ khi điểm dưới 50%
 const ENCOURAGEMENT_MESSAGES = {
   en: [
     "Don't give up! Đừng bỏ cuộc!",
@@ -216,9 +208,6 @@ const getRandomEncouragement = (lang: Language) => {
   return messages[Math.floor(Math.random() * messages.length)];
 };
 
-// ------------------------------------------------------------------------------------
-// HỆ THỐNG ÂM THANH GAME & NATIVE TTS
-// ------------------------------------------------------------------------------------
 const playGameSound = (type: 'correct' | 'wrong' | 'success') => {
   let audioSrc = '';
   if (type === 'correct') audioSrc = '/assets/correct.mp3'; 
@@ -227,7 +216,7 @@ const playGameSound = (type: 'correct' | 'wrong' | 'success') => {
   
   if (audioSrc) {
     const audio = new Audio(audioSrc);
-    audio.play().catch(e => console.warn("Audio file missing in /assets folder", e));
+    audio.play().catch(e => console.warn("Audio file missing", e));
   }
 };
 
@@ -334,12 +323,8 @@ export default function App() {
   const [gameResults, setGameResults] = useState<GameResult[]>([]);
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isTestInProgress, setIsTestInProgress] = useState(false);
-  const [pendingAction, setPendingAction] = useState<{ type: 'view' | 'lang', value: any } | null>(null);
-  const [showExitConfirm, setShowExitConfirm] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // CẢM BIẾN NHẬN DIỆN BÀN PHÍM ĐIỆN THOẠI
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
   useEffect(() => {
     const handleFocusIn = (e: any) => {
@@ -397,40 +382,6 @@ export default function App() {
       console.error("Logout Error:", error);
     }
   };
-  const handleViewChange = (newView: View) => {
-    if (isTestInProgress) {
-      setPendingAction({ type: 'view', value: newView });
-      setShowExitConfirm(true);
-    } else {
-      setView(newView);
-      if (newView !== 'games') setActiveGame(null);
-    }
-  };
-
-  const handleLanguageChange = (newLang: Language) => {
-    if (isTestInProgress) {
-      setPendingAction({ type: 'lang', value: newLang });
-      setShowExitConfirm(true);
-    } else {
-      setLanguage(newLang);
-      setEditingLesson(null); setPlayVocabList([]); setActiveLessonId(null); setGameResults([]);
-    }
-  };
-
-  const confirmExitTest = () => {
-    if (pendingAction) {
-      if (pendingAction.type === 'view') {
-        setView(pendingAction.value);
-        if (pendingAction.value !== 'games') setActiveGame(null);
-      } else {
-        setLanguage(pendingAction.value);
-        setEditingLesson(null); setPlayVocabList([]); setActiveLessonId(null); setGameResults([]);
-      }
-    }
-    setIsTestInProgress(false);
-    setShowExitConfirm(false);
-    setPendingAction(null);
-  };
 
   const enterTestMode = () => {
     setIsTestMode(true);
@@ -459,7 +410,6 @@ export default function App() {
     const newResults = [...gameResults, { ...res, language }];
     setGameResults(newResults);
     
-    // 1. Kiểm tra điều kiện chuyển view trước
     let isReportNext = false;
     if (activeLessonId) {
        const gamesPlayedOfThisLesson = newResults.filter(r => r.lessonId === activeLessonId).map(r => r.gameType);
@@ -469,17 +419,14 @@ export default function App() {
        }
     }
 
-    // 2. Cập nhật Giao diện (UI) ngay lập tức để tránh độ trễ
     if (isReportNext) {
        playGameSound('success');
        setView('report');
-       // Trì hoãn unmount để mượt mà với hiệu ứng AnimatePresence
        setTimeout(() => setActiveGame(null), 300);
     } else {
        setActiveGame(null); 
     }
 
-    // 3. Cập nhật Database chạy ngầm (Background), không làm nghẽn UI
     if (activeLessonId && !isTestMode) {
       try {
         const lessonRef = doc(db, 'lessons', activeLessonId);
@@ -525,18 +472,16 @@ export default function App() {
           </div>
           
           <div className="hidden md:flex items-center gap-2 lg:gap-4 overflow-x-auto">
-            <NavButton active={view === 'topics'} onClick={() => handleViewChange('topics')} icon={<LayoutGrid size={18} />} label="Chủ đề" />
-            <NavButton active={view === 'input'} onClick={() => handleViewChange('input')} icon={<PlusCircle size={18} />} label="Nhập liệu" />
-            <NavButton active={view === 'library'} onClick={() => handleViewChange('library')} icon={<FileText size={18} />} label="Thư viện" />
-            <NavButton active={view === 'games'} onClick={() => handleViewChange('games')} icon={<Gamepad2 size={18} />} label="Trò chơi" />
-            <NavButton active={view === 'report'} onClick={() => handleViewChange('report')} icon={<BarChart3 size={18} />} label="Báo cáo" />
-            <NavButton active={view === 'dictionary'} onClick={() => handleViewChange('dictionary')} icon={<BookOpen size={18} />} label="Từ điển" />
-            <NavButton active={view === 'assessment'} onClick={() => handleViewChange('assessment')} icon={<Trophy size={18} />} label="Kiểm tra năng lực" />
+            <NavButton active={view === 'topics'} onClick={() => setView('topics')} icon={<LayoutGrid size={18} />} label="Chủ đề" />
+            <NavButton active={view === 'assessment'} onClick={() => setView('assessment')} icon={<Target size={18} />} label="Đánh giá" />
+            <NavButton active={view === 'input'} onClick={() => setView('input')} icon={<PlusCircle size={18} />} label="Nhập liệu" />
+            <NavButton active={view === 'library'} onClick={() => setView('library')} icon={<FileText size={18} />} label="Thư viện" />
+            <NavButton active={view === 'games'} onClick={() => setView('games')} icon={<Gamepad2 size={18} />} label="Trò chơi" />
+            <NavButton active={view === 'report'} onClick={() => setView('report')} icon={<BarChart3 size={18} />} label="Báo cáo" />
+            <NavButton active={view === 'dictionary'} onClick={() => setView('dictionary')} icon={<BookOpen size={18} />} label="Từ điển" />
           </div>
 
           <div className="flex items-center gap-2 lg:gap-4">
-            
-            {/* BỔ SUNG: Nút Từ điển hiển thị trên thanh Header của Điện thoại */}
             <button 
               onClick={() => setView('dictionary')} 
               className={cn("md:hidden w-8 h-8 rounded-full transition-all flex items-center justify-center", view === 'dictionary' ? "bg-indigo-100 text-indigo-600" : "bg-slate-50 text-slate-500 hover:text-indigo-600")}
@@ -547,7 +492,7 @@ export default function App() {
 
            <div className="flex bg-slate-100 p-1 rounded-xl">
               <button 
-                onClick={() => handleLanguageChange('en')}
+                onClick={() => { setLanguage('en'); setEditingLesson(null); setPlayVocabList([]); setActiveLessonId(null); setGameResults([]); }}
                 className={cn("px-2 lg:px-3 py-1.5 rounded-lg text-sm font-bold transition-all flex items-center gap-2", language === 'en' ? "bg-white shadow-sm text-indigo-600" : "text-slate-500 hover:text-indigo-600")}
                 title="Tiếng Anh"
               >
@@ -555,7 +500,7 @@ export default function App() {
                 <span className="hidden sm:block">EN</span>
               </button>
               <button 
-                onClick={() => handleLanguageChange('de')}
+                onClick={() => { setLanguage('de'); setEditingLesson(null); setPlayVocabList([]); setActiveLessonId(null); setGameResults([]); }}
                 className={cn("px-2 lg:px-3 py-1.5 rounded-lg text-sm font-bold transition-all flex items-center gap-2", language === 'de' ? "bg-white shadow-sm text-indigo-600" : "text-slate-500 hover:text-indigo-600")}
                 title="Tiếng Đức"
               >
@@ -617,6 +562,11 @@ export default function App() {
               <HomeView setView={setView} language={language} user={user} lessons={lessons} />
             </motion.div>
           )}
+          {view === 'assessment' && (
+            <motion.div key={`assessment-${language}`} className="w-full" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
+              <AssessmentView language={language} onGoToTopics={() => setView('topics')} />
+            </motion.div>
+          )}
           {view === 'topics' && (
             <motion.div key={`topics-${language}`} className="w-full" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
               <TopicLibraryView language={language} lessons={lessons} onOpenInInput={(vocabData, generatedTitle) => {
@@ -659,46 +609,25 @@ export default function App() {
             </motion.div>
           )}
           {view === 'report' && (
-  <motion.div key="report" className="w-full" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-    <ReportView 
-      results={gameResults} 
-      language={language} 
-      activeLessonId={activeLessonId || ''} 
-      onPlayAIGame={() => { setView('games'); setActiveGame('roleplay'); }}
-      onGoToTopics={() => setView('topics')}
-    />
-  </motion.div>
-)}
-{view === 'assessment' && (
-            <motion.div key="assessment" className="w-full" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
-              <AssessmentView language={language} setView={setView} />
+            <motion.div key="report" className="w-full" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <ReportView 
+                results={gameResults} 
+                language={language} 
+                activeLessonId={activeLessonId || ''} 
+                onPlayAIGame={() => { setView('games'); setActiveGame('roleplay'); }}
+                onGoToTopics={() => setView('topics')}
+              />
             </motion.div>
           )}
         </AnimatePresence>
       </main>
-      <AnimatePresence>
-        {showExitConfirm && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" />
-            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="relative bg-white p-8 rounded-[2.5rem] max-w-sm w-full shadow-2xl text-center">
-              <AlertCircle className="w-16 h-16 text-orange-500 mx-auto mb-4" />
-              <h3 className="text-xl font-bold mb-2">Dừng bài kiểm tra?</h3>
-              <p className="text-slate-500 mb-6 font-medium">Kết quả hiện tại sẽ không được ghi nhận nếu anh rời đi lúc này.</p>
-              <div className="flex gap-3">
-                <button onClick={() => setShowExitConfirm(false)} className="flex-1 py-3 rounded-xl font-bold bg-slate-100 text-slate-600">Làm tiếp</button>
-                <button onClick={confirmExitTest} className="flex-1 py-3 rounded-xl font-bold bg-red-500 text-white">Xác nhận dừng</button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
 
      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around p-2 z-[100] transition-all duration-300" style={{ paddingBottom: isKeyboardOpen ? '0.5rem' : 'calc(0.5rem + env(safe-area-inset-bottom, 1rem))' }}>
         <MobileNavButton active={view === 'topics'} onClick={() => setView('topics')} icon={<LayoutGrid />} />
+        <MobileNavButton active={view === 'assessment'} onClick={() => setView('assessment')} icon={<Target />} />
         <MobileNavButton active={view === 'input'} onClick={() => setView('input')} icon={<PlusCircle />} />
         <MobileNavButton active={view === 'library'} onClick={() => setView('library')} icon={<FileText />} />
         <MobileNavButton active={view === 'games'} onClick={() => setView('games')} icon={<Gamepad2 />} />
-        <MobileNavButton active={view === 'home'} onClick={() => { setView('home'); setActiveGame(null); }} icon={<Home />} />
       </div>
     
     </div>
@@ -782,6 +711,253 @@ function StatCard({ title, value, color }: { title: string, value: string, color
   );
 }
 
+// --- ASSESSMENT VIEW (TRẮC NGHIỆM ĐÁNH GIÁ NĂNG LỰC) ---
+function AssessmentView({ language, onGoToTopics }: { language: Language, onGoToTopics: () => void }) {
+  const [phase, setPhase] = useState<'intro' | 'quiz' | 'result'>('intro');
+  const [questions, setQuestions] = useState<any[]>([]);
+  const [currentIdx, setCurrentIdx] = useState(0);
+  const [scores, setScores] = useState<Record<string, { correct: number, total: number }>>({});
+  const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  
+  const generateQuiz = () => {
+    const dict = language === 'en' ? enDictDataRaw : deDictDataRaw;
+    const standardLevels = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
+    let generatedQuestions: any[] = [];
+    let initialScores: Record<string, { correct: number, total: number }> = {};
+
+    standardLevels.forEach(lvl => {
+      const wordsInLevel = dict.filter(w => w.level?.toUpperCase() === lvl);
+      if (wordsInLevel.length >= 5) {
+        initialScores[lvl] = { correct: 0, total: 5 };
+        const shuffled = wordsInLevel.sort(() => 0.5 - Math.random()).slice(0, 5);
+        
+        shuffled.forEach(w => {
+          const correctMeaning = w.vietnamese_meaning || w.meaning;
+          let distractors = dict
+            .filter(d => d.word !== w.word)
+            .sort(() => 0.5 - Math.random())
+            .slice(0, 3)
+            .map(d => d.vietnamese_meaning || d.meaning);
+          
+          const options = [correctMeaning, ...distractors].sort(() => 0.5 - Math.random());
+          generatedQuestions.push({
+            word: w.word,
+            level: lvl,
+            correctMeaning,
+            options
+          });
+        });
+      }
+    });
+
+    if (generatedQuestions.length === 0) {
+      alert("Không đủ dữ liệu từ vựng được phân cấp trình độ để tạo bài kiểm tra.");
+      return;
+    }
+
+    setScores(initialScores);
+    setQuestions(generatedQuestions);
+    setCurrentIdx(0);
+    setSelectedOption(null);
+    setPhase('quiz');
+  };
+
+  const handleAnswer = (option: string) => {
+    if (selectedOption) return; 
+    setSelectedOption(option);
+    
+    const currentQ = questions[currentIdx];
+    const isCorrect = option === currentQ.correctMeaning;
+    
+    if (isCorrect) {
+      playGameSound('correct');
+      setScores(prev => ({
+        ...prev,
+        [currentQ.level]: { ...prev[currentQ.level], correct: prev[currentQ.level].correct + 1 }
+      }));
+    } else {
+      playGameSound('wrong');
+    }
+
+    setTimeout(() => {
+      if (currentIdx < questions.length - 1) {
+        setCurrentIdx(prev => prev + 1);
+        setSelectedOption(null);
+      } else {
+        setPhase('result');
+      }
+    }, 1000);
+  };
+
+  const calculateFinalLevel = () => {
+    const evaluatedLevels = Object.keys(scores).sort();
+    let finalLevel = 'Pre-A1';
+    
+    for (const lvl of evaluatedLevels) {
+      const acc = scores[lvl].correct / scores[lvl].total;
+      if (acc >= 0.6) { // Yêu cầu trả lời đúng 3/5 câu trở lên ở mức độ đó
+        finalLevel = lvl;
+      } else {
+        break; // Nếu gãy ở mức nào thì dừng ở mức đó
+      }
+    }
+    return finalLevel;
+  };
+
+  const getRecommendations = (level: string) => {
+    switch(level) {
+      case 'Pre-A1': return "AIBTeM nhận thấy anh/chị cần củng cố lại từ vựng cơ bản. Hãy bắt đầu học từ Chủ đề 'Đời sống hàng ngày' và 'Thời gian' ở mức độ A1 trước nhé.";
+      case 'A1': return "Anh/chị đã nắm được các khái niệm rất cơ bản. Tiếp tục mở rộng vốn từ ở các chủ đề 'Gia đình', 'Du lịch' mức độ A2 để tự tin giao tiếp hơn.";
+      case 'A2': return "Nền tảng của anh/chị khá tốt! Hãy thử thách bản thân bằng các từ vựng B1 thuộc chuyên ngành 'Công sở & Kinh doanh' hoặc 'Sức khỏe'.";
+      case 'B1': return "Khả năng ngôn ngữ của anh/chị đã ở mức giao tiếp độc lập. Để lên B2, hãy tập trung vào các từ diễn đạt trừu tượng thuộc 'Xã hội & Văn hóa'.";
+      case 'B2': return "Rất xuất sắc! Vốn từ của anh/chị hoàn toàn đáp ứng được môi trường học thuật/làm việc. Hãy tìm hiểu thêm các thành ngữ C1 để văn phong tự nhiên hơn.";
+      case 'C1': 
+      case 'C2': return "Tuyệt vời! Anh/chị sở hữu lượng từ vựng ở mức chuyên gia/bản xứ. Hãy duy trì thói quen bằng cách giao tiếp Roleplay với AI thường xuyên.";
+      default: return "Hãy tiếp tục luyện tập hàng ngày cùng AIBTeM để nâng cao trình độ.";
+    }
+  };
+
+  if (phase === 'intro') {
+    return (
+      <div className="w-full pb-20">
+        <div className="text-center mb-10">
+          <h2 className="text-4xl font-bold text-slate-900 mb-4">Đánh giá Năng lực Từ vựng</h2>
+          <p className="text-slate-500 text-lg max-w-2xl mx-auto">Kiểm tra vốn từ của bạn theo Khung tham chiếu ngôn ngữ chung Châu Âu (CEFR). AIBTeM sẽ tự động phân tích và đưa ra lộ trình phù hợp.</p>
+        </div>
+
+        <div className="bg-white rounded-[3rem] p-10 md:p-16 shadow-xl border border-slate-100 max-w-4xl mx-auto flex flex-col items-center justify-center text-center">
+          <div className="w-32 h-32 bg-indigo-50 text-indigo-600 rounded-[2rem] flex items-center justify-center mb-8 shadow-sm rotate-3">
+            <Target size={64} />
+          </div>
+          <h3 className="text-2xl font-bold text-slate-800 mb-6">Bạn đang ở cấp độ nào?</h3>
+          <div className="flex flex-wrap justify-center gap-4 mb-10">
+            {['A1', 'A2', 'B1', 'B2', 'C1', 'C2'].map(lvl => (
+              <span key={lvl} className="px-5 py-2 bg-slate-100 text-slate-600 font-bold rounded-xl border border-slate-200">{lvl}</span>
+            ))}
+          </div>
+          <ul className="text-left space-y-3 text-slate-600 font-medium mb-12 bg-indigo-50/50 p-6 rounded-2xl border border-indigo-100">
+            <li className="flex items-center gap-3"><CheckCircle2 className="text-emerald-500" size={20} /> Hệ thống tự động trích xuất các từ ngẫu nhiên theo từng cấp độ.</li>
+            <li className="flex items-center gap-3"><CheckCircle2 className="text-emerald-500" size={20} /> Đánh giá độ chính xác để chốt khung năng lực.</li>
+            <li className="flex items-center gap-3"><CheckCircle2 className="text-emerald-500" size={20} /> Đưa ra lời khuyên cá nhân hóa cho lộ trình học.</li>
+          </ul>
+          <button onClick={generateQuiz} className="bg-indigo-600 text-white px-12 py-5 rounded-2xl font-bold text-xl hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200 hover:scale-105 active:scale-95">
+            Bắt đầu làm bài Test
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (phase === 'quiz') {
+    const currentQ = questions[currentIdx];
+    return (
+      <div className="w-full max-w-3xl mx-auto pb-20">
+        <div className="flex items-center justify-between mb-8">
+          <span className="font-bold text-slate-400 uppercase tracking-widest text-sm">Câu hỏi {currentIdx + 1} / {questions.length}</span>
+          <span className="bg-indigo-100 text-indigo-600 px-3 py-1 rounded-lg font-bold text-sm">Trình độ đang đo: {currentQ.level}</span>
+        </div>
+        
+        <div className="flex gap-2 w-full mb-10">
+          {questions.map((_, i) => (
+            <div key={i} className={cn("h-2 rounded-full transition-all flex-1", i < currentIdx ? "bg-indigo-600" : i === currentIdx ? "bg-indigo-400 animate-pulse" : "bg-slate-200")} />
+          ))}
+        </div>
+
+        <div className="space-y-6">
+          <div className="bg-white p-8 md:p-12 rounded-[2.5rem] shadow-xl text-center border border-slate-100">
+            <span className="text-slate-400 font-bold uppercase tracking-widest text-xs mb-3 block">Chọn nghĩa đúng nhất của từ</span>
+            <div className="flex items-center justify-center gap-4">
+              <h3 className="text-4xl md:text-5xl font-black text-indigo-600">{currentQ.word}</h3>
+              <button onClick={() => handleSpeak(currentQ.word, language)} className="p-3 bg-indigo-50 text-indigo-600 rounded-full hover:bg-indigo-100 transition-colors shadow-sm"><Volume2 size={24} /></button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
+            {currentQ.options.map((opt: string, i: number) => (
+              <button key={i} disabled={!!selectedOption} onClick={() => handleAnswer(opt)}
+                className={cn("p-6 rounded-3xl text-left font-bold text-lg transition-all border-2 flex items-center min-h-[100px] shadow-sm", 
+                  selectedOption === opt 
+                  ? (opt === currentQ.correctMeaning ? "bg-green-50 border-[#009900] text-[#009900]" : "bg-red-50 border-red-500 text-red-600") 
+                  : selectedOption && opt === currentQ.correctMeaning 
+                    ? "bg-green-50 border-[#009900] text-[#009900]" 
+                    : "bg-white border-slate-100 hover:border-indigo-300 hover:bg-indigo-50")}
+              >
+                {opt}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Result Phase
+  const finalLevel = calculateFinalLevel();
+  const maxAvailableLevel = Object.keys(scores).sort().pop() || 'A1';
+
+  return (
+    <div className="w-full pb-32">
+      <Confetti />
+      <div className="text-center mb-10">
+        <h2 className="text-4xl font-bold text-slate-900 mb-4">Kết quả Khảo sát Năng lực</h2>
+      </div>
+
+      <div className="grid md:grid-cols-12 gap-8 max-w-6xl mx-auto">
+        <div className="md:col-span-5 bg-indigo-600 text-white rounded-[3rem] p-10 flex flex-col items-center justify-center text-center shadow-xl relative overflow-hidden">
+          <Trophy size={80} className="mb-6 text-indigo-200" />
+          <p className="text-indigo-100 text-lg uppercase tracking-widest font-bold mb-2">Trình độ của bạn là</p>
+          <h1 className="text-8xl font-black mb-4 drop-shadow-lg">{finalLevel}</h1>
+          <div className="bg-white/20 px-6 py-2 rounded-full text-sm font-medium backdrop-blur-md">
+            Theo hệ thống đánh giá CEFR
+          </div>
+          <div className="absolute -left-10 -bottom-10 opacity-10"><Target size={250} /></div>
+        </div>
+
+        <div className="md:col-span-7 bg-white rounded-[3rem] p-10 shadow-xl border border-slate-100 flex flex-col justify-center">
+          <h3 className="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-3"><BrainCircuit className="text-indigo-600" /> Phân tích Chi tiết</h3>
+          
+          <div className="space-y-4 mb-8">
+            {Object.keys(scores).sort().map(lvl => {
+              const data = scores[lvl];
+              const pct = (data.correct / data.total) * 100;
+              return (
+                <div key={lvl} className="flex items-center gap-4">
+                  <span className="font-bold text-slate-600 w-8">{lvl}</span>
+                  <div className="flex-1 bg-slate-100 h-4 rounded-full overflow-hidden">
+                    <motion.div initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 1, ease: "easeOut" }} className={cn("h-full", pct >= 60 ? "bg-emerald-500" : "bg-orange-400")} />
+                  </div>
+                  <span className="font-bold text-sm text-slate-500 w-12 text-right">{data.correct}/{data.total}</span>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="bg-indigo-50 p-6 rounded-2xl border border-indigo-100">
+            <h4 className="font-bold text-indigo-800 mb-2 flex items-center gap-2"><LightbulbIcon size={18} /> Khuyến nghị từ AIBTeM:</h4>
+            <p className="text-indigo-700/80 leading-relaxed font-medium">{getRecommendations(finalLevel)}</p>
+          </div>
+          
+          <div className="mt-8 flex gap-4">
+            <button onClick={onGoToTopics} className="flex-1 bg-indigo-600 text-white py-4 rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg flex items-center justify-center gap-2">
+              <LayoutGrid size={20} /> Chọn Chủ đề Học ngay
+            </button>
+          </div>
+          <p className="text-center text-xs text-slate-400 mt-4 font-medium">* Trình độ tối đa có thể đánh giá dựa trên kho từ vựng hiện tại: {maxAvailableLevel}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Bổ sung Icon phụ cho phần Khuyến nghị
+function LightbulbIcon(props: any) {
+  return (
+    <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1.3.5 2.6 1.5 3.5.8.8 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/>
+    </svg>
+  );
+}
+
 function TopicLibraryView({ language, lessons, onOpenInInput }: { language: Language, lessons: Lesson[], onOpenInInput: (vocab: Vocabulary[], title: string) => void }) {
   const currentDict = useMemo(() => {
     const rawDict = language === 'en' ? enDictDataRaw : deDictDataRaw;
@@ -795,17 +971,12 @@ function TopicLibraryView({ language, lessons, onOpenInInput }: { language: Lang
   const [selectedWords, setSelectedWords] = useState<Set<string>>(new Set());
   const [selectedLevel, setSelectedLevel] = useState<string | 'ALL'>('ALL');
 
-  // STATE MỚI: CẢM BIẾN CUỘN TRANG (SCROLL)
   const [showScrollTop, setShowScrollTop] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
-      // Hiện nút khi cuộn xuống quá 300px
-      if (window.scrollY > 300) {
-        setShowScrollTop(true);
-      } else {
-        setShowScrollTop(false);
-      }
+      if (window.scrollY > 300) setShowScrollTop(true);
+      else setShowScrollTop(false);
     };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
@@ -991,7 +1162,6 @@ function TopicLibraryView({ language, lessons, onOpenInInput }: { language: Lang
           </div>
         </div>
 
-        {/* NÚT VỀ ĐẦU TRANG NỔI (HIỂN THỊ KHI CUỘN) */}
         <AnimatePresence>
           {showScrollTop && (
             <motion.button
@@ -1034,7 +1204,6 @@ function TopicLibraryView({ language, lessons, onOpenInInput }: { language: Lang
         })}
       </div>
 
-      {/* NÚT VỀ ĐẦU TRANG CHO MÀN HÌNH CHÍNH (NẾU CẦN) */}
       <AnimatePresence>
         {showScrollTop && (
           <motion.button
@@ -1534,10 +1703,6 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
     }
   };
 
-  // =========================================================================
-  // BỘ MÁY XỬ LÝ VĂN BẢN (TEXT & TABLE PARSER) - ĐÃ VÁ LỖI CỘT BẢNG
-  // =========================================================================
-
   const extractWordMeaning = (line: string) => {
     let cleanLine = line.replace(/^[\s\-\*•]+/, '').replace(/^\d+[\.\)]\s*/, '').trim();
     const sepRegex = /(\t|:| \- | \– | \— | = )/;
@@ -1589,39 +1754,32 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
     const doc = parser.parseFromString(processedHtml, 'text/html');
     const newRows: any[] = [];
 
-    // Hàm kiểm tra ký tự Tiếng Việt (để tìm cột Định nghĩa)
     const hasVietnamese = (text: string) => /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i.test(text);
 
     const tables = doc.querySelectorAll('table');
     tables.forEach(table => {
       const trs = table.querySelectorAll('tr');
       trs.forEach(tr => {
-        // Lấy tất cả các cột và làm sạch khoảng trắng
         const tds = Array.from(tr.querySelectorAll('td, th')).map(td => td.textContent?.replace(/\n/g, ' ').trim() || '');
         
         let wordColIndex = -1;
         let meaningColIndex = -1;
 
-        // THUẬT TOÁN ĐỊNH VỊ CỘT THÔNG MINH
         for (let i = 0; i < tds.length; i++) {
            const colText = tds[i];
            if (!colText) continue;
 
-           // Kiểm tra xem cột có phải chỉ chứa số (Ví dụ: cột STT)
            const isNum = /^[\d\.\)\s]+$/.test(colText);
            const isViet = hasVietnamese(colText);
 
-           // Cột "Thuật ngữ" = Cột đầu tiên KHÔNG phải Số và KHÔNG chứa Tiếng Việt
            if (!isNum && !isViet && wordColIndex === -1) {
               wordColIndex = i;
            } 
-           // Cột "Định nghĩa" = Cột đầu tiên CHỨA Tiếng Việt
            else if (isViet && meaningColIndex === -1) {
               meaningColIndex = i;
            }
         }
 
-        // Kế hoạch B: Nếu không tìm thấy cột Tiếng Việt, bốc 2 cột văn bản đầu tiên
         if (wordColIndex === -1 || meaningColIndex === -1) {
            const textCols = [];
            for (let i = 0; i < tds.length; i++) {
@@ -1635,12 +1793,10 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
            }
         }
 
-        // Nếu đã định vị được đúng 2 cột
         if (wordColIndex !== -1 && meaningColIndex !== -1 && wordColIndex !== meaningColIndex) {
            let word = tds[wordColIndex].replace(/^[\s\-\*•\d\.\)]+\s*/, '').trim();
            let meaning = tds[meaningColIndex].trim();
            
-           // Lọc bỏ hàng Tiêu đề của bảng (như: "STT", "Tiếng Anh", "Nghĩa")
            const isTableTitleRow = word.toLowerCase().includes('tiếng') || 
                                    word.toLowerCase().includes('từ vựng') || 
                                    word.toLowerCase().includes('stt') || 
@@ -1651,7 +1807,7 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
            }
         }
       });
-      table.remove(); // Xóa bảng để tránh quét lặp ở đoạn văn bản tự do
+      table.remove(); 
     });
 
     const remainingText = doc.body.textContent || '';
@@ -1665,7 +1821,7 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
     if (!file) return;
 
     if (file.name.toLowerCase().endsWith('.doc')) {
-      alert("Hệ thống AIBTeM chỉ hỗ trợ chuẩn lưu trữ hiện đại (.docx, .txt, .csv).\n\nĐịnh dạng .doc cũ (trước 2007) không còn được các trình duyệt web bảo mật hỗ trợ. Bạn vui lòng mở file này bằng phần mềm MS Word, sau đó chọn 'Save As' (Lưu dưới dạng) thành định dạng .docx rồi tải lên lại nhé!");
+      alert("Hệ thống AIBTeM chỉ hỗ trợ chuẩn lưu trữ hiện đại (.docx, .txt, .csv).\n\nĐịnh dạng .doc cũ (trước 2007) không còn được các trình duyệt web bảo mật hỗ trợ. Tiến sĩ vui lòng mở file này bằng phần mềm MS Word, sau đó chọn 'Save As' (Lưu dưới dạng) thành định dạng .docx rồi tải lên lại nhé!");
       e.target.value = '';
       return;
     }
@@ -1722,7 +1878,6 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
               <div className="hidden md:flex items-center justify-center w-10 font-bold text-slate-300 text-xl group-hover:text-indigo-200 transition-colors">{index + 1}</div>
              <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
                 
-                {/* --- Ô THUẬT NGỮ --- */}
                 <div className="space-y-1 relative">
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Thuật ngữ ({language.toUpperCase()})</label>
                   <input 
@@ -1762,7 +1917,6 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
                   </AnimatePresence>
                 </div>
 
-                {/* --- Ô ĐỊNH NGHĨA --- */}
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Định nghĩa (Tiếng Việt)</label>
                   <div className="relative">
@@ -1948,7 +2102,6 @@ function GameCard({ title, desc, icon, onClick, colorClass }: { title: string, d
   );
 }
 
-// --- GAME LOGIC (CHỐNG NHẢY TỪ TUYỆT ĐỐI) ---
 function GameContainer({ type, vocabList, language, onBack, onFinish, playSound, activeLessonId }: { type: GameType, vocabList: Vocabulary[], language: Language, onBack: () => void, onFinish: (score: number, mistakes?: any[]) => void, playSound: (t: 'correct' | 'wrong' | 'success') => void, activeLessonId: string }) {
   
   const [gameVocabs] = useState(() => {
@@ -2171,7 +2324,6 @@ function FlashcardGame({ vocab, onNext, onPrev, language, step, totalSteps, onFi
     setViewedSides(new Set([0]));
   }, [vocab, step]);
 
-  // THUẬT TOÁN ĐẢM BẢO CHÍNH XÁC: Gửi tín hiệu lật thẻ lên GameContainer
   useEffect(() => {
     setViewedSides(prev => {
       const newSet = new Set(prev).add(side);
@@ -2304,7 +2456,6 @@ function QuizGame({ vocab, allVocabs, onAnswer, onNextStep, language }: { vocab:
   const [options, setOptions] = useState<string[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
 
-  // Tự động phát âm thanh khi hiển thị từ khóa
   useEffect(() => {
     handleSpeak(vocab.word, language);
   }, [vocab, language]);
@@ -2360,7 +2511,6 @@ function MatchingGame({ vocabs, onCompleteGame, playSound, language, onPairResol
   
   const [mistakesLog, setMistakesLog] = useState<any[]>([]);
 
-  // Sử dụng useRef để quản lý trạng thái đếm lỗi và điểm số mà không gây re-render dư thừa
   const wordAttempts = useRef<Record<string, number>>({});
   const matchingScore = useRef(0);
 
@@ -2376,7 +2526,6 @@ function MatchingGame({ vocabs, onCompleteGame, playSound, language, onPairResol
         const hasError = (wordAttempts.current[selectedWord] || 0) > 0;
         if (!hasError) matchingScore.current += 1;
 
-        // Báo cáo kết quả của cặp từ này lên thanh tiến độ
         onPairResolved(hasError ? 'wrong' : 'correct');
 
         setSelectedWord(null);
@@ -2389,7 +2538,6 @@ function MatchingGame({ vocabs, onCompleteGame, playSound, language, onPairResol
         setWrong([selectedWord, selectedMeaning]);
         playSound('wrong');
         
-        // Ghi nhận từ này đã bị chọn sai ít nhất 1 lần
         wordAttempts.current[selectedWord] = (wordAttempts.current[selectedWord] || 0) + 1;
 
         setMistakesLog(prev => [...prev, { word: selectedWord, userAnswer: selectedMeaning, correctAnswer: correctAnswer }]);
@@ -2404,7 +2552,7 @@ function MatchingGame({ vocabs, onCompleteGame, playSound, language, onPairResol
         {words.map(v => (
           <button key={v.word} disabled={matches.includes(v.word)} onClick={() => {
               setSelectedWord(v.word);
-              handleSpeak(v.word, language); // Tự động phát âm thanh khi chọn từ
+              handleSpeak(v.word, language);
           }} 
             className={cn("w-full p-6 rounded-2xl font-bold text-lg border-2 transition-all", 
               matches.includes(v.word) ? "bg-green-50 text-[#009900] border-[#009900] opacity-50" : 
@@ -2481,13 +2629,12 @@ function FillGame({ vocab, onAnswer, onNextStep, language }: { vocab: Vocabulary
     }
   }, [vocab, exampleText, language]);
 
-  // LUỚI AN TOÀN CHỐNG MẤT Ô TRỐNG: 
   let parts: string[] = [sentence];
   let hasMatch = false;
   try {
       const escapedWord = vocab.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       parts = sentence.split(new RegExp(`(${escapedWord})`, 'gi'));
-      hasMatch = parts.length > 1; // Nếu mảng > 1 tức là từ được tìm thấy và câu đã bị cắt
+      hasMatch = parts.length > 1;
   } catch(e) {}
 
   const check = () => {
@@ -2495,8 +2642,6 @@ function FillGame({ vocab, onAnswer, onNextStep, language }: { vocab: Vocabulary
     const isCorrect = input.toLowerCase().trim() === vocab.word.toLowerCase().trim();
     setIsCorrectVal(isCorrect);
     onAnswer(isCorrect, input || 'Không gõ gì', vocab.vietnamese_meaning || vocab.meaning, vocab.word);
-    
-    // Đã gỡ bỏ tính năng phát âm lại từ khóa khi gõ đúng
     setTimeout(onNextStep, isCorrect ? 800 : 2500);
   };
 
@@ -2506,7 +2651,6 @@ function FillGame({ vocab, onAnswer, onNextStep, language }: { vocab: Vocabulary
         <button onClick={() => handleSpeak(sentence, language)} className="absolute top-6 right-6 p-4 bg-indigo-50 text-indigo-600 rounded-2xl hover:bg-indigo-100 transition-colors shadow-sm" title="Nghe cả câu"><Volume2 size={24} /></button>
         <h3 className="text-2xl md:text-3xl font-medium leading-loose text-slate-700 text-center mt-8">
           
-          {/* NẾU KHÔNG TÌM THẤY TỪ NGUYÊN MẪU TRONG CÂU -> ÉP HIỂN THỊ Ô TRỐNG RỒI MỚI IN CÂU */}
           {!hasMatch && (
               <span className={cn("inline-block min-w-[120px] border-b-4 mx-2 font-bold px-2 rounded-t-lg transition-colors", submitted ? (isCorrectVal ? "border-[#009900] text-[#009900] bg-green-50" : "border-red-500 text-red-600 bg-red-50") : "border-indigo-300 text-indigo-600 bg-indigo-50/50")}>
                 {submitted ? (isCorrectVal ? vocab.word : (input || '...')) : (input || '...')}
@@ -2536,7 +2680,6 @@ function FillGame({ vocab, onAnswer, onNextStep, language }: { vocab: Vocabulary
     </div>
   );
 }
-// --- ROLEPLAY GAME (AI CONVERSATION) ---
 
 function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], language: Language, onComplete: (score: number) => void }) {
   const [messages, setMessages] = useState<{role: 'user' | 'ai', text: string}[]>([]);
@@ -2561,7 +2704,6 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
   const targetWordsWithLevel = vocabs.map(v => `${v.word} (Level: ${v.level || 'A2'})`);
   const targetWords = vocabs.map(v => v.word);
 
-  // THUẬT TOÁN TÍNH ĐIỂM: Quét tìm các từ đã được người dùng gõ/đọc thành công
   const usedWords = targetWords.filter(word => 
     messages.some(m => m.role === 'user' && m.text.toLowerCase().includes(word.toLowerCase()))
   );
@@ -2658,7 +2800,6 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
             <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-1"><BrainCircuit className="text-indigo-600" /> AIBTeM Roleplay</h3>
             <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Đang đóng vai: <span className="text-indigo-500">{aiRole}</span></p>
             
-            {/* GIAO DIỆN GAMIFICATION: Từ vựng đổi màu khi sử dụng thành công */}
             <div className="flex flex-wrap gap-2 items-center">
               <span className="text-sm text-slate-500 font-medium mr-1">Mục tiêu:</span>
               {targetWords.map((w, idx) => {
@@ -2672,7 +2813,6 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
             </div>
          </div>
 
-         {/* NÚT KẾT THÚC: Sẽ trả về số lượng từ đã được đổi màu */}
          <button onClick={() => onComplete(usedWords.length)} className="bg-red-50 text-red-600 px-5 py-3 rounded-xl text-sm font-bold hover:bg-red-100 transition-all shrink-0 shadow-sm border border-red-100 flex items-center gap-2">
             Kết thúc đàm thoại
          </button>
@@ -2713,7 +2853,7 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
     </div>
   );
 }
-// --- REPORT VIEW ---
+
 function ReportView({ results, language, activeLessonId, onPlayAIGame, onGoToTopics }: { results: GameResult[], language: Language, activeLessonId: string, onPlayAIGame: () => void, onGoToTopics: () => void }) {
   const currentSessionResults = results.filter(r => r.lessonId === activeLessonId && r.language === language);
   
@@ -2728,7 +2868,6 @@ function ReportView({ results, language, activeLessonId, onPlayAIGame, onGoToTop
   const totalPossible = currentSessionResults.reduce((acc, r) => acc + r.total, 0);
   const accuracy = totalPossible > 0 ? Math.round((totalScore / totalPossible) * 100) : 0;
 
-  // THUẬT TOÁN TỔNG HỢP & ĐẾM TẦN SUẤT LỖI SAI
   const mistakeMap: Record<string, { count: number, correct: string, games: Set<string> }> = {};
   currentSessionResults.forEach(r => {
       if (r.mistakes && r.mistakes.length > 0) {
@@ -2811,7 +2950,6 @@ function ReportView({ results, language, activeLessonId, onPlayAIGame, onGoToTop
             </p>
         </div>
 
-        {/* BẢNG PHÂN TÍCH LỖI SAI CHI TIẾT */}
         {mistakesList.length > 0 && (
             <div>
                 <h4 className="text-lg font-bold text-red-600 mb-4 flex items-center gap-2"><AlertCircle size={20} /> Phân tích Từ vựng cần lưu ý</h4>
@@ -2834,7 +2972,7 @@ function ReportView({ results, language, activeLessonId, onPlayAIGame, onGoToTop
             </div>
         )}
       </div>
-      {/* --- KHỐI MỚI: THỬ THÁCH NÂNG CAO AI --- */}
+      
       <div className="bg-indigo-50 border-l-4 border-indigo-500 p-6 md:p-8 rounded-r-[2.5rem] rounded-l-xl shadow-sm mt-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex-1">
           <h3 className="text-xl font-bold text-indigo-800 flex items-center gap-2 mb-2">
@@ -2864,148 +3002,6 @@ function ReportView({ results, language, activeLessonId, onPlayAIGame, onGoToTop
           </button>
         </div>
       </div>
-      {/* --- KẾT THÚC KHỐI AI --- */}
     </div>
   );
-}
-
-// --- ASSESSMENT VIEW (KIỂM TRA NĂNG LỰC 6 BẬC CEFR) ---
-function AssessmentView({ language, setView }: { language: Language, setView: (v: View) => void }) {
-  const [testState, setTestState] = useState<'intro' | 'testing' | 'result'>('intro');
-  const [questions, setQuestions] = useState<any[]>([]);
-  const [currentQIndex, setCurrentQIndex] = useState(0);
-  const [userAnswers, setUserAnswers] = useState<Record<number, boolean>>({});
-  const [finalLevel, setFinalLevel] = useState<string>('');
-  
-  const CEFR_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
-
-  const startTest = () => {
-    const dict = language === 'en' ? enDictDataRaw : deDictDataRaw;
-    let generatedQuestions: any[] = [];
-
-    CEFR_LEVELS.forEach(level => {
-      const wordsAtLevel = dict.filter(w => (w as any).level?.toUpperCase() === level);
-      const selectedWords = [...wordsAtLevel].sort(() => 0.5 - Math.random()).slice(0, 5);
-      
-      selectedWords.forEach(targetWord => {
-        let distractors = dict
-          .filter(w => w.word !== targetWord.word && (w as any).level?.toUpperCase() === level)
-          .sort(() => 0.5 - Math.random())
-          .slice(0, 3)
-          .map(w => w.vietnamese_meaning || w.meaning);
-        
-        while (distractors.length < 3) distractors.push("Đáp án phụ trợ ngẫu nhiên");
-        
-        const correctMeaning = targetWord.vietnamese_meaning || targetWord.meaning;
-        const options = [...distractors, correctMeaning].sort(() => 0.5 - Math.random());
-        
-        generatedQuestions.push({
-          word: targetWord.word,
-          level: level,
-          correctMeaning: correctMeaning,
-          options: options
-        });
-      });
-    });
-
-    setQuestions(generatedQuestions);
-    setUserAnswers({});
-    setCurrentQIndex(0);
-    setTestState('testing');
-  };
-
-  const handleAnswer = (selectedOption: string) => {
-    const isCorrect = selectedOption === questions[currentQIndex].correctMeaning;
-    const newAnswers = { ...userAnswers, [currentQIndex]: isCorrect };
-    setUserAnswers(newAnswers);
-
-    if (currentQIndex < questions.length - 1) {
-      setCurrentQIndex(prev => prev + 1);
-    } else {
-      calculateResult(newAnswers, questions);
-    }
-  };
-
-  const calculateResult = (answers: Record<number, boolean>, qs: any[]) => {
-    const scoresByLevel: Record<string, number> = { A1: 0, A2: 0, B1: 0, B2: 0, C1: 0, C2: 0 };
-    qs.forEach((q, idx) => { if (answers[idx]) scoresByLevel[q.level]++; });
-
-    let achievedLevel = 'Pre-A1 (Người mới bắt đầu)';
-    for (let i = 0; i < CEFR_LEVELS.length; i++) {
-      const lvl = CEFR_LEVELS[i];
-      if (scoresByLevel[lvl] >= 3) achievedLevel = lvl;
-      else break;
-    }
-    setFinalLevel(achievedLevel);
-    setTestState('result');
-  };
-
-  const getRecommendation = (level: string) => {
-    if (level.includes('Pre-A1') || level === 'A1') return "Khuyến nghị: Tập trung vào chủ đề Đời sống hàng ngày và rèn luyện kỹ năng phát âm cơ bản qua game Luyện viết.";
-    if (level === 'A2') return "Khuyến nghị: Mở rộng học các chủ đề Giao thông, Du lịch. Sử dụng Flashcard để tăng phản xạ nhận diện từ.";
-    if (level === 'B1') return "Khuyến nghị: Học các chủ đề Công sở, Kinh doanh và sử dụng Game Giao tiếp AI để luyện đàm thoại thực tế.";
-    if (level === 'B2') return "Khuyến nghị: Thử thách với chủ đề Khoa học, Xã hội. Tập trung vào game Điền từ để hiểu văn cảnh phức tạp.";
-    return "Khuyến nghị: Duy trì thói quen bằng cách trò chuyện chuyên sâu với Trợ lý AI và tự tạo các bộ từ vựng chuyên ngành.";
-  };
-
-  if (testState === 'intro') {
-    return (
-      <div className="max-w-3xl mx-auto text-center py-12 px-6 bg-white rounded-[3rem] shadow-xl border border-slate-100 mt-8">
-        <Trophy className="w-20 h-20 text-indigo-600 mx-auto mb-6" />
-        <h2 className="text-4xl font-bold text-slate-900 mb-4">Đánh giá Năng lực Từ vựng</h2>
-        <p className="text-lg text-slate-600 mb-8 leading-relaxed">
-          Hệ thống sẽ bốc ngẫu nhiên từ vựng từ mức độ dễ (A1) đến khó (C2) để chẩn đoán chính xác trình độ hiện tại của anh theo chuẩn CEFR quốc tế.
-        </p>
-        <button onClick={startTest} className="bg-indigo-600 text-white px-10 py-5 rounded-2xl font-bold text-xl shadow-lg">
-          Bắt đầu kiểm tra ngay
-        </button>
-      </div>
-    );
-  }
-
-  if (testState === 'testing' && questions.length > 0) {
-    const q = questions[currentQIndex];
-    return (
-      <div className="max-w-3xl mx-auto py-8">
-        <div className="flex items-center justify-between mb-6">
-          <span className="font-bold text-slate-500 uppercase tracking-widest">Câu {currentQIndex + 1}/30</span>
-          <span className="bg-indigo-100 text-indigo-700 font-bold px-4 py-1.5 rounded-xl border border-indigo-200">Cấp độ: {q.level}</span>
-        </div>
-        <div className="bg-white p-10 rounded-[3rem] shadow-xl text-center border border-slate-100 mb-8">
-          <h3 className="text-4xl md:text-5xl font-black text-indigo-600">{q.word}</h3>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {q.options.map((opt: string, i: number) => (
-            <button key={i} onClick={() => handleAnswer(opt)} className="p-6 rounded-3xl text-left font-bold text-lg bg-white border-2 border-slate-100 hover:border-indigo-500 hover:bg-indigo-50 transition-all min-h-[100px]">
-              {opt}
-            </button>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (testState === 'result') {
-    return (
-      <div className="max-w-4xl mx-auto py-8">
-        <div className="bg-white rounded-[3rem] p-10 shadow-xl border border-slate-100 text-center relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-4 bg-emerald-500" />
-          <h2 className="text-3xl font-bold text-slate-800 mb-2 mt-4">Kết quả Chẩn đoán CEFR</h2>
-          <div className="inline-block bg-emerald-50 border-2 border-emerald-500 text-emerald-600 px-12 py-6 rounded-3xl mb-10 shadow-lg mt-6">
-            <span className="block text-sm uppercase tracking-widest font-bold text-emerald-500 mb-2">Bậc năng lực</span>
-            <span className="text-6xl font-black">{finalLevel}</span>
-          </div>
-          <div className="text-left bg-slate-50 p-8 rounded-[2rem] border border-slate-200">
-            <h4 className="font-bold text-slate-800 text-xl mb-3 flex items-center gap-2"><BrainCircuit className="text-indigo-600" /> Nhận xét từ AIBTeM:</h4>
-            <p className="text-slate-600 text-lg leading-relaxed font-medium">{getRecommendation(finalLevel)}</p>
-          </div>
-          <div className="mt-10 flex gap-4 justify-center">
-            <button onClick={startTest} className="bg-slate-100 text-slate-700 px-8 py-4 rounded-2xl font-bold">Kiểm tra lại</button>
-            <button onClick={() => setView('topics')} className="bg-indigo-600 text-white px-8 py-4 rounded-2xl font-bold shadow-lg">Khám phá Chủ đề</button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-  return null;
 }

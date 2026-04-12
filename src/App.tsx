@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Languages, 
-  PlusCircle, 
+  PlusCircle,
+  ArrowUp,
   Gamepad2, 
   BarChart3, 
   Volume2, 
@@ -727,9 +728,27 @@ function TopicLibraryView({ language, lessons, onOpenInInput }: { language: Lang
 
   const [selectedTopic, setSelectedTopic] = useState<any | null>(null);
   const [selectedWords, setSelectedWords] = useState<Set<string>>(new Set());
-  
-  // STATE MỚI: Quản lý bộ lọc trình độ
   const [selectedLevel, setSelectedLevel] = useState<string | 'ALL'>('ALL');
+
+  // STATE MỚI: CẢM BIẾN CUỘN TRANG (SCROLL)
+  const [showScrollTop, setShowScrollTop] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      // Hiện nút khi cuộn xuống quá 300px
+      if (window.scrollY > 300) {
+        setShowScrollTop(true);
+      } else {
+        setShowScrollTop(false);
+      }
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const learnedWordsMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -769,7 +788,6 @@ function TopicLibraryView({ language, lessons, onOpenInInput }: { language: Lang
   };
 
   const generateLessonTitle = (topicName: string, prefix: 'NN' | 'TC', levelStr: string) => {
-    // Tự động thêm nhãn Trình độ vào tên bài học (VD: A1, B2)
     const levelSuffix = levelStr === 'ALL' ? '' : ` (${levelStr})`;
     const baseName = `${topicName}${levelSuffix} - ${prefix}`;
     const matchingLessons = lessons.filter(l => l.language === language && l.title.startsWith(baseName));
@@ -810,7 +828,6 @@ function TopicLibraryView({ language, lessons, onOpenInInput }: { language: Lang
   if (selectedTopic) {
     const allTopicWords = getTopicWords(selectedTopic.id);
     
-    // TÍNH TOÁN DANH SÁCH TRÌNH ĐỘ (ĐỘNG) - Tự quét xem có A1, B2 hay C1 không
     const levelCounts = allTopicWords.reduce((acc, word) => {
       const lvl = word.level ? word.level.toUpperCase() : 'Chưa rõ';
       acc[lvl] = (acc[lvl] || 0) + 1;
@@ -823,14 +840,13 @@ function TopicLibraryView({ language, lessons, onOpenInInput }: { language: Lang
       return a.localeCompare(b);
     });
 
-    // LỌC TỪ THEO TRÌNH ĐỘ
     const filteredWords = selectedLevel === 'ALL' 
       ? allTopicWords 
       : allTopicWords.filter(w => (w.level ? w.level.toUpperCase() : 'Chưa rõ') === selectedLevel);
 
     return (
       <div className="w-full pb-32">
-        <button onClick={() => { setSelectedTopic(null); setSelectedWords(new Set()); setSelectedLevel('ALL'); }} className="flex items-center gap-2 text-slate-500 hover:text-indigo-600 font-bold mb-6 transition-colors">
+        <button onClick={() => { setSelectedTopic(null); setSelectedWords(new Set()); setSelectedLevel('ALL'); scrollToTop(); }} className="flex items-center gap-2 text-slate-500 hover:text-indigo-600 font-bold mb-6 transition-colors">
           <ChevronLeft size={20} /> Quay lại danh sách
         </button>
         
@@ -840,7 +856,6 @@ function TopicLibraryView({ language, lessons, onOpenInInput }: { language: Lang
             <h2 className="text-4xl font-bold mb-2">{selectedTopic.name}</h2>
             <p className="text-white/80 text-lg mb-6">{selectedTopic.desc}</p>
             
-            {/* THANH LỌC TRÌNH ĐỘ (LEVEL SELECTOR) */}
             <div className="flex flex-wrap items-center gap-2 mb-8 bg-black/10 p-2 rounded-2xl border border-white/10 backdrop-blur-md w-fit">
               <span className="text-white/90 font-bold text-sm uppercase tracking-wider ml-2 mr-3 flex items-center gap-2"><BarChart3 size={16}/> Trình độ:</span>
               <button 
@@ -895,9 +910,7 @@ function TopicLibraryView({ language, lessons, onOpenInInput }: { language: Lang
                           {vocab.article && <span className={cn("font-normal mr-2", vocab.article.toLowerCase() === 'der' ? "text-blue-500" : vocab.article.toLowerCase() === 'die' ? "text-red-500" : "text-green-500")}>{vocab.article}</span>}
                           {vocab.word}
                         </span>
-                        {/* HIỂN THỊ BADGE TRÌNH ĐỘ BÊN CẠNH TỪ */}
                         {vocab.level && <span className="bg-slate-100 text-slate-500 text-[10px] font-bold px-2 py-0.5 rounded-md border border-slate-200">{vocab.level.toUpperCase()}</span>}
-                        
                         {vocab.phonetic && <span className="text-sm font-mono text-slate-400 ml-1">{renderPhonetic(vocab.phonetic)}</span>}
                       </div>
                       <div className={cn("mb-1", isLearned ? "text-emerald-600/80" : "text-slate-600")}>{vocab.vietnamese_meaning || vocab.meaning}</div>
@@ -912,12 +925,28 @@ function TopicLibraryView({ language, lessons, onOpenInInput }: { language: Lang
             }) : <div className="p-12 text-center text-slate-400">Không có từ vựng nào ở trình độ này.</div>}
           </div>
         </div>
+
+        {/* NÚT VỀ ĐẦU TRANG NỔI (HIỂN THỊ KHI CUỘN) */}
+        <AnimatePresence>
+          {showScrollTop && (
+            <motion.button
+              initial={{ opacity: 0, y: 20, scale: 0.8 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.8 }}
+              onClick={scrollToTop}
+              className="fixed bottom-24 right-6 md:right-8 bg-indigo-600 text-white p-3 md:p-4 rounded-full shadow-[0_10px_25px_rgba(79,70,229,0.4)] hover:bg-indigo-700 hover:shadow-[0_15px_30px_rgba(79,70,229,0.5)] transition-all z-50 flex items-center justify-center group border-2 border-white hover:-translate-y-1"
+              title="Về đầu trang"
+            >
+              <ArrowUp size={24} className="group-hover:-translate-y-1 transition-transform" />
+            </motion.button>
+          )}
+        </AnimatePresence>
       </div>
     );
   }
 
   return (
-    <div className="w-full pb-32">
+    <div className="w-full pb-32 relative">
       <div className="mb-10">
         <h2 className="text-4xl font-bold text-slate-900 mb-2">Thư viện Chủ đề</h2>
         <p className="text-slate-500 text-lg">Học từ vựng theo ngữ cảnh để ghi nhớ sâu hơn.</p>
@@ -927,7 +956,7 @@ function TopicLibraryView({ language, lessons, onOpenInInput }: { language: Lang
           const count = getTopicWords(topic.id).length;
           if (topic.id === 'other' && count === 0) return null;
           return (
-            <motion.button key={topic.id} whileHover={{ y: -8 }} whileTap={{ scale: 0.98 }} onClick={() => setSelectedTopic(topic)} className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 text-left transition-all hover:shadow-xl group relative overflow-hidden flex flex-col h-full">
+            <motion.button key={topic.id} whileHover={{ y: -8 }} whileTap={{ scale: 0.98 }} onClick={() => { setSelectedTopic(topic); scrollToTop(); }} className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 text-left transition-all hover:shadow-xl group relative overflow-hidden flex flex-col h-full">
               <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center mb-6 transition-transform group-hover:scale-110", topic.bgSoft, topic.textCol)}><topic.icon size={28} /></div>
               <h3 className="text-xl font-bold mb-2 text-slate-900 group-hover:text-indigo-600 transition-colors">{topic.name}</h3>
               <p className="text-slate-500 text-sm leading-relaxed mb-6 flex-grow">{topic.desc}</p>
@@ -939,6 +968,22 @@ function TopicLibraryView({ language, lessons, onOpenInInput }: { language: Lang
           );
         })}
       </div>
+
+      {/* NÚT VỀ ĐẦU TRANG CHO MÀN HÌNH CHÍNH (NẾU CẦN) */}
+      <AnimatePresence>
+        {showScrollTop && (
+          <motion.button
+            initial={{ opacity: 0, y: 20, scale: 0.8 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.8 }}
+            onClick={scrollToTop}
+            className="fixed bottom-24 right-6 md:right-8 bg-indigo-600 text-white p-3 md:p-4 rounded-full shadow-[0_10px_25px_rgba(79,70,229,0.4)] hover:bg-indigo-700 hover:shadow-[0_15px_30px_rgba(79,70,229,0.5)] transition-all z-50 flex items-center justify-center group border-2 border-white hover:-translate-y-1"
+            title="Về đầu trang"
+          >
+            <ArrowUp size={24} className="group-hover:-translate-y-1 transition-transform" />
+          </motion.button>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -1593,7 +1638,7 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <h2 className="text-3xl font-bold mb-2">{initialLesson ? "Kiểm tra & Lưu bài học" : "Tạo bài học mới"}</h2>
-          <p className="text-slate-500">Chỉnh sửa, thêm bớt và BẮT BUỘC lưu lại để bắt đầu luyện tập.</p>
+          <p className="text-slate-500">Nhập từ cần học, chỉnh sửa, thêm bớt và BẮT BUỘC lưu lại để bắt đầu luyện tập.</p>
         </div>
         <div className="flex items-center gap-3">
           <label className={cn("flex items-center gap-2 bg-white border border-slate-200 px-4 py-2.5 rounded-xl cursor-pointer hover:bg-slate-50 hover:border-indigo-300 transition-all shadow-sm group", uploading && "opacity-50 cursor-not-allowed")}>

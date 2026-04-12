@@ -621,10 +621,16 @@ export default function App() {
             </motion.div>
           )}
           {view === 'report' && (
-            <motion.div key="report" className="w-full" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <ReportView results={gameResults} language={language} activeLessonId={activeLessonId || ''} />
-            </motion.div>
-          )}
+  <motion.div key="report" className="w-full" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+    <ReportView 
+      results={gameResults} 
+      language={language} 
+      activeLessonId={activeLessonId || ''} 
+      onPlayAIGame={() => { setView('games'); setActiveGame('roleplay'); }}
+      onGoToTopics={() => setView('topics')}
+    />
+  </motion.div>
+)}
         </AnimatePresence>
       </main>
 
@@ -2649,7 +2655,7 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
   );
 }
 // --- REPORT VIEW ---
-function ReportView({ results, language, activeLessonId }: { results: GameResult[], language: Language, activeLessonId: string }) {
+function ReportView({ results, language, activeLessonId, onPlayAIGame, onGoToTopics }: { results: GameResult[], language: Language, activeLessonId: string, onPlayAIGame: () => void, onGoToTopics: () => void }) {
   const currentSessionResults = results.filter(r => r.lessonId === activeLessonId && r.language === language);
   
   const chartData = currentSessionResults.map((r, i) => ({
@@ -2769,6 +2775,37 @@ function ReportView({ results, language, activeLessonId }: { results: GameResult
             </div>
         )}
       </div>
+      {/* --- KHỐI MỚI: THỬ THÁCH NÂNG CAO AI --- */}
+      <div className="bg-indigo-50 border-l-4 border-indigo-500 p-6 md:p-8 rounded-r-[2.5rem] rounded-l-xl shadow-sm mt-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="flex-1">
+          <h3 className="text-xl font-bold text-indigo-800 flex items-center gap-2 mb-2">
+            <span className="text-2xl">🚀</span> Thử thách Nâng cao: Giao tiếp cùng AI
+          </h3>
+          <p className="text-slate-700 text-base mb-3 leading-relaxed">
+            Chúc mừng anh đã hoàn thành bài học! Để vận dụng ngay các từ vựng này vào thực tế, hãy thử sức trò chuyện trực tiếp với <strong>Trợ lý AI AIBTeM</strong>.
+          </p>
+          <ul className="list-disc list-inside text-indigo-700/80 text-sm font-medium">
+            <li>Hình thức: Đóng vai (Role-play) tình huống thực tế.</li>
+            <li>Phần tùy chọn (không bắt buộc) dành cho chuyên gia muốn luyện phản xạ.</li>
+          </ul>
+        </div>
+        
+        <div className="flex flex-col gap-3 min-w-[200px] shrink-0">
+          <button 
+            onClick={onPlayAIGame}
+            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-6 rounded-2xl transition-all shadow-lg flex items-center justify-center gap-2"
+          >
+            <Mic size={20} /> Chơi Game AI ngay
+          </button>
+          <button 
+            onClick={onGoToTopics}
+            className="w-full bg-white hover:bg-slate-50 text-indigo-600 font-bold py-3 px-6 rounded-2xl transition-all border border-indigo-100 flex items-center justify-center gap-2"
+          >
+            Quay lại Chủ đề
+          </button>
+        </div>
+      </div>
+      {/* --- KẾT THÚC KHỐI AI --- */}
     </div>
   );
 }

@@ -1169,6 +1169,11 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  
+  // STATE MỚI: QUẢN LÝ TÍNH NĂNG GỢI Ý TỪ (AUTO-SUGGEST)
+  const [activeWordIndex, setActiveWordIndex] = useState<number | null>(null);
+  const [wordSuggestions, setWordSuggestions] = useState<any[]>([]);
+
   const translationCache = useRef<Record<string, any>>({});
   const abortControllers = useRef<Record<number, AbortController>>({});
   const lastTranslatedWords = useRef<Record<number, string>>({});
@@ -1192,6 +1197,30 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
       if (field === 'word' && cleanedValue === '') { newRows[index].meaning = ''; newRows[index].loading = false; newRows[index].suggestions = []; if (abortControllers.current[index]) abortControllers.current[index].abort(); }
       return newRows;
     });
+  };
+
+  // HÀM MỚI: Xử lý thay đổi chữ và quét từ điển cục bộ
+  const handleWordChange = (index: number, value: string) => {
+    updateRow(index, 'word', value);
+    const cleanVal = cleanInputData(value, false);
+    if (cleanVal.trim().length >= 1) { // Chỉ cần gõ 1 ký tự là bắt đầu gợi ý
+      const currentDict = language === 'en' ? enDictDataRaw : deDictDataRaw;
+      const results = currentDict
+        .filter(item => item.word && item.word.toLowerCase().startsWith(cleanVal.toLowerCase()))
+        .slice(0, 5); // Hiển thị 5 từ khớp nhất
+      setWordSuggestions(results);
+      setActiveWordIndex(index);
+    } else {
+      setWordSuggestions([]);
+      setActiveWordIndex(null);
+    }
+  };
+
+  // HÀM MỚI: Xử lý khi người dùng bấm chọn 1 từ gợi ý
+  const handleSelectWordSuggestion = (index: number, wordStr: string) => {
+    updateRow(index, 'word', wordStr);
+    setWordSuggestions([]);
+    setActiveWordIndex(null);
   };
 
   const handleSelectSuggestion = (index: number, selectedText: string) => {
@@ -1337,10 +1366,41 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
             <div className="flex flex-col md:flex-row gap-4 p-6 bg-white rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-md hover:border-indigo-100 transition-all relative">
               <div className="hidden md:flex items-center justify-center w-10 font-bold text-slate-300 text-xl group-hover:text-indigo-200 transition-colors">{index + 1}</div>
              <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1">
+                
+                {/* --- Ô THUẬT NGỮ (ĐÃ CẤY DROPDOWN GỢI Ý) --- */}
+                <div className="space-y-1 relative">
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Thuật ngữ ({language.toUpperCase()})</label>
-                  <input type="text" value={row.word} onChange={(e) => updateRow(index, 'word', e.target.value)} onBlur={() => handleAutoTranslate(index, language)} className="w-full bg-slate-100 border-2 border-transparent rounded-2xl px-5 py-4 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all text-lg font-medium text-slate-800 placeholder:text-slate-400" placeholder="Nhập từ..." />
+                  <input 
+                    type="text" 
+                    value={row.word} 
+                    onChange={(e) => handleWordChange(index, e.target.value)} 
+                    onFocus={(e) => handleWordChange(index, e.target.value)}
+                    onBlur={() => {
+                      // Cài đặt Delay 200ms để kịp click vào thẻ gợi ý trước khi nó ẩn
+                      setTimeout(() => {
+                        if (activeWordIndex === index) setActiveWordIndex(null);
+                        handleAutoTranslate(index, language);
+                      }, 200);
+                    }} 
+                    className="w-full bg-slate-100 border-2 border-transparent rounded-2xl px-5 py-4 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all text-lg font-medium text-slate-800 placeholder:text-slate-400" 
+                    placeholder="Nhập từ..." 
+                  />
+                  
+                  {/* BẢNG DROPDOWN TỪ GỢI Ý */}
+                  <AnimatePresence>
+                    {activeWordIndex === index && wordSuggestions.length > 0 && (
+                      <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }} className="absolute top-[80px] left-0 right-0 bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden z-[60]">
+                        {wordSuggestions.map((s, idx) => (
+                          <div key={idx} onClick={() => handleSelectWordSuggestion(index, s.word)} className="px-5 py-3 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-none">
+                            <span className="text-lg font-bold text-slate-800">{s.word}</span>
+                          </div>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
+                {/* ------------------------------------------- */}
+
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Định nghĩa (Tiếng Việt)</label>
                   <div className="relative">
@@ -1360,7 +1420,7 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
                   })()}
                 </div>
               </div>
-              <div className="flex md:flex-col items-center justify-center gap-2">
+              <div className="flex md:flex-col items-center justify-center gap-2 z-10">
                 <button onClick={() => removeRow(index)} className="p-3 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all" title="Xóa hàng"><Trash2 size={20} /></button>
               </div>
             </div>

@@ -272,7 +272,7 @@
         "vietnamese_meaning": "việc đăng ký dài hạn, thuê bao, sự đặt mua định kỳ",
         "example_german": "Die Universitätsbibliothek hat das Abonnement für mehrere internationale Fachzeitschriften verlängert.",
         "example_vietnamese": "Thư viện trường đại học đã gia hạn việc đăng ký mua dài hạn cho nhiều tạp chí chuyên ngành quốc tế.",
-        "topic": "other",
+        "topic": "work_and_business",
         "level": "B1"
     },
     {
@@ -836,7 +836,7 @@
         "vietnamese_meaning": "cơ quan, chức vụ, bộ, nhiệm vụ",
         "example_german": "Das Amt für Ausbildungsförderung ist für die Antragsbearbeitung und Bewilligung der staatlichen Studienfinanzierung zuständig.",
         "example_vietnamese": "Cơ quan Hỗ trợ Đào tạo chịu trách nhiệm xử lý hồ sơ và phê duyệt tài trợ tài chính giáo dục của nhà nước.",
-        "topic": "other",
+        "topic": "work_and_business",
         "level": "A2"
     },
     {
@@ -1004,7 +1004,7 @@
         "vietnamese_meaning": "dữ liệu, thông tin, sự khai báo, sự chỉ dẫn",
         "example_german": "Jede gemachte Angabe im immatrikulationsantrag muss zwingend durch offizielle Dokumente belegt werden.",
         "example_vietnamese": "Mọi thông tin được khai báo trong đơn xin nhập học bắt buộc phải được minh chứng bằng các tài liệu chính thức.",
-        "topic": "other",
+        "topic": "science_and_technology",
         "level": "A2"
     },
     {
@@ -1256,7 +1256,7 @@
         "vietnamese_meaning": "người gọi điện, thuê bao gọi",
         "example_german": "Das Empfangspersonal wurde geschult, jeden Anrufer freundlich an den zuständigen Abteilungsleiter weiterzuleiten.",
         "example_vietnamese": "Nhân viên tiếp tân đã được đào tạo để chuyển hướng mỗi người gọi một cách thân thiện đến trưởng bộ phận có thẩm quyền.",
-        "topic": "other",
+        "topic": "work_and_business",
         "level": "A2"
     },
     {
@@ -1628,7 +1628,7 @@
         "vietnamese_meaning": "Sở lao động, cơ quan việc làm, trung tâm giới thiệu việc làm",
         "example_german": "Die Agentur für Arbeit (früher Arbeitsamt) bietet regelmäßige Sprechstunden trực tiếp auf dem Hochschulcampus an.",
         "example_vietnamese": "Cơ quan Việc làm (trước đây là Sở Lao động) cung cấp các giờ tư vấn định kỳ trực tiếp ngay trong khuôn viên trường đại học.",
-        "topic": "other",
+        "topic": "work_and_business",
         "level": "A2"
     },
     {
@@ -2108,7 +2108,7 @@
         "vietnamese_meaning": "giải thích, làm sáng tỏ, giáo dục giới tính, trinh sát",
         "example_german": "Die Polizei konnte den Diebstahl nach nur zwei Tagen aufklären.",
         "example_vietnamese": "Cảnh sát đã có thể làm sáng tỏ vụ trộm chỉ sau hai ngày.",
-        "topic": "other",
+        "topic": "education_and_learning",
         "level": "B2"
     },
     {
@@ -2132,7 +2132,7 @@
         "vietnamese_meaning": "chăm chú, tập trung, chú ý, tinh tế",
         "example_german": "Die Lehramtsstudierenden verfolgten die Vorlesung zur Fachdidaktik aufmerksam und beteiligten sich an der Diskussion.",
         "example_vietnamese": "Các sinh viên sư phạm đã chăm chú theo dõi bài giảng về phương pháp giảng dạy chuyên ngành và tham gia vào cuộc thảo luận.",
-        "topic": "other",
+        "topic": "nature_and_environment",
         "level": "A2"
     },
     {
@@ -2144,7 +2144,7 @@
         "vietnamese_meaning": "sự chú ý, sự tập trung, sự quan tâm, món quà nhỏ",
         "example_german": "Die Hochschulleitung widmet der barrierefreien und inklusiven Gestaltung des Campus besondere Aufmerksamkeit.",
         "example_vietnamese": "Ban lãnh đạo đại học dành sự chú ý đặc biệt cho việc thiết kế khuôn viên không rào cản và hòa nhập.",
-        "topic": "other",
+        "topic": "nature_and_environment",
         "level": "B1"
     },
     {
@@ -2408,7 +2408,7 @@
         "vietnamese_meaning": "điền vào, làm đầy, chiếm thời gian, thực hiện",
         "example_german": "Bitte füllen Sie das offizielle Antragsformular zur Zulassung des Staatsexamens vollständig, wahrheitsgemäß und leserlich aus.",
         "example_vietnamese": "Vui lòng điền vào biểu mẫu đơn xin dự thi quốc gia chính thức một cách đầy đủ, trung thực và rõ ràng.",
-        "topic": "other",
+        "topic": "daily_life",
         "level": "A2"
     },
     {
@@ -3152,7 +3152,7 @@
         "vietnamese_meaning": "ngân hàng, ghế dự bị, băng ghế, bãi cạn",
         "example_german": "Ausländische Studierende müssen bei einer deutschen Bank ein Sperrkonto einrichten, um den gesetzlichen Nachweis zur Sicherung ihres Lebensunterhalts zu erbringen.",
         "example_vietnamese": "Sinh viên nước ngoài phải lập một tài khoản phong tỏa tại một ngân hàng Đức để cung cấp bằng chứng pháp lý về việc đảm bảo chi phí sinh hoạt của họ.",
-        "topic": "other",
+        "topic": "work_and_business",
         "level": "A1"
     },
     {
@@ -3296,7 +3296,7 @@
         "vietnamese_meaning": "công chức, viên chức, cán bộ nhà nước",
         "example_german": "Ein verbeamteter Professor unterliegt als Beamter des Freistaates spezifischen dienstrechtlichen Privilegien und Loyalitätspflichten.",
         "example_vietnamese": "Một giáo sư có biên chế công chức, với tư cách là công chức của Tiểu bang Tự do, phải tuân thủ các đặc quyền và nghĩa vụ trung thành theo quy định của luật công vụ.",
-        "topic": "other",
+        "topic": "work_and_business",
         "level": "B1"
     },
     {
@@ -3380,7 +3380,7 @@
         "vietnamese_meaning": "nhu cầu, sự cần thiết, vật tư cần dùng",
         "example_german": "Die Kapazitätsverordnung reguliert streng, wie der personelle und räumliche Bedarf eines zulassungsbeschränkten Studiengangs berechnet wird.",
         "example_vietnamese": "Quy định về quy mô đào tạo kiểm soát chặt chẽ cách tính toán nhu cầu về nhân sự và không gian của một chương trình học có giới hạn chỉ tiêu.",
-        "topic": "other",
+        "topic": "daily_life",
         "level": "B1"
     },
     {
@@ -3476,7 +3476,7 @@
         "vietnamese_meaning": "nhu cầu, sự đòi hỏi, sự cần thiết, mong muốn",
         "example_german": "Das strategische Hochschulmanagement muss sich fortwährend an das sich wandelnde gesellschaftliche Bedürfnis nach interdisziplinär ausgebildeten Fachkräften anpassen.",
         "example_vietnamese": "Quản lý đại học chiến lược phải liên tục thích ứng với nhu cầu xã hội đang biến đổi về lực lượng chuyên gia được đào tạo liên ngành.",
-        "topic": "other",
+        "topic": "daily_life",
         "level": "B1"
     },
     {
@@ -3536,7 +3536,7 @@
         "vietnamese_meaning": "mệnh lệnh, chỉ thị, lệnh điều khiển máy tính",
         "example_german": "Im Modul zur Rechnerarchitektur lernen die Studierenden, wie ein in Maschinensprache geschriebener Befehl im Prozessor hardwareseitig ausgeführt wird.",
         "example_vietnamese": "Trong học phần kiến trúc máy tính, sinh viên học cách một mệnh lệnh được viết bằng ngôn ngữ máy được thực thi như thế nào về mặt phần cứng trong bộ xử lý.",
-        "topic": "other",
+        "topic": "science_and_technology",
         "level": "B1"
     },
     {
@@ -3776,7 +3776,7 @@
         "vietnamese_meaning": "cơ quan chức năng, chính quyền, nhà chức trách",
         "example_german": "Für die formelle Akkreditierung neuer staatlicher Studiengänge ist die zuständige Zertifizierungsagentur, handelnd als beliehene Behörde, verantwortlich.",
         "example_vietnamese": "Đối với việc kiểm định chính thức các chương trình đào tạo công lập mới, cơ quan cấp chứng nhận có thẩm quyền, hoạt động như một cơ quan được ủy quyền, sẽ chịu trách nhiệm.",
-        "topic": "other",
+        "topic": "work_and_business",
         "level": "B1"
     },
     {
@@ -4100,7 +4100,7 @@
         "vietnamese_meaning": "sự tư vấn, lời khuyên, sự thảo luận, trung tâm tư vấn",
         "example_german": "Das Studierendenwerk bietet eine kostenlose psychologische Beratung an, um Studierende bei extremen studienbedingten Belastungssituationen professionell zu unterstützen.",
         "example_vietnamese": "Trung tâm sinh viên cung cấp dịch vụ tư vấn tâm lý miễn phí nhằm hỗ trợ chuyên nghiệp cho sinh viên trong các tình huống căng thẳng tột độ do việc học gây ra.",
-        "topic": "other",
+        "topic": "nature_and_environment",
         "level": "B1"
     },
     {
@@ -4712,7 +4712,7 @@
         "vietnamese_meaning": "sự hướng dẫn, sự chăm sóc, sự quản lý, sự hỗ trợ",
         "example_german": "Die hohe Qualität của wissenschaftlichen Betreuung durch die Fakultät ist ein wesentlicher Erfolgsfaktor für Master- und Promotionsarbeiten.",
         "example_vietnamese": "Chất lượng cao trong sự hướng dẫn khoa học của khoa là một yếu tố thành công thiết yếu đối với các luận văn thạc sĩ và luận án tiến sĩ.",
-        "topic": "other",
+        "topic": "work_and_business",
         "level": "B1"
     },
     {
@@ -5048,7 +5048,7 @@
         "vietnamese_meaning": "cung cấp, mang lại, đưa ra, đấu giá",
         "example_german": "Die staatlichen berufsbildenden Schulen bieten den Auszubildenden modern ausgestattete Lehrwerkstätten.",
         "example_vietnamese": "Các trường dạy nghề công lập cung cấp cho học viên các xưởng thực hành được trang bị hiện đại.",
-        "topic": "other",
+        "topic": "science_and_technology",
         "level": "B1"
     },
     {
@@ -6200,7 +6200,7 @@
         "vietnamese_meaning": "quan liêu, mang tính hành chính, phiền hà",
         "example_german": "Die Rektorenkonferenz fordert den Gesetzgeber auf, die hochgradig bürokratischen Hürden bei der Beantragung von Drittmitteln for die Forschung drastisch abzubauen.",
         "example_vietnamese": "Hội nghị Hiệu trưởng kêu gọi cơ quan lập pháp giảm thiểu quyết liệt các rào cản mang tính quan liêu cao trong việc nộp đơn xin tài trợ của bên thứ ba cho hoạt động nghiên cứu.",
-        "topic": "other",
+        "topic": "science_and_technology",
         "level": "B1"
     },
     {
@@ -6776,7 +6776,7 @@
         "vietnamese_meaning": "dữ liệu, thông số, ngày tháng",
         "example_german": "Nach den Bestimmungen der Europäischen Datenschutz-Grundverordnung müssen die erhobenen Daten der Studierenden nach Exmatrikulation pseudonymisiert werden.",
         "example_vietnamese": "Theo các quy định của Quy định chung về bảo vệ dữ liệu của Châu Âu, dữ liệu thu thập được của sinh viên phải được ẩn danh sau khi buộc thôi học.",
-        "topic": "other",
+        "topic": "science_and_technology",
         "level": "A2"
     },
     {
@@ -7856,7 +7856,7 @@
         "vietnamese_meaning": "xuyên qua, thông qua, bởi, trong suốt thời gian",
         "example_german": "Die rechtsgültige formale Anerkennung von im nicht-europäischen Ausland erworbenen Bildungsabschlüssen erfolgt zentral durch die ministeriell beauftragte Kultusministerkonferenz.",
         "example_vietnamese": "Việc công nhận hình thức hợp pháp các văn bằng giáo dục đạt được ở các nước ngoài châu Âu được thực hiện tập trung thông qua Hội nghị Bộ trưởng Văn hóa do Bộ ủy nhiệm.",
-        "topic": "other",
+        "topic": "daily_life",
         "level": "A1"
     },
     {
@@ -7928,7 +7928,7 @@
         "vietnamese_meaning": "được phép, có thể, có lẽ",
         "example_german": "Nicht offiziell immatrikulierte Personen, externe Besucher sowie Gasthörer ohne entsprechenden Statusnachweis dürfen die sensiblen, geschlossenen Bibliotheks- und Forschungsbereiche der staatlichen Universität aus Sicherheitsgründen nur mit einer vorab erteilten, befristeten und schriftlichen Sondergenehmigung des Dekanats betreten.",
         "example_vietnamese": "Những người không đăng ký nhập học chính thức, khách tham quan bên ngoài cũng như sinh viên dự thính không có minh chứng tư cách tương ứng, vì lý do an toàn, chỉ được phép bước vào các khu vực thư viện và nghiên cứu đóng cửa, nhạy cảm của trường đại học công lập khi có giấy phép đặc biệt bằng văn bản, có thời hạn và được cấp trước từ văn phòng khoa.",
-        "topic": "other",
+        "topic": "health_and_body",
         "level": "A1"
     },
     {
@@ -8048,7 +8048,7 @@
         "vietnamese_meaning": "thư điện tử, email",
         "example_german": "Gemäß den rechtlich bindenden Immatrikulationsrichtlinien der Hochschule erfolgt jegliche formale, fristsetzende Kommunikation zwischen der zentralen Prüfungsverwaltung und den Studierenden ausnahmslos und ausschließlich über die offiziell vom Rechenzentrum zugeteilte, personalisierte studentische E-Mail.",
         "example_vietnamese": "Theo các hướng dẫn nhập học có tính ràng buộc pháp lý của trường đại học, mọi giao tiếp hình thức và ấn định thời hạn giữa ban quản lý thi cử trung tâm và sinh viên diễn ra không có ngoại lệ và độc quyền thông qua địa chỉ thư điện tử sinh viên được cá nhân hóa do trung tâm máy tính chính thức cấp phát.",
-        "topic": "other",
+        "topic": "science_and_technology",
         "level": "A1"
     },
     {
@@ -8252,7 +8252,7 @@
         "vietnamese_meaning": "thành thật, trung thực, ngay thẳng, thực thà",
         "example_german": "Gute wissenschaftliche Praxis an Universitäten verlangt kompromisslos den durchgehend ehrlichen, methodisch sauberen und absolut transparenten Umgang mit sensiblen empirischen Datensätzen sowie das konsequente, ethisch fundierte Vermeiden jeglicher Form von analytischer Datenfälschung.",
         "example_vietnamese": "Thực hành khoa học tốt tại các trường đại học đòi hỏi không khoan nhượng việc xử lý xuyên suốt một cách trung thực, minh bạch tuyệt đối và chuẩn mực về phương pháp đối với các tập dữ liệu thực nghiệm nhạy cảm cũng như việc kiên quyết tránh mọi hình thức làm giả dữ liệu phân tích dựa trên nền tảng đạo đức.",
-        "topic": "other",
+        "topic": "nature_and_environment",
         "level": "A2"
     },
     {
@@ -8540,7 +8540,7 @@
         "vietnamese_meaning": "sự mua sắm, bộ phận thu mua, hàng mua được",
         "example_german": "Der zentrale Einkauf der Universität ist für die rechtskonforme und wirtschaftliche Beschaffung von hochpreisigen Laborgeräten zuständig.",
         "example_vietnamese": "Bộ phận thu mua trung tâm của trường đại học chịu trách nhiệm mua sắm thiết bị phòng thí nghiệm đắt tiền một cách kinh tế và đúng pháp luật.",
-        "topic": "other",
+        "topic": "daily_life",
         "level": "A2"
     },
     {
@@ -8552,7 +8552,7 @@
         "vietnamese_meaning": "mua sắm, đi chợ",
         "example_german": "Die Fakultät wird aus den bewilligten Drittmitteln neue Lizenzen für internationale Fachdatenbanken einkaufen.",
         "example_vietnamese": "Khoa sẽ mua sắm các giấy phép mới cho các cơ sở dữ liệu chuyên ngành quốc tế từ nguồn tài trợ bên thứ ba được phê duyệt.",
-        "topic": "other",
+        "topic": "daily_life",
         "level": "A1"
     },
     {
@@ -8732,7 +8732,7 @@
         "vietnamese_meaning": "sự cô đơn, tình trạng lẻ loi, sự cô quạnh",
         "example_german": "Psychologische Beratungsstellen der Universitäten verzeichnen alarmierend einen signifikanten Anstieg an studentischen Konsultationen wegen sozialer Einsamkeit.",
         "example_vietnamese": "Các trung tâm tư vấn tâm lý của trường đại học ghi nhận một cách đáng báo động sự gia tăng đáng kể các cuộc tham tham vấn của sinh viên do tình trạng cô đơn trong xã hội.",
-        "topic": "other",
+        "topic": "work_and_business",
         "level": "B1"
     },
     {
@@ -8864,7 +8864,7 @@
         "vietnamese_meaning": "điền vào, ghi danh, mang lại (lợi nhuận), đăng ký",
         "example_german": "Bitte tragen Sie Ihren Namen und Ihre Adresse in die Liste ein.",
         "example_vietnamese": "Vui lòng điền tên và địa chỉ của bạn vào danh sách.",
-        "topic": "other",
+        "topic": "science_and_technology",
         "level": "A2"
     },
     {
@@ -9188,7 +9188,7 @@
         "vietnamese_meaning": "cảm xúc, tình cảm, sự xúc động",
         "example_german": "Die moderne pädagogische Psychologie und Neurobiologie untersuchen detailliert, wie eine positive Emotion den kognitiven Lernprozess und die intrinsische Motivation von Schülern nachhaltig fördern kann.",
         "example_vietnamese": "Tâm lý học giáo dục và sinh học thần kinh hiện đại nghiên cứu chi tiết cách thức một cảm xúc tích cực có thể thúc đẩy bền vững quá trình học tập nhận thức và động lực nội tại của học sinh.",
-        "topic": "other",
+        "topic": "daily_life",
         "level": "B1"
     },
     {
@@ -9200,7 +9200,7 @@
         "vietnamese_meaning": "xúc động, thuộc về cảm xúc, dễ cảm động, đầy cảm xúc",
         "example_german": "Die wochenlange Phase der intensiven Examensvorbereitung stellt für many hochmotivierte Kandidaten eine extreme kognitive und zugleich stark belastende emotionale Ausnahmesituation dar.",
         "example_vietnamese": "Giai đoạn chuẩn bị thi tốt nghiệp chuyên sâu kéo dài nhiều tuần tạo ra một tình huống ngoại lệ cực độ về mặt nhận thức và đồng thời vô cùng căng thẳng về mặt cảm xúc đối với nhiều thí sinh có động lực cao.",
-        "topic": "other",
+        "topic": "daily_life",
         "level": "B1"
     },
     {
@@ -9260,7 +9260,7 @@
         "vietnamese_meaning": "cảm thấy, cảm nhận, có cảm xúc, nhận thấy",
         "example_german": "Ich empfinde große Dankbarkeit für deine Hilfe.",
         "example_vietnamese": "Tôi cảm thấy biết ơn sâu sắc vì sự giúp đỡ của bạn.",
-        "topic": "other",
+        "topic": "daily_life",
         "level": "B1"
     },
     {
@@ -9956,7 +9956,7 @@
         "vietnamese_meaning": "hiểu thấu, ghi nhận (dữ liệu), thộp lấy, bao quát, nắm bắt",
         "example_german": "Die Kamera kann alle Nummernschilder automatisch erfassen.",
         "example_vietnamese": "Camera có thể tự động ghi nhận tất cả các biển số xe.",
-        "topic": "other",
+        "topic": "science_and_technology",
         "level": "B2"
     },
     {
@@ -10507,7 +10507,7 @@
         "vietnamese_meaning": "sự thu hoạch, vụ gặt, mùa màng, thành quả lao động",
         "example_german": "Agrarwissenschaftliche Fakultäten untersuchen die Auswirkungen von extremen Wetterereignissen auf die globale Ernte im Kontext des Klimawandels.",
         "example_vietnamese": "Các khoa khoa học nông nghiệp nghiên cứu tác động của các hiện tượng thời tiết khắc nghiệt đối với vụ thu hoạch toàn cầu trong bối cảnh biến đổi khí hậu.",
-        "topic": "other",
+        "topic": "science_and_technology",
         "level": "B1"
     },
     {
@@ -10591,7 +10591,7 @@
         "vietnamese_meaning": "giúp tránh khỏi (phiền toái), tiết kiệm được (tiền/thời gian), dành dụm",
         "example_german": "Das hätte uns viel Ärger ersparen können.",
         "example_vietnamese": "Điều đó đã có thể giúp chúng ta tránh được nhiều rắc rối.",
-        "topic": "other",
+        "topic": "daily_life",
         "level": "B1"
     },
     {
@@ -10627,7 +10627,7 @@
         "vietnamese_meaning": "cấp, ban, đưa ra (chỉ thị, thông tin), giảng dạy",
         "example_german": "Bei schwerwiegenden Verstößen gegen die Hausordnung kann das Rektorat ein weitreichendes Hausverbot für den gesamten Campus erteilen.",
         "example_vietnamese": "Trong trường hợp vi phạm nghiêm trọng nội quy trường học, ban giám hiệu có thể ban hành lệnh cấm vào khuôn viên đối với toàn bộ khu vực đại học.",
-        "topic": "other",
+        "topic": "education_and_learning",
         "level": "B2"
     },
     {
@@ -11563,7 +11563,7 @@
         "vietnamese_meaning": "lười biếng, thối rữa, hỏng, đáng nghi",
         "example_german": "Ein fehlender Studienfortschritt bedeutet nicht zwingend, dass ein Student faul ist; häufig liegen tiefgreifende strukturelle oder psychologische Belastungsfaktoren vor.",
         "example_vietnamese": "Sự thiếu hụt tiến độ học tập không nhất thiết có nghĩa là một sinh viên lười biếng; thông thường có những yếu tố áp lực sâu sắc về mặt cấu trúc hoặc tâm lý.",
-        "topic": "other",
+        "topic": "nature_and_environment",
         "level": "A1"
     },
     {
@@ -11743,7 +11743,7 @@
         "vietnamese_meaning": "cửa sổ, khung cửa, cửa sổ máy tính",
         "example_german": "Gemäß den aktuellen Hygiene- und Lüftungsrichtlinien müssen in den stark frequentierten Seminarräumen alle Fenster in regelmäßigen Intervallen weit geöffnet werden.",
         "example_vietnamese": "Theo các hướng dẫn về vệ sinh và thông gió hiện hành, tất cả các cửa sổ trong các phòng hội thảo có mật độ sử dụng cao phải được mở rộng theo các khoảng thời gian đều đặn.",
-        "topic": "other",
+        "topic": "science_and_technology",
         "level": "A1"
     },
     {
@@ -13459,7 +13459,7 @@
         "vietnamese_meaning": "phòng thay đồ, tủ quần áo, nơi gửi đồ, trang phục",
         "example_german": "Bei offiziellen Festakten der Hochschule ist das Ablegen der Oberbekleidung in der bewachten Garderobe obligatorisch.",
         "example_vietnamese": "Tại các buổi lễ chính thức của trường đại học, việc để lại trang phục bên ngoài tại phòng gửi đồ có bảo vệ là bắt buộc.",
-        "topic": "other",
+        "topic": "daily_life",
         "level": "A2"
     },
     {
@@ -13771,7 +13771,7 @@
         "vietnamese_meaning": "cảm xúc, cảm giác, trực giác, linh cảm",
         "example_german": "Das Gefühl der sozialen Zugehörigkeit auf dem Campus fördert maßgeblich die psychosoziale Gesundheit der Studierenden.",
         "example_vietnamese": "Cảm giác thuộc về xã hội trong khuôn viên trường thúc đẩy đáng kể sức khỏe tâm lý xã hội của sinh viên.",
-        "topic": "other",
+        "topic": "daily_life",
         "level": "A2"
     },
     {
@@ -14419,7 +14419,7 @@
         "vietnamese_meaning": "bát đĩa, dụng cụ ăn uống, bộ đồ ăn, chén bát",
         "example_german": "Das Studierendenwerk bittet alle Mensagäste, das benutzte Geschirr nach der Mahlzeit ordnungsgemäß an den Rückgabestationen abzugeben.",
         "example_vietnamese": "Trung tâm dịch vụ sinh viên yêu cầu tất cả khách dùng bữa tại nhà ăn nộp lại bát đĩa đã sử dụng đúng quy định tại các trạm trả đồ sau bữa ăn.",
-        "topic": "other",
+        "topic": "daily_life",
         "level": "A1"
     },
     {
@@ -15187,7 +15187,7 @@
         "vietnamese_meaning": "biên giới, giới hạn, ranh giới, ngưỡng",
         "example_german": "Die Rechtswissenschaft untersucht die Grenzen der staatlichen Regulierung im Bereich der digitalen Kommunikation.",
         "example_vietnamese": "Khoa học pháp lý nghiên cứu các giới hạn của sự điều chỉnh nhà nước trong lĩnh vực truyền thông kỹ thuật số.",
-        "topic": "other",
+        "topic": "nature_and_environment",
         "level": "B1"
     },
     {
@@ -16231,7 +16231,7 @@
         "vietnamese_meaning": "quê hương, nhà, trung tâm nội trú, viện dưỡng lão",
         "example_german": "Das Studentenwohnheim bietet internationalen Studierenden ein sicheres Heim während ihres Auslandsstudiums.",
         "example_vietnamese": "Ký túc xá sinh viên cung cấp cho sinh viên quốc tế một ngôi nhà an toàn trong thời gian du học.",
-        "topic": "other",
+        "topic": "nature_and_environment",
         "level": "B1"
     },
     {
@@ -16435,7 +16435,7 @@
         "vietnamese_meaning": "bếp, bếp nấu, ổ (bệnh)",
         "example_german": "In den Lehrküchen der hauswirtschaftlichen Schulen ist auf die vorschriftsmäßige Bedienung der Herde zu achten.",
         "example_vietnamese": "Tại các phòng bếp thực hành của trường kinh tế gia đình, cần chú ý đến việc vận hành bếp theo đúng quy định.",
-        "topic": "other",
+        "topic": "health_and_body",
         "level": "A2"
     },
     {
@@ -16891,7 +16891,7 @@
         "vietnamese_meaning": "trang chủ, trang mạng chính",
         "example_german": "Aktuelle Ankündigungen und Termine werden regelmäßig auf der Homepage des Instituts veröffentlicht.",
         "example_vietnamese": "Các thông báo và lịch trình hiện tại được công bố định kỳ trên trang chủ của viện.",
-        "topic": "other",
+        "topic": "science_and_technology",
         "level": "A2"
     },
     {
@@ -16927,7 +16927,7 @@
         "vietnamese_meaning": "người nghe, thính giả, sinh viên (trong bối cảnh bài giảng), ống nghe",
         "example_german": "Die Vorlesung war so gut besucht, dass der Professor über dreihundert Hörer im Saal begrüßen konnte.",
         "example_vietnamese": "Buổi giảng có đông người tham dự đến mức giáo sư đã có thể chào đón hơn ba trăm thính giả trong hội trường.",
-        "topic": "other",
+        "topic": "education_and_learning",
         "level": "B1"
     },
     {
@@ -17539,7 +17539,7 @@
         "vietnamese_meaning": "nhạc cụ, công cụ, phương tiện, thiết bị đo",
         "example_german": "Die Evaluation der Lehre ist ein wichtiges Instrument zur kontinuierlichen Qualitätssicherung an Hochschulen.",
         "example_vietnamese": "Việc đánh giá giảng dạy là một công cụ quan trọng để đảm bảo chất lượng liên tục tại các trường đại học.",
-        "topic": "other",
+        "topic": "travel_and_transport",
         "level": "A2"
     },
     {
@@ -17623,7 +17623,7 @@
         "vietnamese_meaning": "quốc tế, mang tính quốc tế",
         "example_german": "Die Universität strebt eine stärkere internationale Vernetzung durch strategische Partnerschaften an.",
         "example_vietnamese": "Trường đại học hướng tới sự kết nối quốc tế mạnh mẽ hơn thông qua các quan hệ đối tác chiến lược.",
-        "topic": "other",
+        "topic": "science_and_technology",
         "level": "A2"
     },
     {
@@ -17635,7 +17635,7 @@
         "vietnamese_meaning": "mạng, internet, không gian mạng",
         "example_german": "Der Zugang zum wissenschaftlichen Internet ist für alle Studierenden auf dem gesamten Campus kostenfrei möglich.",
         "example_vietnamese": "Việc truy cập vào mạng internet khoa học được cung cấp miễn phí cho tất cả sinh viên trên toàn bộ khuôn viên trường.",
-        "topic": "other",
+        "topic": "science_and_technology",
         "level": "A1"
     },
     {
@@ -17647,7 +17647,7 @@
         "vietnamese_meaning": "kết nối internet, đường truyền mạng",
         "example_german": "In allen staatlich geförderten Studierendenwohnheimen ist ein schneller Internetanschluss in der Miete enthalten.",
         "example_vietnamese": "Trong tất cả các ký túc xá sinh viên được nhà nước hỗ trợ, một kết nối internet tốc độ cao đã được bao gồm trong tiền thuê phòng.",
-        "topic": "other",
+        "topic": "science_and_technology",
         "level": "A2"
     },
     {
@@ -18883,7 +18883,7 @@
         "vietnamese_meaning": "nến, đèn cầy, nến đánh lửa (kỹ thuật), cây nến",
         "example_german": "Aus Gründen des Brandschutzes ist die Verwendung offener Lichtquellen wie Kerzen in den Universitätsgebäuden strengstens untersagt.",
         "example_vietnamese": "Vì lý do phòng cháy chữa cháy, việc sử dụng các nguồn sáng hở như nến trong các tòa nhà đại học bị nghiêm cấm.",
-        "topic": "other",
+        "topic": "science_and_technology",
         "level": "A2"
     },
     {
@@ -19267,7 +19267,7 @@
         "vietnamese_meaning": "quần áo, y phục, đồ mặc",
         "example_german": "In den klinischen Praktika ist das Tragen von spezieller Schutzkleidung (Kittel) over den normalen Kleidern zwingend.",
         "example_vietnamese": "Trong các khóa thực tập lâm sàng, việc mặc trang phục bảo hộ chuyên dụng (áo choàng) bên ngoài quần áo bình thường là bắt buộc.",
-        "topic": "other",
+        "topic": "daily_life",
         "level": "A1"
     },
     {
@@ -19279,7 +19279,7 @@
         "vietnamese_meaning": "quần áo, trang phục, cách ăn mặc",
         "example_german": "Gemäß den Sicherheitsvorschriften ist in den technischen Werkstätten eng anliegende Kleidung vorgeschrieben.",
         "example_vietnamese": "Theo các quy định an toàn, trang phục ôm sát người được quy định trong các xưởng kỹ thuật.",
-        "topic": "other",
+        "topic": "daily_life",
         "level": "A1"
     },
     {
@@ -20323,7 +20323,7 @@
         "vietnamese_meaning": "ngôn ngữ cơ thể, điệu bộ, cử chỉ",
         "example_german": "In den Seminaren zur Rhetorik lernen die Studierenden, ihre Körpersprache bei Präsentationen bewusst und souverän einzusetzen.",
         "example_vietnamese": "Trong các buổi hội thảo về hùng biện, sinh viên học cách sử dụng ngôn ngữ cơ thể bir cách có ý thức và tự tin khi thuyết trình.",
-        "topic": "other",
+        "topic": "health_and_body",
         "level": "B1"
     },
     {
@@ -20851,7 +20851,7 @@
         "vietnamese_meaning": "phê bình, chỉ trích, nguy cấp, phản biện, then chốt",
         "example_german": "Ein kritisches Hinterfragen etablierter Lehrmeinungen ist das Ziel jeder universitären Ausbildung.",
         "example_vietnamese": "Việc đặt câu hỏi phản biện đối với các quan điểm giảng dạy đã được thiết lập là mục tiêu của mọi chương trình đào tạo đại học.",
-        "topic": "other",
+        "topic": "nature_and_environment",
         "level": "B1"
     },
     {
@@ -20911,7 +20911,7 @@
         "vietnamese_meaning": "căn bếp, nhà bếp, nghệ thuật ẩm thực, trù phòng",
         "example_german": "Das staatliche Hygieneamt führt regelmäßige unangekündigte Kontrollen in der Zentralküche des Universitätsklinikums durch.",
         "example_vietnamese": "Cục vệ sinh nhà nước thực hiện các cuộc kiểm tra định kỳ không báo trước tại nhà bếp trung tâm của bệnh viện đại học.",
-        "topic": "other",
+        "topic": "society_and_culture",
         "level": "A1"
     },
     {
@@ -21019,7 +21019,7 @@
         "vietnamese_meaning": "văn hóa, sự tu dưỡng, nuôi cấy (sinh học), sự khai hóa",
         "example_german": "Das Studium der Kulturwissenschaften vermittelt ein tiefgreifendes Verständnis for globale gesellschaftliche Transformationsprozesse.",
         "example_vietnamese": "Ngành khoa học văn hóa truyền đạt một sự hiểu biết sâu sắc về các tiến trình chuyển đổi xã hội toàn cầu.",
-        "topic": "other",
+        "topic": "society_and_culture",
         "level": "B1"
     },
     {
@@ -21031,7 +21031,7 @@
         "vietnamese_meaning": "thuộc về văn hóa, mang tính văn hóa",
         "example_german": "Die staatliche Förderung kultureller Bildungsangebote an Schulen soll die Chancengerechtigkeit erhöhen.",
         "example_vietnamese": "Sự hỗ trợ của nhà nước cho các chương trình giáo dục văn hóa tại trường học nhằm nâng cao tính công bằng về cơ hội.",
-        "topic": "other",
+        "topic": "science_and_technology",
         "level": "B1"
     },
     {
@@ -21091,7 +21091,7 @@
         "vietnamese_meaning": "nghệ thuật, mỹ thuật, kỹ năng, kỹ xảo",
         "example_german": "Die staatliche Kunstakademie bietet spezialisierte Studiengänge in den Bereichen Malerei, Bildhauerei und Medienkunst an.",
         "example_vietnamese": "Học viện nghệ thuật nhà nước cung cấp các chương trình đào tạo chuyên sâu trong các lĩnh vực hội họa, điêu khắc và nghệ thuật truyền thông.",
-        "topic": "other",
+        "topic": "society_and_culture",
         "level": "A2"
     },
     {
@@ -21103,7 +21103,7 @@
         "vietnamese_meaning": "nghệ sĩ, họa sĩ, người làm nghệ thuật",
         "example_german": "Die staatliche Kunstakademie fördert junge Künstler durch die Bereitstellung von großzügigen Ateliers und Stipendien.",
         "example_vietnamese": "Học viện nghệ thuật nhà nước hỗ trợ các nghệ sĩ trẻ bằng việc cung cấp các xưởng vẽ rộng rãi và học bổng.",
-        "topic": "other",
+        "topic": "society_and_culture",
         "level": "A2"
     },
     {
@@ -21211,7 +21211,7 @@
         "vietnamese_meaning": "bờ biển, vùng duyên hải",
         "example_german": "Geowissenschaftler untersuchen die Auswirkungen des steigenden Meeresspiegels auf die Infrastruktur an den deutschen Küsten.",
         "example_vietnamese": "Các nhà khoa học trái đất nghiên cứu tác động của việc mực nước biển dâng cao đối với cơ sở hạ tầng tại các bờ biển của Đức.",
-        "topic": "other",
+        "topic": "nature_and_environment",
         "level": "A2"
     },
     {
@@ -21355,7 +21355,7 @@
         "vietnamese_meaning": "đất nước, quốc gia, tiểu bang, nông thôn, vùng đất",
         "example_german": "Die Zuständigkeit for das Bildungswesen liegt in Deutschland primär beim jeweiligen Land.",
         "example_vietnamese": "Tại Đức, thẩm quyền về hệ thống giáo dục chủ yếu thuộc về từng tiểu bang tương ứng.",
-        "topic": "other",
+        "topic": "society_and_culture",
         "level": "A1"
     },
     {
@@ -22183,7 +22183,7 @@
         "vietnamese_meaning": "Giao hàng, cung cấp, chuyển phát, mang lại, sản xuất",
         "example_german": "Können Sie die Ware bis Ende der Woche liefern?",
         "example_vietnamese": "Ngài có thể giao hàng trước cuối tuần này không?",
-        "topic": "other",
+        "topic": "science_and_technology",
         "level": "B1"
     },
     {
@@ -22639,7 +22639,7 @@
         "vietnamese_meaning": "thư điện tử, email, hòm thư",
         "example_german": "Ich schicke dir alle Informationen per Mail zu.",
         "example_vietnamese": "Tôi sẽ gửi cho bạn tất cả thông tin qua email.",
-        "topic": "other",
+        "topic": "science_and_technology",
         "level": "A1"
     },
     {
@@ -22651,7 +22651,7 @@
         "vietnamese_meaning": "hộp thư thoại, hộp thư điện tử, tin nhắn chờ",
         "example_german": "Bitte hinterlassen Sie eine Nachricht auf meiner Mailbox.",
         "example_vietnamese": "Vui lòng để lại tin nhắn trong hộp thư thoại của tôi.",
-        "topic": "other",
+        "topic": "science_and_technology",
         "level": "A2"
     },
     {
@@ -22663,7 +22663,7 @@
         "vietnamese_meaning": "gửi email, gửi thư điện tử, liên lạc qua mạng",
         "example_german": "Kannst du mir die Dokumente bitte heute noch mailen?",
         "example_vietnamese": "Bạn có thể gửi email các tài liệu cho tôi ngay trong hôm nay được không?",
-        "topic": "other",
+        "topic": "science_and_technology",
         "level": "A2"
     },
     {
@@ -22879,7 +22879,7 @@
         "vietnamese_meaning": "khu quảng trường chợ, quảng trường trung tâm",
         "example_german": "Das Rathaus befindet sich direkt am historischen Marktplatz.",
         "example_vietnamese": "Tòa thị chính nằm ngay tại quảng trường chợ lịch sử.",
-        "topic": "other",
+        "topic": "nature_and_environment",
         "level": "A1"
     },
     {
@@ -23887,7 +23887,7 @@
         "vietnamese_meaning": "trung tâm, ở giữa, điểm giữa, sự cân bằng",
         "example_german": "Das Rathaus befindet sich genau in der Mitte der Stadt.",
         "example_vietnamese": "Tòa thị chính nằm chính xác ở trung tâm thành phố.",
-        "topic": "other",
+        "topic": "nature_and_environment",
         "level": "A1"
     },
     {
@@ -24247,7 +24247,7 @@
         "vietnamese_meaning": "động cơ, lý do, họa tiết, chủ đề nghệ thuật",
         "example_german": "Was war sein Motiv für diese seltsame Entscheidung?",
         "example_vietnamese": "Động cơ của anh ấy cho quyết định kỳ lạ này là gì?",
-        "topic": "other",
+        "topic": "society_and_culture",
         "level": "B2"
     },
     {
@@ -25147,7 +25147,7 @@
         "vietnamese_meaning": "thực (lương), tịnh (trọng lượng), sau thuế",
         "example_german": "Wie viel verdient man dort eigentlich netto?",
         "example_vietnamese": "Thực ra người ta kiếm được bao nhiêu lương tịnh ở đó?",
-        "topic": "other",
+        "topic": "work_and_business",
         "level": "B1"
     },
     {
@@ -26167,7 +26167,7 @@
         "vietnamese_meaning": "tối ưu, tốt nhất có thể",
         "example_german": "Wir suchen nach einer optimalen Lösung für alle Beteiligten.",
         "example_vietnamese": "Chúng tôi đang tìm kiếm một giải pháp tối ưu cho tất cả các bên liên quan.",
-        "topic": "other",
+        "topic": "health_and_body",
         "level": "B1"
     },
     {
@@ -26359,7 +26359,7 @@
         "vietnamese_meaning": "trứng Phục sinh",
         "example_german": "Die Kinder suchen am Ostersonntag versteckte Ostereier im Garten.",
         "example_vietnamese": "Các em nhỏ tìm kiếm những quả trứng Phục sinh bị giấu trong vườn vào Chủ nhật Phục sinh.",
-        "topic": "other",
+        "topic": "nature_and_environment",
         "level": "A2"
     },
     {
@@ -26911,7 +26911,7 @@
         "vietnamese_meaning": "bằng, thông qua, qua mạng",
         "example_german": "Ich habe die Einladung per Post verschickt.",
         "example_vietnamese": "Tôi đã gửi lời mời thông qua đường bưu điện.",
-        "topic": "other",
+        "topic": "science_and_technology",
         "level": "A2"
     },
     {
@@ -26923,7 +26923,7 @@
         "vietnamese_meaning": "hoàn hảo, tuyệt vời, thì hiện tại hoàn thành (ngữ pháp)",
         "example_german": "Das Wetter war am Wochenende einfach perfekt für einen Ausflug.",
         "example_vietnamese": "Thời tiết vào cuối tuần đơn giản là hoàn hảo cho một chuyến dã ngoại.",
-        "topic": "other",
+        "topic": "education_and_learning",
         "level": "A1"
     },
     {
@@ -27991,7 +27991,7 @@
         "vietnamese_meaning": "búp bê, con rối, kén côn trùng",
         "example_german": "Das kind spielt den ganzen Nachmittag mit seiner neuen Puppe.",
         "example_vietnamese": "Đứa trẻ chơi với con búp bê mới của nó suốt cả buổi chiều.",
-        "topic": "other",
+        "topic": "nature_and_environment",
         "level": "A2"
     },
     {
@@ -28207,7 +28207,7 @@
         "vietnamese_meaning": "biên lai, hóa đơn thanh toán, sự xác nhận (bóng)",
         "example_german": "Bewahren Sie die Quittung auf, falls Sie das Gerät umtauschen müssen.",
         "example_vietnamese": "Hãy giữ lại biên lai trong trường hợp bạn cần đổi thiết bị.",
-        "topic": "other",
+        "topic": "nature_and_environment",
         "level": "B1"
     },
     {
@@ -29575,7 +29575,7 @@
         "vietnamese_meaning": "cách mạng, sự biến đổi lớn, cuộc khởi nghĩa",
         "example_german": "Die industrielle Revolution hat das Leben der Menschen grundlegend verändert.",
         "example_vietnamese": "Cuộc cách mạng công nghiệp đã thay đổi cơ bản cuộc sống của con người.",
-        "topic": "other",
+        "topic": "science_and_technology",
         "level": "B2"
     },
     {
@@ -29791,7 +29791,7 @@
         "vietnamese_meaning": "nguyên liệu thô, tài nguyên thiên nhiên, vật liệu cơ bản",
         "example_german": "Die Preise für Rohstoffe sind auf dem Weltmarkt gestiegen.",
         "example_vietnamese": "Giá nguyên liệu thô đã tăng trên thị trường thế giới.",
-        "topic": "other",
+        "topic": "nature_and_environment",
         "level": "B2"
     },
     {
@@ -30343,7 +30343,7 @@
         "vietnamese_meaning": "bộ sưu tập, sự quyên góp, sự tập hợp, sự tập trung tinh thần",
         "example_german": "Das Museum besitzt eine beeindruckende Sammlung alter Gemälde.",
         "example_vietnamese": "Bảo tàng sở hữu một bộ sưu tập tranh cổ ấn tượng.",
-        "topic": "other",
+        "topic": "nature_and_environment",
         "level": "B1"
     },
     {
@@ -30979,7 +30979,7 @@
         "vietnamese_meaning": "biển báo, nhãn, tấm khiên",
         "example_german": "Auf dem Schild steht, dass das Parken hier verboten ist.",
         "example_vietnamese": "Trên biển báo ghi rằng việc đỗ xe ở đây bị cấm.",
-        "topic": "other",
+        "topic": "nature_and_environment",
         "level": "A1"
     },
     {
@@ -30991,7 +30991,7 @@
         "vietnamese_meaning": "chửi bới, mắng mỏ, phàn nàn",
         "example_german": "Die Mutter schimpfte mit ihrem Sohn, weil er sein Zimmer nicht aufgeräumt hatte.",
         "example_vietnamese": "Người mẹ mắng con trai mình vì cậu không dọn dẹp phòng.",
-        "topic": "other",
+        "topic": "science_and_technology",
         "level": "A2"
     },
     {
@@ -31939,7 +31939,7 @@
         "vietnamese_meaning": "miếng bọt biển, giẻ lau bảng, nấm xốp",
         "example_german": "Wischen Sie die Tafel bitte mit einem feuchten Schwamm ab.",
         "example_vietnamese": "Vui lòng lau bảng bằng một miếng bọt biển ẩm.",
-        "topic": "other",
+        "topic": "nature_and_environment",
         "level": "B1"
     },
     {
@@ -33439,7 +33439,7 @@
         "vietnamese_meaning": "Trung tâm thành phố, lõi đô thị",
         "example_german": "Das Stadtzentrum ist vom Bahnhof aus zu Fuß erreichbar.",
         "example_vietnamese": "Có thể đi bộ từ nhà ga đến trung tâm thành phố.",
-        "topic": "other",
+        "topic": "nature_and_environment",
         "level": "A2"
     },
     {
@@ -33463,7 +33463,7 @@
         "vietnamese_meaning": "thân cây, bộ lạc, gốc rễ (từ vựng), đội ngũ nòng cốt",
         "example_german": "Der Stamm der alten Eiche hat einen gewaltigen Umfang.",
         "example_vietnamese": "Thân của cây sồi già có chu vi khổng lồ.",
-        "topic": "other",
+        "topic": "education_and_learning",
         "level": "B2"
     },
     {
@@ -33619,7 +33619,7 @@
         "vietnamese_meaning": "ga, trạm, giai đoạn, khoa (bệnh viện)",
         "example_german": "Die universitäre Wetterstation liefert präzise Klimadaten cho geowissenschaftliche Studien.",
         "example_vietnamese": "Trạm khí tượng của trường đại học cung cấp dữ liệu khí hậu chính xác cho các nghiên cứu khoa học trái đất.",
-        "topic": "other",
+        "topic": "health_and_body",
         "level": "B1"
     },
     {
@@ -36954,7 +36954,7 @@
         "vietnamese_meaning": "bản dịch, sự biên dịch",
         "example_german": "Die offizielle Übersetzung der Studienordnung wurde auf der Homepage der Universität veröffentlicht.",
         "example_vietnamese": "Bản dịch chính thức của quy chế học tập đã được công bố trên trang chủ của trường đại học.",
-        "topic": "other",
+        "topic": "nature_and_environment",
         "level": "A2"
     },
     {
@@ -37902,7 +37902,7 @@
         "vietnamese_meaning": "ký tên, phê chuẩn",
         "example_german": "Beide Parteien müssen den offiziellen Forschungsvertrag rechtsverbindlich unterschreiben.",
         "example_vietnamese": "Cả hai bên phải ký tên vào hợp đồng nghiên cứu chính thức với tính ràng buộc pháp lý.",
-        "topic": "other",
+        "topic": "health_and_body",
         "level": "A2"
     },
     {
@@ -40698,7 +40698,7 @@
         "vietnamese_meaning": "quần áo giặt, đồ lót, sự giặt giũ",
         "example_german": "Die saubere Wäsche hängt zum Trocknen im Garten.",
         "example_vietnamese": "Quần áo sạch đang được treo phơi trong vườn.",
-        "topic": "other",
+        "topic": "daily_life",
         "level": "A1"
     },
     {
@@ -42438,7 +42438,7 @@
         "vietnamese_meaning": "phương thức thanh toán, phương tiện thanh toán",
         "example_german": "Bargeld und Kreditkarten sind gängige Zahlungsmittel.",
         "example_vietnamese": "Tiền mặt và thẻ tín dụng là những phương thức thanh toán phổ biến.",
-        "topic": "other",
+        "topic": "travel_and_transport",
         "level": "B1"
     },
     {
@@ -42762,7 +42762,7 @@
         "vietnamese_meaning": "trung tâm, then chốt, trọng tâm",
         "example_german": "Die Wohnung liegt sehr zentral và hat eine gute Verkehrsanbindung.",
         "example_vietnamese": "Căn hộ nằm ở vị trí rất trung tâm và có kết nối giao thông tốt.",
-        "topic": "other",
+        "topic": "nature_and_environment",
         "level": "B1"
     },
     {
@@ -42786,7 +42786,7 @@
         "vietnamese_meaning": "trung tâm, trọng điểm, tiêu điểm, khu trung tâm",
         "example_german": "Das Zentrum der Stadt ist am Wochenende sehr belebt.",
         "example_vietnamese": "Trọng tâm thành phố rất nhộn nhịp vào cuối tuần.",
-        "topic": "other",
+        "topic": "nature_and_environment",
         "level": "A2"
     },
     {

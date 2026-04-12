@@ -1170,9 +1170,10 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   
-  // STATE MỚI: QUẢN LÝ TÍNH NĂNG GỢI Ý TỪ (AUTO-SUGGEST)
+  // STATE QUẢN LÝ GỢI Ý TỪ & PHÍM TẮT
   const [activeWordIndex, setActiveWordIndex] = useState<number | null>(null);
   const [wordSuggestions, setWordSuggestions] = useState<any[]>([]);
+  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
 
   const translationCache = useRef<Record<string, any>>({});
   const abortControllers = useRef<Record<number, AbortController>>({});
@@ -1194,33 +1195,41 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
     setRows(prevRows => {
       const newRows = [...prevRows];
       newRows[index] = { ...newRows[index], [field]: cleanedValue };
-      if (field === 'word' && cleanedValue === '') { newRows[index].meaning = ''; newRows[index].loading = false; newRows[index].suggestions = []; if (abortControllers.current[index]) abortControllers.current[index].abort(); }
+      if (field === 'word' && cleanedValue === '') { 
+        newRows[index].meaning = ''; 
+        newRows[index].loading = false; 
+        newRows[index].suggestions = []; 
+        if (abortControllers.current[index]) abortControllers.current[index].abort(); 
+      }
       return newRows;
     });
   };
 
-  // HÀM MỚI: Xử lý thay đổi chữ và quét từ điển cục bộ
   const handleWordChange = (index: number, value: string) => {
     updateRow(index, 'word', value);
     const cleanVal = cleanInputData(value, false);
-    if (cleanVal.trim().length >= 1) { // Chỉ cần gõ 1 ký tự là bắt đầu gợi ý
+    if (cleanVal.trim().length >= 1) {
       const currentDict = language === 'en' ? enDictDataRaw : deDictDataRaw;
       const results = currentDict
         .filter(item => item.word && item.word.toLowerCase().startsWith(cleanVal.toLowerCase()))
-        .slice(0, 5); // Hiển thị 5 từ khớp nhất
+        .slice(0, 5);
       setWordSuggestions(results);
       setActiveWordIndex(index);
+      setSelectedSuggestionIndex(-1); // Reset vị trí chọn khi gõ chữ mới
     } else {
       setWordSuggestions([]);
       setActiveWordIndex(null);
     }
   };
 
-  // HÀM MỚI: Xử lý khi người dùng bấm chọn 1 từ gợi ý
   const handleSelectWordSuggestion = (index: number, wordStr: string) => {
     updateRow(index, 'word', wordStr);
     setWordSuggestions([]);
     setActiveWordIndex(null);
+    setSelectedSuggestionIndex(-1);
+    
+    // Sau khi chọn từ, tự động kích hoạt lấy nghĩa từ từ điển nội bộ ngay lập tức
+    handleAutoTranslate(index, language, wordStr);
   };
 
   const handleSelectSuggestion = (index: number, selectedText: string) => {
@@ -1234,15 +1243,37 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
     });
   };
 
-  const handleAutoTranslate = async (index: number, currentLanguage: Language) => {
+  // CẢI TIẾN: Ưu tiên lấy dữ liệu từ điển cục bộ trước khi gọi AI
+  const handleAutoTranslate = async (index: number, currentLanguage: Language, overrideWord?: string) => {
     const currentRow = rows[index];
     if (!currentRow) return;
-    const term = currentRow.word.trim();
+    const term = overrideWord || currentRow.word.trim();
     const definition = currentRow.meaning.trim();
-    if (term === '' || definition !== '' || lastTranslatedWords.current[index] === term) return;
+    
+    if (term === '' || (definition !== '' && !overrideWord) || lastTranslatedWords.current[index] === term) return;
     const word = cleanInputData(term, true);
     if (!word) return;
 
+    // BƯỚC 1: KIỂM TRA TỪ ĐIỂN NỘI BỘ (KHÔNG GỌI AI)
+    const currentDict = currentLanguage === 'en' ? enDictDataRaw : deDictDataRaw;
+    const localEntry = currentDict.find(item => item.word.toLowerCase() === word.toLowerCase());
+    
+    if (localEntry) {
+      const meaningStr = localEntry.vietnamese_meaning || localEntry.meaning || '';
+      const meaningArray = meaningStr.split(/[,;]/).map((s: string) => s.trim()).filter((s: string) => s !== '');
+      
+      lastTranslatedWords.current[index] = term;
+      setRows(prev => {
+        const upd = [...prev];
+        if (upd[index]) {
+          upd[index] = { ...upd[index], suggestions: meaningArray, loading: false };
+        }
+        return upd;
+      });
+      return; // Dừng lại ở đây, không gọi AI
+    }
+
+    // BƯỚC 2: NẾU KHÔNG CÓ TRONG TỪ ĐIỂN -> KIỂM TRA CACHE HOẶC GỌI AI
     if (translationCache.current[word]) {
       lastTranslatedWords.current[index] = term; 
       setRows(prev => { const upd = [...prev]; if (upd[index]) upd[index] = { ...upd[index], suggestions: translationCache.current[word].translations }; return upd; });
@@ -1264,6 +1295,21 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
     } catch (error: any) {
       if (error.message === 'Aborted') return;
       setRows(prev => { const newRows = [...prev]; if (newRows[index]) newRows[index] = { ...newRows[index], loading: false, suggestions: [] }; return newRows; });
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
+    if (activeWordIndex === index && wordSuggestions.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSelectedSuggestionIndex(prev => (prev < wordSuggestions.length - 1 ? prev + 1 : 0));
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSelectedSuggestionIndex(prev => (prev > 0 ? prev - 1 : wordSuggestions.length - 1));
+      } else if (e.key === 'Enter' && selectedSuggestionIndex >= 0) {
+        e.preventDefault();
+        handleSelectWordSuggestion(index, wordSuggestions[selectedSuggestionIndex].word);
+      }
     }
   };
 
@@ -1366,8 +1412,6 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
             <div className="flex flex-col md:flex-row gap-4 p-6 bg-white rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-md hover:border-indigo-100 transition-all relative">
               <div className="hidden md:flex items-center justify-center w-10 font-bold text-slate-300 text-xl group-hover:text-indigo-200 transition-colors">{index + 1}</div>
              <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
-                
-                {/* --- Ô THUẬT NGỮ (ĐÃ CẤY DROPDOWN GỢI Ý) --- */}
                 <div className="space-y-1 relative">
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Thuật ngữ ({language.toUpperCase()})</label>
                   <input 
@@ -1375,8 +1419,8 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
                     value={row.word} 
                     onChange={(e) => handleWordChange(index, e.target.value)} 
                     onFocus={(e) => handleWordChange(index, e.target.value)}
+                    onKeyDown={(e) => handleKeyDown(e, index)}
                     onBlur={() => {
-                      // Cài đặt Delay 200ms để kịp click vào thẻ gợi ý trước khi nó ẩn
                       setTimeout(() => {
                         if (activeWordIndex === index) setActiveWordIndex(null);
                         handleAutoTranslate(index, language);
@@ -1386,20 +1430,22 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
                     placeholder="Nhập từ..." 
                   />
                   
-                  {/* BẢNG DROPDOWN TỪ GỢI Ý */}
                   <AnimatePresence>
                     {activeWordIndex === index && wordSuggestions.length > 0 && (
                       <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }} className="absolute top-[80px] left-0 right-0 bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden z-[60]">
                         {wordSuggestions.map((s, idx) => (
-                          <div key={idx} onClick={() => handleSelectWordSuggestion(index, s.word)} className="px-5 py-3 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-none">
-                            <span className="text-lg font-bold text-slate-800">{s.word}</span>
+                          <div 
+                            key={idx} 
+                            onClick={() => handleSelectWordSuggestion(index, s.word)} 
+                            className={cn("px-5 py-3 cursor-pointer border-b border-slate-100 last:border-none transition-colors", selectedSuggestionIndex === idx ? "bg-indigo-600 text-white" : "hover:bg-slate-50 text-slate-800")}
+                          >
+                            <span className="text-lg font-bold">{s.word}</span>
                           </div>
                         ))}
                       </motion.div>
                     )}
                   </AnimatePresence>
                 </div>
-                {/* ------------------------------------------- */}
 
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Định nghĩa (Tiếng Việt)</label>

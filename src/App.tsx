@@ -85,7 +85,7 @@ import deDictDataRaw from './data/de_3000.json';
 
 // Types
 type Language = 'en' | 'de';
-type View = 'home' | 'topics' | 'input' | 'library' | 'games' | 'report' | 'dictionary';
+type View = 'home' | 'topics' | 'input' | 'library' | 'games' | 'report' | 'dictionary' | 'assessment';
 type GameType = 'flashcards' | 'quiz' | 'matching' | 'writing' | 'fill' | 'roleplay';
 
 interface Vocabulary {
@@ -494,6 +494,7 @@ export default function App() {
             <NavButton active={view === 'games'} onClick={() => setView('games')} icon={<Gamepad2 size={18} />} label="Trò chơi" />
             <NavButton active={view === 'report'} onClick={() => setView('report')} icon={<BarChart3 size={18} />} label="Báo cáo" />
             <NavButton active={view === 'dictionary'} onClick={() => setView('dictionary')} icon={<BookOpen size={18} />} label="Từ điển" />
+            <NavButton active={view === 'assessment'} onClick={() => setView('assessment')} icon={<Trophy size={18} />} label="Kiểm tra năng lực" />
           </div>
 
           <div className="flex items-center gap-2 lg:gap-4">
@@ -631,6 +632,11 @@ export default function App() {
     />
   </motion.div>
 )}
+{view === 'assessment' && (
+            <motion.div key="assessment" className="w-full" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
+              <AssessmentView language={language} setView={setView} />
+            </motion.div>
+          )}
         </AnimatePresence>
       </main>
 
@@ -2808,4 +2814,145 @@ function ReportView({ results, language, activeLessonId, onPlayAIGame, onGoToTop
       {/* --- KẾT THÚC KHỐI AI --- */}
     </div>
   );
+}
+
+// --- ASSESSMENT VIEW (KIỂM TRA NĂNG LỰC 6 BẬC CEFR) ---
+function AssessmentView({ language, setView }: { language: Language, setView: (v: View) => void }) {
+  const [testState, setTestState] = useState<'intro' | 'testing' | 'result'>('intro');
+  const [questions, setQuestions] = useState<any[]>([]);
+  const [currentQIndex, setCurrentQIndex] = useState(0);
+  const [userAnswers, setUserAnswers] = useState<Record<number, boolean>>({});
+  const [finalLevel, setFinalLevel] = useState<string>('');
+  
+  const CEFR_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
+
+  const startTest = () => {
+    const dict = language === 'en' ? enDictDataRaw : deDictDataRaw;
+    let generatedQuestions: any[] = [];
+
+    CEFR_LEVELS.forEach(level => {
+      const wordsAtLevel = dict.filter(w => (w as any).level?.toUpperCase() === level);
+      const selectedWords = [...wordsAtLevel].sort(() => 0.5 - Math.random()).slice(0, 5);
+      
+      selectedWords.forEach(targetWord => {
+        let distractors = dict
+          .filter(w => w.word !== targetWord.word && (w as any).level?.toUpperCase() === level)
+          .sort(() => 0.5 - Math.random())
+          .slice(0, 3)
+          .map(w => w.vietnamese_meaning || w.meaning);
+        
+        while (distractors.length < 3) distractors.push("Đáp án phụ trợ ngẫu nhiên");
+        
+        const correctMeaning = targetWord.vietnamese_meaning || targetWord.meaning;
+        const options = [...distractors, correctMeaning].sort(() => 0.5 - Math.random());
+        
+        generatedQuestions.push({
+          word: targetWord.word,
+          level: level,
+          correctMeaning: correctMeaning,
+          options: options
+        });
+      });
+    });
+
+    setQuestions(generatedQuestions);
+    setUserAnswers({});
+    setCurrentQIndex(0);
+    setTestState('testing');
+  };
+
+  const handleAnswer = (selectedOption: string) => {
+    const isCorrect = selectedOption === questions[currentQIndex].correctMeaning;
+    const newAnswers = { ...userAnswers, [currentQIndex]: isCorrect };
+    setUserAnswers(newAnswers);
+
+    if (currentQIndex < questions.length - 1) {
+      setCurrentQIndex(prev => prev + 1);
+    } else {
+      calculateResult(newAnswers, questions);
+    }
+  };
+
+  const calculateResult = (answers: Record<number, boolean>, qs: any[]) => {
+    const scoresByLevel: Record<string, number> = { A1: 0, A2: 0, B1: 0, B2: 0, C1: 0, C2: 0 };
+    qs.forEach((q, idx) => { if (answers[idx]) scoresByLevel[q.level]++; });
+
+    let achievedLevel = 'Pre-A1 (Người mới bắt đầu)';
+    for (let i = 0; i < CEFR_LEVELS.length; i++) {
+      const lvl = CEFR_LEVELS[i];
+      if (scoresByLevel[lvl] >= 3) achievedLevel = lvl;
+      else break;
+    }
+    setFinalLevel(achievedLevel);
+    setTestState('result');
+  };
+
+  const getRecommendation = (level: string) => {
+    if (level.includes('Pre-A1') || level === 'A1') return "Khuyến nghị: Tập trung vào chủ đề Đời sống hàng ngày và rèn luyện kỹ năng phát âm cơ bản qua game Luyện viết.";
+    if (level === 'A2') return "Khuyến nghị: Mở rộng học các chủ đề Giao thông, Du lịch. Sử dụng Flashcard để tăng phản xạ nhận diện từ.";
+    if (level === 'B1') return "Khuyến nghị: Học các chủ đề Công sở, Kinh doanh và sử dụng Game Giao tiếp AI để luyện đàm thoại thực tế.";
+    if (level === 'B2') return "Khuyến nghị: Thử thách với chủ đề Khoa học, Xã hội. Tập trung vào game Điền từ để hiểu văn cảnh phức tạp.";
+    return "Khuyến nghị: Duy trì thói quen bằng cách trò chuyện chuyên sâu với Trợ lý AI và tự tạo các bộ từ vựng chuyên ngành.";
+  };
+
+  if (testState === 'intro') {
+    return (
+      <div className="max-w-3xl mx-auto text-center py-12 px-6 bg-white rounded-[3rem] shadow-xl border border-slate-100 mt-8">
+        <Trophy className="w-20 h-20 text-indigo-600 mx-auto mb-6" />
+        <h2 className="text-4xl font-bold text-slate-900 mb-4">Đánh giá Năng lực Từ vựng</h2>
+        <p className="text-lg text-slate-600 mb-8 leading-relaxed">
+          Hệ thống sẽ bốc ngẫu nhiên từ vựng từ mức độ dễ (A1) đến khó (C2) để chẩn đoán chính xác trình độ hiện tại của anh theo chuẩn CEFR quốc tế.
+        </p>
+        <button onClick={startTest} className="bg-indigo-600 text-white px-10 py-5 rounded-2xl font-bold text-xl shadow-lg">
+          Bắt đầu kiểm tra ngay
+        </button>
+      </div>
+    );
+  }
+
+  if (testState === 'testing' && questions.length > 0) {
+    const q = questions[currentQIndex];
+    return (
+      <div className="max-w-3xl mx-auto py-8">
+        <div className="flex items-center justify-between mb-6">
+          <span className="font-bold text-slate-500 uppercase tracking-widest">Câu {currentQIndex + 1}/30</span>
+          <span className="bg-indigo-100 text-indigo-700 font-bold px-4 py-1.5 rounded-xl border border-indigo-200">Cấp độ: {q.level}</span>
+        </div>
+        <div className="bg-white p-10 rounded-[3rem] shadow-xl text-center border border-slate-100 mb-8">
+          <h3 className="text-4xl md:text-5xl font-black text-indigo-600">{q.word}</h3>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {q.options.map((opt: string, i: number) => (
+            <button key={i} onClick={() => handleAnswer(opt)} className="p-6 rounded-3xl text-left font-bold text-lg bg-white border-2 border-slate-100 hover:border-indigo-500 hover:bg-indigo-50 transition-all min-h-[100px]">
+              {opt}
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (testState === 'result') {
+    return (
+      <div className="max-w-4xl mx-auto py-8">
+        <div className="bg-white rounded-[3rem] p-10 shadow-xl border border-slate-100 text-center relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-4 bg-emerald-500" />
+          <h2 className="text-3xl font-bold text-slate-800 mb-2 mt-4">Kết quả Chẩn đoán CEFR</h2>
+          <div className="inline-block bg-emerald-50 border-2 border-emerald-500 text-emerald-600 px-12 py-6 rounded-3xl mb-10 shadow-lg mt-6">
+            <span className="block text-sm uppercase tracking-widest font-bold text-emerald-500 mb-2">Bậc năng lực</span>
+            <span className="text-6xl font-black">{finalLevel}</span>
+          </div>
+          <div className="text-left bg-slate-50 p-8 rounded-[2rem] border border-slate-200">
+            <h4 className="font-bold text-slate-800 text-xl mb-3 flex items-center gap-2"><BrainCircuit className="text-indigo-600" /> Nhận xét từ AIBTeM:</h4>
+            <p className="text-slate-600 text-lg leading-relaxed font-medium">{getRecommendation(finalLevel)}</p>
+          </div>
+          <div className="mt-10 flex gap-4 justify-center">
+            <button onClick={startTest} className="bg-slate-100 text-slate-700 px-8 py-4 rounded-2xl font-bold">Kiểm tra lại</button>
+            <button onClick={() => setView('topics')} className="bg-indigo-600 text-white px-8 py-4 rounded-2xl font-bold shadow-lg">Khám phá Chủ đề</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  return null;
 }

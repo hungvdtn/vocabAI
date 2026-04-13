@@ -375,12 +375,12 @@ export default function App() {
 
   // ĐỌC TRÌNH ĐỘ TỪ HỒ SƠ FIREBASE
   useEffect(() => {
-    if (!user || isTestMode) return;
+    if (!user) return; // Đã xóa isTestMode ở đây
     const unsubProfile = onSnapshot(doc(db, 'userProfiles', user.uid), (docSnap) => {
       if (docSnap.exists()) setUserLevel(docSnap.data().cefrLevel || null);
     });
     return () => unsubProfile();
-  }, [user, isTestMode]);
+  }, [user]); // Đã xóa isTestMode ở đây
 
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);

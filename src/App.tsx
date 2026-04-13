@@ -1589,25 +1589,48 @@ function DictionaryView({ language }: { language: Language }) {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { setSearchTerm(''); setSelectedWord(null); setSuggestions([]); setAiTranslation(null); }, [language]);
+  // STATE MỚI: THEO DÕI VỊ TRÍ PHÍM LÊN XUỐNG CỦA BÀN PHÍM
+  const [selectedIndex, setSelectedIndex] = useState(-1);
+
+  useEffect(() => { setSearchTerm(''); setSelectedWord(null); setSuggestions([]); setAiTranslation(null); setSelectedIndex(-1); }, [language]);
 
   const currentDict: any[] = mergedDict;
 
   const handleSearchChange = (text: string) => {
-    setSearchTerm(text); setAiTranslation(null); 
+    setSearchTerm(text); setAiTranslation(null); setSelectedIndex(-1); // Reset highlight khi gõ ký tự mới
     if (text.trim() === '') { setSuggestions([]); setSelectedWord(null); return; }
     const results = currentDict.filter(item => item.word && item.word.toLowerCase().startsWith(text.toLowerCase())).slice(0, 8); 
     setSuggestions(results); setSelectedWord(null); 
   };
 
-  const handleSelectWord = (wordObj: any) => { setSelectedWord(wordObj); setSearchTerm(wordObj.word); setSuggestions([]); setAiTranslation(null); };
+  const handleSelectWord = (wordObj: any) => { 
+    setSelectedWord(wordObj); 
+    setSearchTerm(wordObj.word); 
+    setSuggestions([]); 
+    setAiTranslation(null); 
+    setSelectedIndex(-1); // Reset highlight sau khi chọn
+  };
 
+  // LOGIC MỚI: ĐIỀU KHIỂN BẰNG BÀN PHÍM
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && searchTerm.trim() !== '') {
+    if (suggestions.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSelectedIndex(prev => (prev < suggestions.length - 1 ? prev + 1 : 0));
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSelectedIndex(prev => (prev > 0 ? prev - 1 : suggestions.length - 1));
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (selectedIndex >= 0 && suggestions[selectedIndex]) {
+          handleSelectWord(suggestions[selectedIndex]);
+        } else {
+          handleSelectWord(suggestions[0]); // Mặc định chọn từ trên cùng nếu chỉ gõ rồi ấn Enter
+        }
+      }
+    } else if (e.key === 'Enter' && searchTerm.trim() !== '') {
       const exactMatch = currentDict.find(item => item.word && item.word.toLowerCase() === searchTerm.toLowerCase().trim());
       if (exactMatch) handleSelectWord(exactMatch);
-      else if (suggestions.length > 0) handleSelectWord(suggestions[0]);
-      else setSuggestions([]);
     }
   };
 
@@ -1644,7 +1667,12 @@ function DictionaryView({ language }: { language: Language }) {
   };
 
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) { if (searchRef.current && !searchRef.current.contains(event.target as Node)) setSuggestions([]); }
+    function handleClickOutside(event: MouseEvent) { 
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setSuggestions([]); 
+        setSelectedIndex(-1);
+      } 
+    }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [searchRef]);
@@ -1662,8 +1690,12 @@ function DictionaryView({ language }: { language: Language }) {
           {suggestions.length > 0 && !selectedWord && (
             <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }} className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden z-50">
               {suggestions.map((item, idx) => (
-                <div key={idx} onClick={() => handleSelectWord(item)} className="px-6 py-4 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-none flex items-center justify-between">
-                  <span className="text-lg font-bold text-slate-800">{item.word}</span>
+                <div 
+                  key={idx} 
+                  onMouseDown={(e) => { e.preventDefault(); handleSelectWord(item); }} 
+                  className={cn("px-6 py-4 cursor-pointer border-b border-slate-100 last:border-none flex items-center justify-between transition-colors", selectedIndex === idx ? "bg-indigo-50" : "hover:bg-slate-50")}
+                >
+                  <span className={cn("text-lg font-bold", selectedIndex === idx ? "text-indigo-700" : "text-slate-800")}>{item.word}</span>
                   <span className="text-slate-500 truncate ml-4 max-w-xs">{item.vietnamese_meaning || item.meaning}</span>
                 </div>
               ))}

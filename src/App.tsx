@@ -317,6 +317,15 @@ export default function App() {
   const [isTestMode, setIsTestMode] = useState(false);
   const [language, setLanguage] = useState<Language>('en');
   const [view, setView] = useState<View>('home');
+  // HÀM TIỆN ÍCH: Trộn dữ liệu JSON với dữ liệu đã sửa trên Firebase
+  const mergedDict = useMemo(() => {
+    const rawData = language === 'en' ? enDictDataRaw : deDictDataRaw;
+    return rawData.map((item: any) => {
+      const overrideKey = `${language}_${item.word.toLowerCase()}`;
+      // Nếu tìm thấy từ này trong danh sách đã sửa -> Lấy bản sửa, ngược lại lấy bản gốc
+      return dictOverrides[overrideKey] ? { ...item, ...dictOverrides[overrideKey] } : item;
+    });
+  }, [language, dictOverrides]);
   const [activeGame, setActiveGame] = useState<GameType | null>(null);
   // STATE BẢO VỆ BÀI TEST
   const [isTestInProgress, setIsTestInProgress] = useState(false);
@@ -351,6 +360,22 @@ export default function App() {
 
   const [gameResults, setGameResults] = useState<GameResult[]>([]);
   const [userLevel, setUserLevel] = useState<string | null>(null);
+  // STATE CHỨA CÁC BẢN VÁ TỪ VỰNG TỪ ĐÁM MÂY
+  const [dictOverrides, setDictOverrides] = useState<Record<string, any>>({});
+
+  // CƠ CHẾ PHỄU LỌC: Tự động tải các bản sửa lỗi từ Firebase khi khởi động
+  useEffect(() => {
+    const q = query(collection(db, 'dictionary_overrides'));
+    const unsubOverrides = onSnapshot(q, (snapshot) => {
+      const overrides: Record<string, any> = {};
+      snapshot.forEach(doc => {
+        // ID tài liệu có dạng "en_word" hoặc "de_word"
+        overrides[doc.id] = doc.data();
+      });
+      setDictOverrides(overrides);
+    });
+    return () => unsubOverrides();
+  }, []);
 
   // ĐỌC TRÌNH ĐỘ TỪ HỒ SƠ FIREBASE
   useEffect(() => {
@@ -807,7 +832,7 @@ function AssessmentView({ language, user, onGoToTopics, setIsTestInProgress }: {
   const getColor = (lvl: string) => LEVEL_COLORS[lvl] || { bg: 'bg-slate-50', text: 'text-slate-700', border: 'border-slate-200', bar: 'bg-slate-100', fill: 'bg-slate-500' };
 
   const generateQuiz = () => {
-    const dict = language === 'en' ? enDictDataRaw : deDictDataRaw;
+    const dict = mergedDict;
     const standardLevels = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
     let generatedQuestions: any[] = [];
     let initialScores: Record<string, { correct: number, total: number }> = {};
@@ -1330,7 +1355,7 @@ function AdminDashboardView({ language }: { language: Language }) {
 }
 function TopicLibraryView({ language, lessons, userLevel, onGoToAssessment, onOpenInInput }: { language: Language, lessons: Lesson[], userLevel: string | null, onGoToAssessment: () => void, onOpenInInput: (vocab: Vocabulary[], title: string) => void }) {
   const currentDict = useMemo(() => {
-    const rawDict = language === 'en' ? enDictDataRaw : deDictDataRaw;
+    const rawDict = mergedDict;
     return rawDict.map(w => {
       if (w.topic && KNOWN_TOPIC_IDS.includes(w.topic)) return w;
       return { ...w, topic: mapSubTopicToMainTopic(w.topic) };
@@ -1567,7 +1592,7 @@ function DictionaryView({ language }: { language: Language }) {
 
   useEffect(() => { setSearchTerm(''); setSelectedWord(null); setSuggestions([]); setAiTranslation(null); }, [language]);
 
-  const currentDict: any[] = language === 'en' ? enDictDataRaw : deDictDataRaw;
+  const currentDict: any[] = mergedDict;
 
   const handleSearchChange = (text: string) => {
     setSearchTerm(text); setAiTranslation(null); 
@@ -2438,7 +2463,7 @@ function GameCard({ title, desc, icon, onClick, colorClass }: { title: string, d
 function GameContainer({ type, vocabList, language, onBack, onFinish, playSound, activeLessonId }: { type: GameType, vocabList: Vocabulary[], language: Language, onBack: () => void, onFinish: (score: number, mistakes?: any[]) => void, playSound: (t: 'correct' | 'wrong' | 'success') => void, activeLessonId: string }) {
   
   const [gameVocabs] = useState(() => {
-    const currentDict = language === 'en' ? enDictDataRaw : deDictDataRaw;
+    const currentDict = mergedDict;
     const enriched = vocabList.map(v => {
         const dictEntry = currentDict.find(d => d.word.toLowerCase() === v.word.toLowerCase());
         if (dictEntry) {

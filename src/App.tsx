@@ -2461,10 +2461,11 @@ function GameCard({ title, desc, icon, onClick, colorClass }: { title: string, d
 
 function GameContainer({ type, vocabList, language, onBack, onFinish, playSound, activeLessonId }: { type: GameType, vocabList: Vocabulary[], language: Language, onBack: () => void, onFinish: (score: number, mistakes?: any[]) => void, playSound: (t: 'correct' | 'wrong' | 'success') => void, activeLessonId: string }) {
   const mergedDict = useMergedDict(language);
+  
   const [gameVocabs] = useState(() => {
-    mergedDict
     const enriched = vocabList.map(v => {
-        const dictEntry = currentDict.find(d => d.word.toLowerCase() === v.word.toLowerCase());
+        // Đã xóa bỏ dòng 'mergedDict' thừa và sửa 'currentDict' thành 'mergedDict'
+        const dictEntry = mergedDict.find((d: any) => d.word.toLowerCase() === v.word.toLowerCase());
         if (dictEntry) {
             return { ...v, part_of_speech: v.part_of_speech || dictEntry.part_of_speech || dictEntry.type, phonetic: v.phonetic || dictEntry.phonetic, english_definition: v.english_definition || dictEntry.english_definition || dictEntry.definition, german_definition: v.german_definition || dictEntry.german_definition || dictEntry.definition, example: v.example || dictEntry.example, example_english: v.example_english || dictEntry.example_english, example_german: v.example_german || dictEntry.example_german, example_vietnamese: v.example_vietnamese || dictEntry.example_vietnamese, level: v.level || (dictEntry as any).level };
         }

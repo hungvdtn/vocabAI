@@ -1745,11 +1745,11 @@ function DictionaryView({ language }: { language: Language }) {
                     onMouseEnter={() => setSelectedIndex(idx)} 
                     className={cn(
                       "px-6 py-4 cursor-pointer border-b border-slate-100 last:border-none flex items-center justify-between transition-all", 
-                      isSelected ? "bg-indigo-600 text-white" : "hover:bg-slate-50 text-slate-800 bg-white"
+                      isSelected ? "bg-indigo-50 text-indigo-800" : "hover:bg-slate-50 text-slate-800 bg-white"
                     )}
                   >
-                    <span className={cn("text-lg font-bold", isSelected ? "text-white" : "text-slate-800")}>{item.word}</span>
-                    <span className={cn("truncate ml-4 max-w-xs text-sm", isSelected ? "text-indigo-100" : "text-slate-500")}>
+                    <span className={cn("text-lg font-bold", isSelected ? "text-indigo-800" : "text-slate-800")}>{item.word}</span>
+                    <span className={cn("truncate ml-4 max-w-xs text-sm", isSelected ? "text-indigo-600" : "text-slate-500")}>
                       {item.vietnamese_meaning || item.meaning}
                     </span>
                   </div>
@@ -2358,7 +2358,7 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
                               e.preventDefault();
                               handleSelectWordSuggestion(index, s.word);
                             }}
-                            className={cn("px-5 py-3 cursor-pointer border-b border-slate-100 last:border-none transition-colors", selectedSuggestionIndex === idx ? "bg-indigo-600 text-white" : "hover:bg-slate-50 text-slate-800")}
+                            className={cn("px-5 py-3 cursor-pointer border-b border-slate-100 last:border-none transition-colors", selectedSuggestionIndex === idx ? "bg-indigo-50 text-indigo-800 font-medium" : "hover:bg-slate-50 text-slate-700")}
                           >
                             <span className="text-lg font-bold">{s.word}</span>
                           </div>
@@ -2561,9 +2561,19 @@ function GameContainer({ type, vocabList, language, onBack, onFinish, playSound,
         // Đã xóa bỏ dòng 'mergedDict' thừa và sửa 'currentDict' thành 'mergedDict'
         const dictEntry = mergedDict.find((d: any) => d.word.toLowerCase() === v.word.toLowerCase());
         if (dictEntry) {
-            return { ...v, part_of_speech: v.part_of_speech || dictEntry.part_of_speech || dictEntry.type, phonetic: v.phonetic || dictEntry.phonetic, english_definition: v.english_definition || dictEntry.english_definition || dictEntry.definition, german_definition: v.german_definition || dictEntry.german_definition || dictEntry.definition, example: v.example || dictEntry.example, example_english: v.example_english || dictEntry.example_english, example_german: v.example_german || dictEntry.example_german, example_vietnamese: v.example_vietnamese || dictEntry.example_vietnamese, level: v.level || (dictEntry as any).level };
+            return { 
+              ...v, 
+              part_of_speech: v.part_of_speech || dictEntry.part_of_speech || dictEntry.type, 
+              phonetic: v.phonetic || dictEntry.phonetic, 
+              english_definition: v.english_definition || dictEntry.english_definition || dictEntry.en_definition || dictEntry.definition, 
+              german_definition: v.german_definition || dictEntry.german_definition || dictEntry.de_definition || dictEntry.definition_de || dictEntry.definition, 
+              example: v.example || dictEntry.example, 
+              example_english: v.example_english || dictEntry.example_english, 
+              example_german: v.example_german || dictEntry.example_german, 
+              example_vietnamese: v.example_vietnamese || dictEntry.example_vietnamese, 
+              level: v.level || (dictEntry as any).level 
+            };
         }
-        return v;
     });
     return type === 'flashcards' ? enriched : [...enriched].sort(() => 0.5 - Math.random());
   });
@@ -2793,7 +2803,10 @@ function FlashcardGame({ vocab, onNext, onPrev, language, step, totalSteps, onFi
     if (side === 2) handleSpeak(vocab.word, language);
   }, [side, vocab.word, language]);
 
-  const definition = language === 'en' ? (vocab.english_definition || vocab.definition) : (vocab.german_definition || vocab.definition);
+  // Bắt mọi thể loại key định nghĩa từ JSON
+  const definition = language === 'en' 
+    ? (vocab.english_definition || vocab.en_definition || vocab.definition) 
+    : (vocab.german_definition || vocab.de_definition || vocab.definition_de || vocab.definition);
   const exampleText = language === 'en' ? (vocab.example_english || vocab.example) : (vocab.example_german || vocab.example);
 
   // HÀM MỚI: Đẩy dữ liệu báo cáo lên Firebase Firestore

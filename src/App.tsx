@@ -336,21 +336,13 @@ const getGameTitle = (type: GameType) => {
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
-  const [isTestMode, setIsTestMode] = useState(false);
-  const [language, setLanguage] = useState<Language>('en');
   const [view, setView] = useState<View>('home');
-  // HÀM TIỆN ÍCH: Trộn dữ liệu JSON với dữ liệu đã sửa trên Firebase
-  const mergedDict = useMemo(() => {
-    const rawData = language === 'en' ? enDictDataRaw : deDictDataRaw;
-    return rawData.map((item: any) => {
-      const overrideKey = `${language}_${item.word.toLowerCase()}`;
-      // Nếu tìm thấy từ này trong danh sách đã sửa -> Lấy bản sửa, ngược lại lấy bản gốc
-      return dictOverrides[overrideKey] ? { ...item, ...dictOverrides[overrideKey] } : item;
-    });
+  const [language, setLanguage] = useState<Language>('en');
   const [activeGame, setActiveGame] = useState<GameType | null>(null);
   
-  // STATE BẢO VỆ BÀI TEST
+  // STATE BẢO VỆ BÀI TEST & ĐIỀU HƯỚNG
   const [isTestInProgress, setIsTestInProgress] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleNavigation = (targetView: View) => {
     if (isTestInProgress) {
@@ -373,66 +365,13 @@ export default function App() {
     setActiveLessonId(null);
     setGameResults([]);
   };
-  
+
   const [vocabList, setVocabList] = useState<Vocabulary[]>([]);
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [playVocabList, setPlayVocabList] = useState<Vocabulary[]>([]);
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
   const [gameResults, setGameResults] = useState<GameResult[]>([]);
   const [userLevel, setUserLevel] = useState<string | null>(null);
-
-  // ĐỌC TRÌNH ĐỘ TỪ HỒ SƠ FIREBASE (Giữ lại cái này)
-  useEffect(() => {
-    if (!user || isTestMode) return;
-    const unsubProfile = onSnapshot(doc(db, 'userProfiles', user.uid), (docSnap) => {
-      if (docSnap.exists()) setUserLevel(docSnap.data().cefrLevel || null);
-    });
-    return () => unsubProfile();
-  }, [user, isTestMode]);
-
-  const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    if (targetView !== 'games') setActiveGame(null);
-  };
-
-  const handleLanguageChange = (lang: Language) => {
-    if (isTestInProgress) {
-      if (!window.confirm("Bạn đang làm bài kiểm tra. Bạn có chắc chắn muốn đổi ngôn ngữ? Kết quả sẽ bị hủy bỏ.")) return;
-      setIsTestInProgress(false);
-    }
-    setLanguage(lang);
-    setEditingLesson(null);
-    setPlayVocabList([]);
-    setActiveLessonId(null);
-    setGameResults([]);
-  };
-  
-  const [vocabList, setVocabList] = useState<Vocabulary[]>([]);
-  const [lessons, setLessons] = useState<Lesson[]>([]);
-  
-  const [playVocabList, setPlayVocabList] = useState<Vocabulary[]>([]);
-  const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
-
-  const [gameResults, setGameResults] = useState<GameResult[]>([]);
-  const [userLevel, setUserLevel] = useState<string | null>(null);
-  // STATE CHỨA CÁC BẢN VÁ TỪ VỰNG TỪ ĐÁM MÂY
-  const [dictOverrides, setDictOverrides] = useState<Record<string, any>>({});
-
-  // CƠ CHẾ PHỄU LỌC: Tự động tải các bản sửa lỗi từ Firebase khi khởi động
-  useEffect(() => {
-    const q = query(collection(db, 'dictionary_overrides'));
-    const unsubOverrides = onSnapshot(q, (snapshot) => {
-      const overrides: Record<string, any> = {};
-      snapshot.forEach(doc => {
-        // ID tài liệu có dạng "en_word" hoặc "de_word"
-        overrides[doc.id] = doc.data();
-      });
-      setDictOverrides(overrides);
-    });
-    return () => unsubOverrides();
-  }, []);
 
   // ĐỌC TRÌNH ĐỘ TỪ HỒ SƠ FIREBASE
   useEffect(() => {
@@ -442,6 +381,7 @@ export default function App() {
     });
     return () => unsubProfile();
   }, [user, isTestMode]);
+
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);

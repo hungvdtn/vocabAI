@@ -86,7 +86,10 @@ import enDictDataRaw from './data/en_3000.json';
 import deDictDataRaw from './data/de_3000.json';
 
 type Language = 'en' | 'de';
-type View = 'home' | 'topics' | 'input' | 'library' | 'games' | 'report' | 'dictionary' | 'assessment';
+type View = 'home' | 'topics' | 'input' | 'library' | 'games' | 'report' | 'dictionary' | 'assessment' | 'admin';
+
+// THAY MÃ UID CỦA MÌNH VÀO ĐÂY (Lấy trong mục Authentication trên Firebase)
+const ADMIN_UID = "W3paMyFVFjPwxOHuy1w5FFScYzD3";
 type GameType = 'flashcards' | 'quiz' | 'matching' | 'writing' | 'fill' | 'roleplay';
 
 interface Vocabulary {
@@ -519,6 +522,7 @@ export default function App() {
             <NavButton active={view === 'games'} onClick={() => handleNavigation('games')} icon={<Gamepad2 size={16} />} label="Trò chơi" />
             <NavButton active={view === 'report'} onClick={() => handleNavigation('report')} icon={<BarChart3 size={16} />} label="Báo cáo" />
             <NavButton active={view === 'dictionary'} onClick={() => handleNavigation('dictionary')} icon={<BookOpen size={16} />} label="Từ điển" />
+            {user?.uid === ADMIN_UID && <NavButton active={view === 'admin'} onClick={() => handleNavigation('admin')} icon={<Save size={16} />} label="Quản trị" />}
           </div>
 
           <div className="flex items-center gap-2 lg:gap-4">
@@ -598,6 +602,7 @@ export default function App() {
                 <MobileMenuButton active={view === 'games'} onClick={() => handleNavigation('games')} icon={<Gamepad2 size={20} />} label="Trò chơi" />
                 <MobileMenuButton active={view === 'report'} onClick={() => handleNavigation('report')} icon={<BarChart3 size={20} />} label="Báo cáo" />
                 <MobileMenuButton active={view === 'dictionary'} onClick={() => handleNavigation('dictionary')} icon={<BookOpen size={20} />} label="Từ điển" />
+                {user?.uid === ADMIN_UID && <MobileMenuButton active={view === 'admin'} onClick={() => handleNavigation('admin')} icon={<Save size={20} />} label="Quản trị" />}
               </div>
             </motion.div>
           )}
@@ -683,6 +688,12 @@ export default function App() {
               />
             </motion.div>
           )}
+          {view === 'admin' && user?.uid === ADMIN_UID && (
+            <motion.div key="admin" className="w-full" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <AdminDashboardView language={language} />
+            </motion.div>
+          )}
+
         </AnimatePresence>
       </main>
 
@@ -1089,7 +1100,111 @@ function LightbulbIcon(props: any) {
     </svg>
   );
 }
+// --- TRANG QUẢN TRỊ ẨN (ADMIN DASHBOARD) ---
+function AdminDashboardView({ language }: { language: Language }) {
+  const [reports, setReports] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editingReportId, setEditingReportId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<any>(null);
 
+  // Tải danh sách báo lỗi từ Firebase
+  useEffect(() => {
+    const q = query(collection(db, 'error_reports'), where('status', '==', 'pending'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setReports(items.sort((a: any, b: any) => b.createdAt - a.createdAt));
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handleResolve = async (id: string) => {
+    try {
+      await updateDoc(doc(db, 'error_reports', id), { status: 'resolved', resolvedAt: Date.now() });
+      alert("Đã đánh dấu khắc phục thành công!");
+    } catch (e) { alert("Lỗi khi cập nhật!"); }
+  };
+
+  const startEdit = (report: any) => {
+    const dict = language === 'en' ? enDictDataRaw : deDictDataRaw;
+    const entry = dict.find(item => item.word.toLowerCase() === report.word.toLowerCase());
+    setEditingReportId(report.id);
+    setEditForm(entry || { word: report.word, meaning: '', part_of_speech: '', level: 'A1' });
+  };
+
+  if (loading) return <div className="py-20 text-center"><Loader2 className="animate-spin mx-auto text-indigo-600" size={40} /></div>;
+
+  return (
+    <div className="w-full pb-32">
+      <div className="mb-10">
+        <h2 className="text-3xl font-bold text-slate-900 mb-2">Trung tâm Quản trị AIBTeM</h2>
+        <p className="text-slate-500">Tiếp nhận báo lỗi và tinh chỉnh dữ liệu từ điển hệ thống ({language.toUpperCase()}).</p>
+      </div>
+
+      <div className="grid lg:grid-cols-12 gap-8">
+        {/* DANH SÁCH BÁO LỖI */}
+        <div className="lg:col-span-7 space-y-4">
+          <h3 className="font-bold text-slate-700 flex items-center gap-2 mb-4"><AlertCircle size={20} className="text-red-500" /> Báo cáo chưa xử lý ({reports.length})</h3>
+          {reports.length === 0 ? (
+            <div className="bg-white p-10 rounded-[2rem] border border-dashed text-center text-slate-400">Không có báo cáo lỗi nào.</div>
+          ) : (
+            reports.map(r => (
+              <div key={r.id} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-md transition-all">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <span className="bg-red-50 text-red-600 px-3 py-1 rounded-lg font-black text-lg">{r.word}</span>
+                    <p className="text-xs text-slate-400 mt-2 font-bold uppercase tracking-widest">Người báo: {r.userName}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => startEdit(r)} className="p-3 bg-indigo-50 text-indigo-600 rounded-xl hover:bg-indigo-100 transition-all"><Edit2 size={18} /></button>
+                    <button onClick={() => handleResolve(r.id)} className="p-3 bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-100 transition-all"><CheckCircle2 size={18} /></button>
+                  </div>
+                </div>
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 italic text-slate-600">"{r.errorText}"</div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* CÔNG CỤ SỬA VÀ TẠO JSON */}
+        <div className="lg:col-span-5">
+          <div className="bg-slate-900 text-white p-8 rounded-[2.5rem] shadow-xl sticky top-24">
+            <h3 className="text-xl font-bold mb-6 flex items-center gap-2 text-indigo-400"><BrainCircuit size={24} /> Trình tạo JSON Cập nhật</h3>
+            {editForm ? (
+              <div className="space-y-4">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Mã JSON để dán vào file .json:</label>
+                  <pre className="bg-black/50 p-4 rounded-xl mt-2 overflow-x-auto text-blue-300 text-xs font-mono border border-white/10">
+                    {JSON.stringify(editForm, null, 2)}
+                  </pre>
+                  <button 
+                    onClick={() => { navigator.clipboard.writeText(JSON.stringify(editForm, null, 2)); alert("Đã copy JSON!"); }}
+                    className="w-full mt-3 py-2 bg-indigo-600 rounded-lg text-xs font-bold hover:bg-indigo-700 transition-all"
+                  >Sao chép đoạn mã</button>
+                </div>
+                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/10">
+                   <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase">Nghĩa tiếng Việt</label>
+                      <input type="text" value={editForm.vietnamese_meaning || editForm.meaning} onChange={e => setEditForm({...editForm, vietnamese_meaning: e.target.value})} className="w-full bg-slate-800 border-none rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500" />
+                   </div>
+                   <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase">Trình độ</label>
+                      <select value={editForm.level} onChange={e => setEditForm({...editForm, level: e.target.value})} className="w-full bg-slate-800 border-none rounded-lg p-2 text-sm">
+                        {['A1','A2','B1','B2','C1','C2'].map(l => <option key={l} value={l}>{l}</option>)}
+                      </select>
+                   </div>
+                </div>
+                <p className="text-[10px] text-slate-500 italic mt-4">* Tiến sĩ sửa nội dung ở form trên, mã JSON sẽ tự cập nhật. Copy mã này dán đè vào từ tương ứng trong file .json ở máy tính nhé.</p>
+              </div>
+            ) : (
+              <div className="text-center py-10 text-slate-500 italic">Chọn một báo cáo lỗi để bắt đầu tinh chỉnh dữ liệu.</div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 function TopicLibraryView({ language, lessons, userLevel, onGoToAssessment, onOpenInInput }: { language: Language, lessons: Lesson[], userLevel: string | null, onGoToAssessment: () => void, onOpenInInput: (vocab: Vocabulary[], title: string) => void }) {
   const currentDict = useMemo(() => {
     const rawDict = language === 'en' ? enDictDataRaw : deDictDataRaw;

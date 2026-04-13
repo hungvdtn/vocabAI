@@ -602,7 +602,7 @@ export default function App() {
                 <MobileMenuButton active={view === 'games'} onClick={() => handleNavigation('games')} icon={<Gamepad2 size={20} />} label="Trò chơi" />
                 <MobileMenuButton active={view === 'report'} onClick={() => handleNavigation('report')} icon={<BarChart3 size={20} />} label="Báo cáo" />
                 <MobileMenuButton active={view === 'dictionary'} onClick={() => handleNavigation('dictionary')} icon={<BookOpen size={20} />} label="Từ điển" />
-                {user?.uid === ADMIN_UID && <MobileMenuButton active={view === 'admin'} onClick={() => handleNavigation('admin')} icon={<Save size={20} />} label="Quản trị" />}
+                {user?.uid === ADMIN_UID && <MobileMenuButton active={view === 'admin'} onClick={() => handleNavigation('admin')} icon={<Save size={20} />} label="Admin" />}
               </div>
             </motion.div>
           )}
@@ -1101,11 +1101,13 @@ function LightbulbIcon(props: any) {
   );
 }
 // --- TRANG QUẢN TRỊ ẨN (ADMIN DASHBOARD) ---
+// --- TRANG QUẢN TRỊ ẨN (ADMIN DASHBOARD) ---
 function AdminDashboardView({ language }: { language: Language }) {
   const [reports, setReports] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingReportId, setEditingReportId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<any>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Tải danh sách báo lỗi từ Firebase
   useEffect(() => {
@@ -1118,86 +1120,207 @@ function AdminDashboardView({ language }: { language: Language }) {
     return () => unsubscribe();
   }, []);
 
-  const handleResolve = async (id: string) => {
-    try {
-      await updateDoc(doc(db, 'error_reports', id), { status: 'resolved', resolvedAt: Date.now() });
-      alert("Đã đánh dấu khắc phục thành công!");
-    } catch (e) { alert("Lỗi khi cập nhật!"); }
-  };
-
   const startEdit = (report: any) => {
     const dict = language === 'en' ? enDictDataRaw : deDictDataRaw;
     const entry = dict.find(item => item.word.toLowerCase() === report.word.toLowerCase());
     setEditingReportId(report.id);
-    setEditForm(entry || { word: report.word, meaning: '', part_of_speech: '', level: 'A1' });
+    
+    // Nạp toàn bộ dữ liệu gốc vào form, nếu không có thì để trống
+    const initialForm = entry || { 
+      word: report.word, 
+      meaning: '', 
+      vietnamese_meaning: '',
+      part_of_speech: '', 
+      phonetic: '',
+      english_definition: '',
+      german_definition: '',
+      example_english: '',
+      example_german: '',
+      example_vietnamese: '',
+      topic: 'other',
+      level: 'A1' 
+    };
+    
+    // Đảm bảo trường vietnamese_meaning luôn có giá trị để chỉnh sửa
+    if (!initialForm.vietnamese_meaning && initialForm.meaning) {
+        initialForm.vietnamese_meaning = initialForm.meaning;
+    }
+    
+    setEditForm(initialForm);
+  };
+
+  // NÚT LƯU TRỰC TIẾP VÀO FIREBASE (CƠ CHẾ HOT-PATCH)
+  const handleResolveAndSave = async () => {
+    if (!editingReportId || !editForm) return;
+    setIsSaving(true);
+    
+    try {
+      // 1. Lưu bản vá từ vựng vào bộ nhớ đệm trên Firebase
+      // Dùng word làm ID để sau này dễ truy xuất và ghi đè
+      const overrideRef = doc(db, 'dictionary_overrides', `${language}_${editForm.word.toLowerCase()}`);
+      await setDoc(overrideRef, {
+          ...editForm,
+          language: language,
+          updatedAt: Date.now(),
+          updatedBy: auth.currentUser?.uid
+      }, { merge: true });
+
+      // 2. Đánh dấu báo cáo lỗi là Đã giải quyết
+      await updateDoc(doc(db, 'error_reports', editingReportId), { 
+          status: 'resolved', 
+          resolvedAt: Date.now(),
+          resolutionNote: 'Đã cập nhật hệ thống'
+      });
+
+      alert("Tuyệt vời! Dữ liệu đã được lưu trực tiếp vào Hệ thống Đám mây.");
+      setEditForm(null);
+      setEditingReportId(null);
+    } catch (error) {
+      console.error(error);
+      alert("Đã xảy ra lỗi khi lưu vào CSDL. Vui lòng kiểm tra lại kết nối.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   if (loading) return <div className="py-20 text-center"><Loader2 className="animate-spin mx-auto text-indigo-600" size={40} /></div>;
+
+  const isEn = language === 'en';
 
   return (
     <div className="w-full pb-32">
       <div className="mb-10">
         <h2 className="text-3xl font-bold text-slate-900 mb-2">Trung tâm Quản trị AIBTeM</h2>
-        <p className="text-slate-500">Tiếp nhận báo lỗi và tinh chỉnh dữ liệu từ điển hệ thống ({language.toUpperCase()}).</p>
+        <p className="text-slate-500">Tiếp nhận báo lỗi và lưu trực tiếp bản sửa lỗi lên Đám mây ({language.toUpperCase()}).</p>
       </div>
 
       <div className="grid lg:grid-cols-12 gap-8">
         {/* DANH SÁCH BÁO LỖI */}
-        <div className="lg:col-span-7 space-y-4">
-          <h3 className="font-bold text-slate-700 flex items-center gap-2 mb-4"><AlertCircle size={20} className="text-red-500" /> Báo cáo chưa xử lý ({reports.length})</h3>
+        <div className="lg:col-span-5 xl:col-span-4 space-y-4">
+          <h3 className="font-bold text-slate-700 flex items-center gap-2 mb-4"><AlertCircle size={20} className="text-red-500" /> Báo cáo chờ xử lý ({reports.length})</h3>
           {reports.length === 0 ? (
             <div className="bg-white p-10 rounded-[2rem] border border-dashed text-center text-slate-400">Không có báo cáo lỗi nào.</div>
           ) : (
-            reports.map(r => (
-              <div key={r.id} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-md transition-all">
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <span className="bg-red-50 text-red-600 px-3 py-1 rounded-lg font-black text-lg">{r.word}</span>
-                    <p className="text-xs text-slate-400 mt-2 font-bold uppercase tracking-widest">Người báo: {r.userName}</p>
+            <div className="max-h-[600px] overflow-y-auto pr-2 space-y-4">
+              {reports.map(r => (
+                <div key={r.id} onClick={() => startEdit(r)} className={cn("bg-white p-5 rounded-[1.5rem] border shadow-sm hover:shadow-md transition-all cursor-pointer", editingReportId === r.id ? "border-indigo-500 ring-2 ring-indigo-500/20" : "border-slate-100")}>
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <span className="bg-red-50 text-red-600 px-3 py-1 rounded-lg font-black text-lg">{r.word}</span>
+                      <p className="text-[10px] text-slate-400 mt-2 font-bold uppercase tracking-widest">Từ: {r.userName}</p>
+                    </div>
+                    <Edit2 size={18} className={editingReportId === r.id ? "text-indigo-600" : "text-slate-300"} />
                   </div>
-                  <div className="flex gap-2">
-                    <button onClick={() => startEdit(r)} className="p-3 bg-indigo-50 text-indigo-600 rounded-xl hover:bg-indigo-100 transition-all"><Edit2 size={18} /></button>
-                    <button onClick={() => handleResolve(r.id)} className="p-3 bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-100 transition-all"><CheckCircle2 size={18} /></button>
-                  </div>
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 text-sm italic text-slate-600 line-clamp-3">"{r.errorText}"</div>
                 </div>
-                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 italic text-slate-600">"{r.errorText}"</div>
-              </div>
-            ))
+              ))}
+            </div>
           )}
         </div>
 
-        {/* CÔNG CỤ SỬA VÀ TẠO JSON */}
-        <div className="lg:col-span-5">
-          <div className="bg-slate-900 text-white p-8 rounded-[2.5rem] shadow-xl sticky top-24">
-            <h3 className="text-xl font-bold mb-6 flex items-center gap-2 text-indigo-400"><BrainCircuit size={24} /> Trình tạo JSON Cập nhật</h3>
+        {/* CÔNG CỤ SỬA 9 TRƯỜNG THÔNG TIN */}
+        <div className="lg:col-span-7 xl:col-span-8">
+          <div className="bg-white border border-slate-200 p-8 rounded-[2.5rem] shadow-xl sticky top-24">
+            <h3 className="text-2xl font-bold mb-6 flex items-center gap-2 text-indigo-700"><BrainCircuit size={28} /> Chỉnh sửa Từ vựng</h3>
             {editForm ? (
-              <div className="space-y-4">
-                <div>
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Mã JSON để dán vào file .json:</label>
-                  <pre className="bg-black/50 p-4 rounded-xl mt-2 overflow-x-auto text-blue-300 text-xs font-mono border border-white/10">
-                    {JSON.stringify(editForm, null, 2)}
-                  </pre>
-                  <button 
-                    onClick={() => { navigator.clipboard.writeText(JSON.stringify(editForm, null, 2)); alert("Đã copy JSON!"); }}
-                    className="w-full mt-3 py-2 bg-indigo-600 rounded-lg text-xs font-bold hover:bg-indigo-700 transition-all"
-                  >Sao chép đoạn mã</button>
-                </div>
-                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/10">
+              <div className="space-y-6">
+                
+                {/* Dòng 1: Từ và Phát âm */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-slate-500 uppercase">Nghĩa tiếng Việt</label>
-                      <input type="text" value={editForm.vietnamese_meaning || editForm.meaning} onChange={e => setEditForm({...editForm, vietnamese_meaning: e.target.value})} className="w-full bg-slate-800 border-none rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500" />
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Thuật ngữ gốc</label>
+                      <input type="text" value={editForm.word || ''} onChange={e => setEditForm({...editForm, word: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-base font-bold focus:bg-white focus:border-indigo-500 outline-none transition-all" />
                    </div>
                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-slate-500 uppercase">Trình độ</label>
-                      <select value={editForm.level} onChange={e => setEditForm({...editForm, level: e.target.value})} className="w-full bg-slate-800 border-none rounded-lg p-2 text-sm">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Phiên âm Quốc tế</label>
+                      <input type="text" value={editForm.phonetic || ''} onChange={e => setEditForm({...editForm, phonetic: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-base font-mono text-slate-600 focus:bg-white focus:border-indigo-500 outline-none transition-all" />
+                   </div>
+                </div>
+
+                {/* Dòng 2: Loại từ, Trình độ, Chủ đề */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                   <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Loại từ</label>
+                      <input type="text" value={editForm.part_of_speech || ''} placeholder="n, v, adj, adv..." onChange={e => setEditForm({...editForm, part_of_speech: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-base focus:bg-white focus:border-indigo-500 outline-none transition-all" />
+                   </div>
+                   <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Trình độ CEFR</label>
+                      <select value={editForm.level || 'A1'} onChange={e => setEditForm({...editForm, level: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-base font-bold text-indigo-700 outline-none cursor-pointer">
                         {['A1','A2','B1','B2','C1','C2'].map(l => <option key={l} value={l}>{l}</option>)}
                       </select>
                    </div>
+                   <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Nhóm Chủ đề</label>
+                      <select value={editForm.topic || 'other'} onChange={e => setEditForm({...editForm, topic: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-base outline-none cursor-pointer truncate">
+                        <option value="education_and_learning">Giáo dục & Học tập</option>
+                        <option value="work_and_business">Công sở & Kinh doanh</option>
+                        <option value="daily_life">Đời sống hàng ngày</option>
+                        <option value="health_and_body">Sức khỏe & Cơ thể</option>
+                        <option value="science_and_technology">Khoa học & Công nghệ</option>
+                        <option value="society_and_culture">Xã hội & Văn hóa</option>
+                        <option value="nature_and_environment">Thiên nhiên & Môi trường</option>
+                        <option value="travel_and_transport">Du lịch & Giao thông</option>
+                        <option value="other">Chủ đề khác</option>
+                      </select>
+                   </div>
                 </div>
-                <p className="text-[10px] text-slate-500 italic mt-4">* Tiến sĩ sửa nội dung ở form trên, mã JSON sẽ tự cập nhật. Copy mã này dán đè vào từ tương ứng trong file .json ở máy tính nhé.</p>
+
+                {/* Dòng 3: Nghĩa Tiếng Việt & Định nghĩa Gốc */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                   <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest ml-1">Nghĩa tiếng Việt</label>
+                      <textarea value={editForm.vietnamese_meaning || ''} onChange={e => setEditForm({...editForm, vietnamese_meaning: e.target.value})} className="w-full bg-emerald-50 border border-emerald-100 rounded-xl p-3 text-base font-medium focus:bg-white focus:border-emerald-500 outline-none transition-all min-h-[100px] resize-none" />
+                   </div>
+                   <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-blue-600 uppercase tracking-widest ml-1">Định nghĩa ({language.toUpperCase()})</label>
+                      <textarea 
+                        value={isEn ? (editForm.english_definition || '') : (editForm.german_definition || '')} 
+                        onChange={e => {
+                          if (isEn) setEditForm({...editForm, english_definition: e.target.value});
+                          else setEditForm({...editForm, german_definition: e.target.value});
+                        }} 
+                        className="w-full bg-blue-50 border border-blue-100 rounded-xl p-3 text-base focus:bg-white focus:border-blue-500 outline-none transition-all min-h-[100px] resize-none" 
+                      />
+                   </div>
+                </div>
+
+                {/* Dòng 4: Ví dụ Gốc & Nghĩa Ví dụ */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                   <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Câu ví dụ ({language.toUpperCase()})</label>
+                      <textarea 
+                        value={isEn ? (editForm.example_english || '') : (editForm.example_german || '')} 
+                        onChange={e => {
+                          if (isEn) setEditForm({...editForm, example_english: e.target.value});
+                          else setEditForm({...editForm, example_german: e.target.value});
+                        }} 
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-base italic focus:bg-white focus:border-indigo-500 outline-none transition-all min-h-[80px] resize-none" 
+                      />
+                   </div>
+                   <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Nghĩa Câu ví dụ (VN)</label>
+                      <textarea 
+                        value={editForm.example_vietnamese || ''} 
+                        onChange={e => setEditForm({...editForm, example_vietnamese: e.target.value})} 
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-base focus:bg-white focus:border-indigo-500 outline-none transition-all min-h-[80px] resize-none" 
+                      />
+                   </div>
+                </div>
+
+                <div className="pt-6 border-t border-slate-100 flex items-center justify-end gap-4">
+                  <button onClick={() => {setEditForm(null); setEditingReportId(null);}} className="px-6 py-4 rounded-2xl font-bold text-slate-500 hover:bg-slate-100 transition-all">Hủy bỏ</button>
+                  <button onClick={handleResolveAndSave} disabled={isSaving} className="bg-indigo-600 text-white px-8 py-4 rounded-2xl font-bold text-lg hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200 hover:-translate-y-1 disabled:opacity-50 flex items-center gap-2">
+                    {isSaving ? <Loader2 className="animate-spin" size={24} /> : <CheckCircle2 size={24} />} 
+                    Lưu đè lên Hệ thống
+                  </button>
+                </div>
+
               </div>
             ) : (
-              <div className="text-center py-10 text-slate-500 italic">Chọn một báo cáo lỗi để bắt đầu tinh chỉnh dữ liệu.</div>
+              <div className="text-center py-20 text-slate-500">
+                <div className="w-24 h-24 bg-slate-50 text-slate-300 rounded-full flex items-center justify-center mx-auto mb-4"><Edit2 size={40} /></div>
+                <p className="text-lg">Chọn một báo cáo lỗi bên trái để bắt đầu tinh chỉnh toàn diện.</p>
+              </div>
             )}
           </div>
         </div>

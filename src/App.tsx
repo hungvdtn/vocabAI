@@ -5,6 +5,8 @@ import {
   PlusCircle,
   ArrowUp,
   Target,
+  Menu,
+  X,
   Gamepad2, 
   BarChart3, 
   Volume2, 
@@ -322,6 +324,7 @@ export default function App() {
       setIsTestInProgress(false);
     }
     setView(targetView);
+    setIsMobileMenuOpen(false); // <--- Tự động đóng menu dọc khi đã chọn trang
     if (targetView !== 'games') setActiveGame(null);
   };
 
@@ -357,6 +360,9 @@ export default function App() {
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // --- BỔ SUNG STATE QUẢN LÝ THỰC ĐƠN ĐIỆN THOẠI ---
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
   useEffect(() => {
@@ -498,32 +504,26 @@ export default function App() {
       <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 md:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => { setView('home'); setActiveGame(null); }}>
-            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center shrink-0">
               <Languages className="text-white w-5 h-5" />
             </div>
             <span className="font-bold text-xl tracking-tight hidden sm:block">Vocab AIBTeM</span>
           </div>
           
-          <div className="hidden md:flex items-center gap-2 lg:gap-4 overflow-x-auto">
-            <NavButton active={view === 'topics'} onClick={() => handleNavigation('topics')} icon={<LayoutGrid size={18} />} label="Chủ đề" />
-            <NavButton active={view === 'assessment'} onClick={() => handleNavigation('assessment')} icon={<Target size={18} />} label="Đánh giá" />
-            <NavButton active={view === 'input'} onClick={() => handleNavigation('input')} icon={<PlusCircle size={18} />} label="Nhập liệu" />
-            <NavButton active={view === 'library'} onClick={() => handleNavigation('library')} icon={<FileText size={18} />} label="Thư viện" />
-            <NavButton active={view === 'games'} onClick={() => handleNavigation('games')} icon={<Gamepad2 size={18} />} label="Trò chơi" />
-            <NavButton active={view === 'report'} onClick={() => handleNavigation('report')} icon={<BarChart3 size={18} />} label="Báo cáo" />
-            <NavButton active={view === 'dictionary'} onClick={() => handleNavigation('dictionary')} icon={<BookOpen size={18} />} label="Từ điển" />
+          {/* MENU DESKTOP: Đã tối ưu padding, font chữ và icon để gọn gàng, không bị tràn thanh cuộn */}
+          <div className="hidden lg:flex items-center gap-1">
+            <NavButton active={view === 'topics'} onClick={() => handleNavigation('topics')} icon={<LayoutGrid size={16} />} label="Chủ đề" />
+            <NavButton active={view === 'assessment'} onClick={() => handleNavigation('assessment')} icon={<Target size={16} />} label="Đánh giá" />
+            <NavButton active={view === 'input'} onClick={() => handleNavigation('input')} icon={<PlusCircle size={16} />} label="Nhập liệu" />
+            <NavButton active={view === 'library'} onClick={() => handleNavigation('library')} icon={<FileText size={16} />} label="Thư viện" />
+            <NavButton active={view === 'games'} onClick={() => handleNavigation('games')} icon={<Gamepad2 size={16} />} label="Trò chơi" />
+            <NavButton active={view === 'report'} onClick={() => handleNavigation('report')} icon={<BarChart3 size={16} />} label="Báo cáo" />
+            <NavButton active={view === 'dictionary'} onClick={() => handleNavigation('dictionary')} icon={<BookOpen size={16} />} label="Từ điển" />
           </div>
 
           <div className="flex items-center gap-2 lg:gap-4">
-            <button 
-              onClick={() => setView('dictionary')} 
-              className={cn("md:hidden w-8 h-8 rounded-full transition-all flex items-center justify-center", view === 'dictionary' ? "bg-indigo-100 text-indigo-600" : "bg-slate-50 text-slate-500 hover:text-indigo-600")}
-              title="Từ điển"
-            >
-              <BookOpen size={18} />
-            </button>
-
-           <div className="flex bg-slate-100 p-1 rounded-xl">
+            {/* NÚT NGÔN NGỮ EN/DE */}
+            <div className="flex bg-slate-100 p-1 rounded-xl">
               <button 
                 onClick={() => handleLanguageChange('en')}
                 className={cn("px-2 lg:px-3 py-1.5 rounded-lg text-sm font-bold transition-all flex items-center gap-2", language === 'en' ? "bg-white shadow-sm text-indigo-600" : "text-slate-500 hover:text-indigo-600")}
@@ -542,6 +542,7 @@ export default function App() {
               </button>
             </div>
             
+            {/* MENU TÀI KHOẢN (AVATAR) */}
             <div className="relative" ref={menuRef}>
               <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="flex items-center gap-2 p-1 pr-2 lg:pr-3 rounded-full hover:bg-slate-100 transition-all border border-slate-200">
                 <img src={user.photoURL || ''} className="w-8 h-8 rounded-full border border-slate-200" alt="User" />
@@ -568,10 +569,40 @@ export default function App() {
                 )}
               </AnimatePresence>
             </div>
+
+            {/* NÚT HAMBURGER (CHỈ HIỂN THỊ TRÊN ĐIỆN THOẠI/TABLET) */}
+            <button 
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} 
+              className="lg:hidden w-10 h-10 rounded-xl bg-slate-50 text-slate-600 flex items-center justify-center hover:bg-indigo-50 hover:text-indigo-600 transition-colors border border-slate-200 shrink-0"
+            >
+              {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
           </div>
         </div>
-      </nav>
 
+        {/* THỰC ĐƠN DỌC DÀNH RIÊNG CHO MOBILE (SỔ XUỐNG KHI BẤM NÚT HAMBURGER) */}
+        <AnimatePresence>
+          {isMobileMenuOpen && (
+            <motion.div 
+              initial={{ height: 0, opacity: 0 }} 
+              animate={{ height: 'auto', opacity: 1 }} 
+              exit={{ height: 0, opacity: 0 }} 
+              className="lg:hidden bg-white border-t border-slate-100 overflow-hidden shadow-2xl absolute w-full z-40"
+            >
+              <div className="flex flex-col p-4 gap-2">
+                <MobileMenuButton active={view === 'home'} onClick={() => handleNavigation('home')} icon={<Home size={20} />} label="Trang chủ" />
+                <MobileMenuButton active={view === 'topics'} onClick={() => handleNavigation('topics')} icon={<LayoutGrid size={20} />} label="Chủ đề" />
+                <MobileMenuButton active={view === 'assessment'} onClick={() => handleNavigation('assessment')} icon={<Target size={20} />} label="Đánh giá" />
+                <MobileMenuButton active={view === 'input'} onClick={() => handleNavigation('input')} icon={<PlusCircle size={20} />} label="Nhập liệu" />
+                <MobileMenuButton active={view === 'library'} onClick={() => handleNavigation('library')} icon={<FileText size={20} />} label="Thư viện" />
+                <MobileMenuButton active={view === 'games'} onClick={() => handleNavigation('games')} icon={<Gamepad2 size={20} />} label="Trò chơi" />
+                <MobileMenuButton active={view === 'report'} onClick={() => handleNavigation('report')} icon={<BarChart3 size={20} />} label="Báo cáo" />
+                <MobileMenuButton active={view === 'dictionary'} onClick={() => handleNavigation('dictionary')} icon={<BookOpen size={20} />} label="Từ điển" />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </nav>
       <AnimatePresence>
         {activeGame && (
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="bg-indigo-600 text-white overflow-hidden w-full">
@@ -655,28 +686,28 @@ export default function App() {
         </AnimatePresence>
       </main>
 
-     <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around p-2 z-[100] transition-all duration-300" style={{ paddingBottom: isKeyboardOpen ? '0.5rem' : 'calc(0.5rem + env(safe-area-inset-bottom, 1rem))' }}>
-        <MobileNavButton active={view === 'topics'} onClick={() => handleNavigation('topics')} icon={<LayoutGrid />} />
-        <MobileNavButton active={view === 'assessment'} onClick={() => handleNavigation('assessment')} icon={<Target />} />
-        <MobileNavButton active={view === 'input'} onClick={() => handleNavigation('input')} icon={<PlusCircle />} />
-        <MobileNavButton active={view === 'library'} onClick={() => handleNavigation('library')} icon={<FileText />} />
-        <MobileNavButton active={view === 'games'} onClick={() => handleNavigation('games')} icon={<Gamepad2 />} />
-      </div>
     
     </div>
   );
 }
 
+// COMPONENT NÚT MENU DESKTOP MỚI
 function NavButton({ active, onClick, icon, label }: { active: boolean, onClick: () => void, icon: React.ReactNode, label: string }) {
   return (
-    <button onClick={onClick} className={cn("flex items-center gap-2 px-3 py-2 rounded-xl font-medium transition-all whitespace-nowrap", active ? "bg-indigo-50 text-indigo-600" : "text-slate-600 hover:bg-slate-50")}>
+    <button onClick={onClick} className={cn("flex items-center gap-1.5 px-2.5 py-2 rounded-xl text-sm font-bold transition-all whitespace-nowrap", active ? "bg-indigo-50 text-indigo-600" : "text-slate-500 hover:bg-slate-50 hover:text-indigo-600")}>
       {icon}{label}
     </button>
   );
 }
 
-function MobileNavButton({ active, onClick, icon }: { active: boolean, onClick: () => void, icon: React.ReactNode }) {
-  return <button onClick={onClick} className={cn("p-3 rounded-2xl transition-all", active ? "bg-indigo-600 text-white shadow-lg -translate-y-2" : "text-slate-400")}>{icon}</button>;
+// COMPONENT NÚT MENU MOBILE DỌC MỚI (To rõ, dễ bấm)
+function MobileMenuButton({ active, onClick, icon, label }: { active: boolean, onClick: () => void, icon: React.ReactNode, label: string }) {
+  return (
+    <button onClick={onClick} className={cn("flex items-center gap-4 px-4 py-3 rounded-2xl font-bold transition-all w-full", active ? "bg-indigo-50 text-indigo-600" : "text-slate-600 hover:bg-slate-50 hover:text-indigo-600")}>
+      {icon}
+      <span className="text-base">{label}</span>
+    </button>
+  );
 }
 
 // --- VIEWS ---

@@ -339,6 +339,7 @@ export default function App() {
   const [view, setView] = useState<View>('home');
   const [language, setLanguage] = useState<Language>('en');
   const [activeGame, setActiveGame] = useState<GameType | null>(null);
+  const [isTestMode, setIsTestMode] = useState(false);
   
   // STATE BẢO VỆ BÀI TEST & ĐIỀU HƯỚNG
   const [isTestInProgress, setIsTestInProgress] = useState(false);

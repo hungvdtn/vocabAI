@@ -266,6 +266,28 @@ const isDefSentence = (text?: string) => {
 };
 
 const KNOWN_TOPIC_IDS = ['education_and_learning', 'work_and_business', 'daily_life', 'health_and_body', 'science_and_technology', 'society_and_culture', 'nature_and_environment', 'travel_and_transport', 'other'];
+// HỆ THỐNG PHỄU LỌC TỰ ĐỘNG TÍCH HỢP BẢN VÁ TỪ FIREBASE
+function useMergedDict(language: Language) {
+  const [overrides, setOverrides] = useState<Record<string, any>>({});
+  
+  useEffect(() => {
+    const q = query(collection(db, 'dictionary_overrides'));
+    const unsub = onSnapshot(q, (snap) => {
+      const res: Record<string, any> = {};
+      snap.forEach(doc => { res[doc.id] = doc.data(); });
+      setOverrides(res);
+    });
+    return () => unsub();
+  }, []);
+
+  return useMemo(() => {
+    const rawData = language === 'en' ? enDictDataRaw : deDictDataRaw;
+    return rawData.map((item: any) => {
+      const key = `${language}_${item.word.toLowerCase()}`;
+      return overrides[key] ? { ...item, ...overrides[key] } : item;
+    });
+  }, [language, overrides]);
+}
 
 const removeAccents = (str: string) => str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D');
 
@@ -325,8 +347,8 @@ export default function App() {
       // Nếu tìm thấy từ này trong danh sách đã sửa -> Lấy bản sửa, ngược lại lấy bản gốc
       return dictOverrides[overrideKey] ? { ...item, ...dictOverrides[overrideKey] } : item;
     });
-  }, [language, dictOverrides]);
   const [activeGame, setActiveGame] = useState<GameType | null>(null);
+  
   // STATE BẢO VỆ BÀI TEST
   const [isTestInProgress, setIsTestInProgress] = useState(false);
 
@@ -336,7 +358,42 @@ export default function App() {
       setIsTestInProgress(false);
     }
     setView(targetView);
-    setIsMobileMenuOpen(false); // <--- Tự động đóng menu dọc khi đã chọn trang
+    setIsMobileMenuOpen(false);
+    if (targetView !== 'games') setActiveGame(null);
+  };
+
+  const handleLanguageChange = (lang: Language) => {
+    if (isTestInProgress) {
+      if (!window.confirm("Bạn đang làm bài kiểm tra. Bạn có chắc chắn muốn đổi ngôn ngữ? Kết quả sẽ bị hủy bỏ.")) return;
+      setIsTestInProgress(false);
+    }
+    setLanguage(lang);
+    setEditingLesson(null);
+    setPlayVocabList([]);
+    setActiveLessonId(null);
+    setGameResults([]);
+  };
+  
+  const [vocabList, setVocabList] = useState<Vocabulary[]>([]);
+  const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [playVocabList, setPlayVocabList] = useState<Vocabulary[]>([]);
+  const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
+  const [gameResults, setGameResults] = useState<GameResult[]>([]);
+  const [userLevel, setUserLevel] = useState<string | null>(null);
+
+  // ĐỌC TRÌNH ĐỘ TỪ HỒ SƠ FIREBASE (Giữ lại cái này)
+  useEffect(() => {
+    if (!user || isTestMode) return;
+    const unsubProfile = onSnapshot(doc(db, 'userProfiles', user.uid), (docSnap) => {
+      if (docSnap.exists()) setUserLevel(docSnap.data().cefrLevel || null);
+    });
+    return () => unsubProfile();
+  }, [user, isTestMode]);
+
+  const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     if (targetView !== 'games') setActiveGame(null);
   };
 
@@ -814,6 +871,7 @@ function StatCard({ title, value, color }: { title: string, value: string, color
 // --- ASSESSMENT VIEW (TRẮC NGHIỆM ĐÁNH GIÁ NĂNG LỰC) ---
 // --- ASSESSMENT VIEW (TRẮC NGHIỆM ĐÁNH GIÁ NĂNG LỰC) ---
 function AssessmentView({ language, user, onGoToTopics, setIsTestInProgress }: { language: Language, user: User, onGoToTopics: () => void, setIsTestInProgress: (status: boolean) => void }) {
+  const mergedDict = useMergedDict(language);
   const [phase, setPhase] = useState<'intro' | 'quiz' | 'result'>('intro');
   const [questions, setQuestions] = useState<any[]>([]);
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -1354,7 +1412,8 @@ function AdminDashboardView({ language }: { language: Language }) {
   );
 }
 function TopicLibraryView({ language, lessons, userLevel, onGoToAssessment, onOpenInInput }: { language: Language, lessons: Lesson[], userLevel: string | null, onGoToAssessment: () => void, onOpenInInput: (vocab: Vocabulary[], title: string) => void }) {
-  const currentDict = useMemo(() => {
+  const mergedDict = useMergedDict(language);
+  mergedDict.map
     const rawDict = mergedDict;
     return rawDict.map(w => {
       if (w.topic && KNOWN_TOPIC_IDS.includes(w.topic)) return w;
@@ -1581,6 +1640,7 @@ function TopicLibraryView({ language, lessons, userLevel, onGoToAssessment, onOp
 }
 
 function DictionaryView({ language }: { language: Language }) {
+  const mergedDict = useMergedDict(language);
   const [searchTerm, setSearchTerm] = useState('');
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [selectedWord, setSelectedWord] = useState<any | null>(null);
@@ -2461,9 +2521,9 @@ function GameCard({ title, desc, icon, onClick, colorClass }: { title: string, d
 }
 
 function GameContainer({ type, vocabList, language, onBack, onFinish, playSound, activeLessonId }: { type: GameType, vocabList: Vocabulary[], language: Language, onBack: () => void, onFinish: (score: number, mistakes?: any[]) => void, playSound: (t: 'correct' | 'wrong' | 'success') => void, activeLessonId: string }) {
-  
+  const mergedDict = useMergedDict(language);
   const [gameVocabs] = useState(() => {
-    const currentDict = mergedDict;
+    mergedDict
     const enriched = vocabList.map(v => {
         const dictEntry = currentDict.find(d => d.word.toLowerCase() === v.word.toLowerCase());
         if (dictEntry) {

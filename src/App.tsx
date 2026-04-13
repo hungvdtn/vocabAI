@@ -1144,14 +1144,14 @@ function AdminDashboardView({ language }: { language: Language }) {
 
   const startEdit = (report: any) => {
     const dict = language === 'en' ? enDictDataRaw : deDictDataRaw;
-    const entry = dict.find(item => item.word.toLowerCase() === report.word.toLowerCase());
+    const entry = dict.find((item: any) => item.word.toLowerCase() === report.word.toLowerCase());
     setEditingReportId(report.id);
     
-    // Nạp toàn bộ dữ liệu gốc vào form, nếu không có thì để trống
+    // Nạp dữ liệu. NẾU LÀ TỪ MỚI DO AI BẮT, tự động điền sẵn report.suggestedMeaning
     const initialForm = entry || { 
       word: report.word, 
-      meaning: '', 
-      vietnamese_meaning: '',
+      meaning: report.suggestedMeaning || '', 
+      vietnamese_meaning: report.suggestedMeaning || '',
       part_of_speech: '', 
       phonetic: '',
       english_definition: '',
@@ -1163,7 +1163,6 @@ function AdminDashboardView({ language }: { language: Language }) {
       level: 'A1' 
     };
     
-    // Đảm bảo trường vietnamese_meaning luôn có giá trị để chỉnh sửa
     if (!initialForm.vietnamese_meaning && initialForm.meaning) {
         initialForm.vietnamese_meaning = initialForm.meaning;
     }
@@ -1585,22 +1584,36 @@ function DictionaryView({ language }: { language: Language }) {
   const [selectedWord, setSelectedWord] = useState<any | null>(null);
   const [aiTranslation, setAiTranslation] = useState<string[] | null>(null);
   const [isTranslating, setIsTranslating] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveSuccess, setSaveSuccess] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
 
-  // STATE MỚI: THEO DÕI VỊ TRÍ PHÍM LÊN XUỐNG CỦA BÀN PHÍM
+  // STATE ĐIỀU KHIỂN BÀN PHÍM
   const [selectedIndex, setSelectedIndex] = useState(-1);
 
-  useEffect(() => { setSearchTerm(''); setSelectedWord(null); setSuggestions([]); setAiTranslation(null); setSelectedIndex(-1); }, [language]);
-
-  const currentDict: any[] = mergedDict;
+  useEffect(() => { 
+    setSearchTerm(''); 
+    setSelectedWord(null); 
+    setSuggestions([]); 
+    setAiTranslation(null); 
+    setSelectedIndex(-1); 
+  }, [language]);
 
   const handleSearchChange = (text: string) => {
-    setSearchTerm(text); setAiTranslation(null); setSelectedIndex(-1); // Reset highlight khi gõ ký tự mới
-    if (text.trim() === '') { setSuggestions([]); setSelectedWord(null); return; }
-    const results = currentDict.filter(item => item.word && item.word.toLowerCase().startsWith(text.toLowerCase())).slice(0, 8); 
-    setSuggestions(results); setSelectedWord(null); 
+    setSearchTerm(text); 
+    setAiTranslation(null); 
+    setSelectedIndex(-1); 
+    
+    if (text.trim() === '') { 
+      setSuggestions([]); 
+      setSelectedWord(null); 
+      return; 
+    }
+    
+    const results = mergedDict.filter((item: any) => 
+      item.word && item.word.toLowerCase().startsWith(text.toLowerCase())
+    ).slice(0, 8); 
+    
+    setSuggestions(results); 
+    setSelectedWord(null); 
   };
 
   const handleSelectWord = (wordObj: any) => { 
@@ -1608,32 +1621,41 @@ function DictionaryView({ language }: { language: Language }) {
     setSearchTerm(wordObj.word); 
     setSuggestions([]); 
     setAiTranslation(null); 
-    setSelectedIndex(-1); // Reset highlight sau khi chọn
+    setSelectedIndex(-1); 
   };
 
-  // LOGIC MỚI: ĐIỀU KHIỂN BẰNG BÀN PHÍM
+  // LOGIC ĐIỀU KHIỂN BÀN PHÍM (ĐÃ CHẶN XUNG ĐỘT BỘ GÕ TIẾNG VIỆT)
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.nativeEvent.isComposing) return;
+
     if (suggestions.length > 0) {
       if (e.key === 'ArrowDown') {
         e.preventDefault();
         setSelectedIndex(prev => (prev < suggestions.length - 1 ? prev + 1 : 0));
-      } else if (e.key === 'ArrowUp') {
+      } 
+      else if (e.key === 'ArrowUp') {
         e.preventDefault();
         setSelectedIndex(prev => (prev > 0 ? prev - 1 : suggestions.length - 1));
-      } else if (e.key === 'Enter') {
+      } 
+      else if (e.key === 'Enter') {
         e.preventDefault();
         if (selectedIndex >= 0 && suggestions[selectedIndex]) {
           handleSelectWord(suggestions[selectedIndex]);
-        } else {
-          handleSelectWord(suggestions[0]); // Mặc định chọn từ trên cùng nếu chỉ gõ rồi ấn Enter
+        } else if (suggestions.length > 0) {
+          handleSelectWord(suggestions[0]);
         }
       }
+      else if (e.key === 'Escape') {
+        setSuggestions([]);
+        setSelectedIndex(-1);
+      }
     } else if (e.key === 'Enter' && searchTerm.trim() !== '') {
-      const exactMatch = currentDict.find(item => item.word && item.word.toLowerCase() === searchTerm.toLowerCase().trim());
+      const exactMatch = mergedDict.find((item: any) => item.word && item.word.toLowerCase() === searchTerm.toLowerCase().trim());
       if (exactMatch) handleSelectWord(exactMatch);
     }
   };
 
+  // TÍNH NĂNG TỰ ĐỘNG THU THẬP TỪ VỰNG NGẦM (AUTO-ENRICHMENT)
   const handleAITranslate = async () => {
     if (!searchTerm.trim()) return;
     setIsTranslating(true);
@@ -1643,27 +1665,39 @@ function DictionaryView({ language }: { language: Language }) {
       if (data && Array.isArray(data.translations)) meaningArray = data.translations;
       else if (typeof data === 'string' && data.trim() !== '') meaningArray = data.split(',').map((s:string) => s.trim()).filter((s:string) => s !== '');
       setAiTranslation(meaningArray);
-    } catch (error) { setAiTranslation(["Lỗi kết nối AIBTeM. Vui lòng thử lại sau."]); } 
-    finally { setIsTranslating(false); }
-  };
 
-  const handleSaveToDatabase = async () => {
-    setIsSaving(true);
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 3000);
-    } catch (error) { alert("Lỗi khi lưu vào Google Sheets!"); } 
-    finally { setIsSaving(false); }
+      // Ghi nhận ngầm đẩy thẳng về Trang Quản Trị
+      if (meaningArray.length > 0) {
+        addDoc(collection(db, 'error_reports'), {
+          word: searchTerm.toLowerCase().trim(),
+          language: language,
+          errorText: "🌟 TỪ MỚI (Từ điển tự động bắt)",
+          userId: auth.currentUser?.uid || 'unknown',
+          userName: auth.currentUser?.displayName || 'Hệ thống tự động',
+          status: 'pending',
+          createdAt: Date.now(),
+          suggestedMeaning: meaningArray.join(', ')
+        }).catch(e => console.error("Lỗi thu thập ngầm:", e));
+      }
+
+    } catch (error) { 
+      setAiTranslation(["Lỗi kết nối AIBTeM. Vui lòng thử lại sau."]); 
+    } finally { 
+      setIsTranslating(false); 
+    }
   };
 
   const startVoiceSearch = () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (SpeechRecognition) {
-      const recognition = new SpeechRecognition(); recognition.lang = language === 'en' ? 'en-US' : 'de-DE';
-      recognition.onresult = (event: any) => { const transcript = event.results[0][0].transcript; setSearchTerm(transcript); handleSearchChange(transcript); };
+      const recognition = new SpeechRecognition(); 
+      recognition.lang = language === 'en' ? 'en-US' : 'de-DE';
+      recognition.onresult = (event: any) => { 
+        const transcript = event.results[0][0].transcript; 
+        handleSearchChange(transcript); 
+      };
       recognition.start();
-    } else alert("Trình duyệt của bạn không hỗ trợ tính năng nhận diện giọng nói (Vui lòng sử dụng Google Chrome).");
+    } else alert("Trình duyệt không hỗ trợ nhận diện giọng nói.");
   };
 
   useEffect(() => {
@@ -1675,48 +1709,98 @@ function DictionaryView({ language }: { language: Language }) {
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [searchRef]);
+  }, []);
 
   return (
     <div className="w-full pb-32">
-      <div className="text-center space-y-4 mb-8 mt-4"><h2 className="text-3xl font-black text-indigo-700">Từ điển {language === 'en' ? 'Anh - Việt' : 'Đức - Việt'}</h2></div>
+      <div className="text-center space-y-4 mb-8 mt-4">
+        <h2 className="text-3xl font-black text-indigo-700">Từ điển {language === 'en' ? 'Anh - Việt' : 'Đức - Việt'}</h2>
+      </div>
+      
       <div className="relative w-full" ref={searchRef}>
         <div className="relative">
           <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 w-6 h-6" />
-          <input type="text" placeholder="Nhập từ vựng cần tra..." value={searchTerm} onChange={(e) => handleSearchChange(e.target.value)} onKeyDown={handleKeyDown} className="w-full bg-white border-2 border-slate-200 rounded-[2rem] pl-16 pr-16 py-4 text-xl font-medium focus:border-indigo-500 outline-none transition-all shadow-sm" />
-          <button onClick={startVoiceSearch} className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-600 transition-colors p-2 bg-slate-50 hover:bg-indigo-50 rounded-full" title="Tra từ bằng giọng nói"><Mic size={20} /></button>
+          <input 
+            type="text" 
+            placeholder="Nhập từ vựng cần tra..." 
+            value={searchTerm} 
+            onChange={(e) => handleSearchChange(e.target.value)} 
+            onKeyDown={handleKeyDown} 
+            className="w-full bg-white border-2 border-slate-200 rounded-[2rem] pl-16 pr-16 py-4 text-xl font-medium focus:border-indigo-500 outline-none transition-all shadow-sm" 
+          />
+          <button onClick={startVoiceSearch} className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-600 transition-colors p-2 bg-slate-50 hover:bg-indigo-50 rounded-full">
+            <Mic size={20} />
+          </button>
         </div>
+
         <AnimatePresence>
           {suggestions.length > 0 && !selectedWord && (
             <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }} className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden z-50">
-              {suggestions.map((item, idx) => (
-                <div 
-                  key={idx} 
-                  onMouseDown={(e) => { e.preventDefault(); handleSelectWord(item); }} 
-                  className={cn("px-6 py-4 cursor-pointer border-b border-slate-100 last:border-none flex items-center justify-between transition-colors", selectedIndex === idx ? "bg-indigo-50" : "hover:bg-slate-50")}
-                >
-                  <span className={cn("text-lg font-bold", selectedIndex === idx ? "text-indigo-700" : "text-slate-800")}>{item.word}</span>
-                  <span className="text-slate-500 truncate ml-4 max-w-xs">{item.vietnamese_meaning || item.meaning}</span>
-                </div>
-              ))}
+              {suggestions.map((item, idx) => {
+                const isSelected = selectedIndex === idx;
+                return (
+                  <div 
+                    key={idx} 
+                    onMouseDown={(e) => { e.preventDefault(); handleSelectWord(item); }}
+                    onMouseEnter={() => setSelectedIndex(idx)} 
+                    className={cn(
+                      "px-6 py-4 cursor-pointer border-b border-slate-100 last:border-none flex items-center justify-between transition-all", 
+                      isSelected ? "bg-indigo-600 text-white" : "hover:bg-slate-50 text-slate-800 bg-white"
+                    )}
+                  >
+                    <span className={cn("text-lg font-bold", isSelected ? "text-white" : "text-slate-800")}>{item.word}</span>
+                    <span className={cn("truncate ml-4 max-w-xs text-sm", isSelected ? "text-indigo-100" : "text-slate-500")}>
+                      {item.vietnamese_meaning || item.meaning}
+                    </span>
+                  </div>
+                );
+              })}
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
+      {selectedWord && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full mt-6 bg-white p-8 md:p-10 border border-slate-200 shadow-sm rounded-[2rem]">
+          <div className="mb-2 flex items-baseline gap-2 flex-wrap">
+            <span className="text-3xl text-blue-700 font-bold">
+              {selectedWord.article && <span className={cn("font-normal mr-2", selectedWord.article.toLowerCase() === 'der' ? "text-blue-500" : selectedWord.article.toLowerCase() === 'die' ? "text-red-500" : "text-green-600")}>{selectedWord.article}</span>}
+              {selectedWord.word}
+            </span>
+            {selectedWord.part_of_speech && <span className="text-xl text-slate-500 font-medium">({selectedWord.part_of_speech})</span>}
+          </div>
+          {selectedWord.phonetic && (
+            <div className="flex items-center gap-3 mb-6">
+              <button onClick={() => handleSpeak(selectedWord.word, language)} className="text-indigo-600 hover:scale-110 transition-transform"><Volume2 size={22} /></button>
+              <span className="font-mono text-slate-600 text-lg">{renderPhonetic(selectedWord.phonetic)}</span>
+            </div>
+          )}
+          <div className="mb-4">
+            <div className="text-emerald-700 mb-8 text-xl font-bold"><span className="text-emerald-600 mr-2">Nghĩa:</span>{selectedWord.vietnamese_meaning || selectedWord.meaning}</div>
+            {language === 'en' && selectedWord.english_definition && <div className="text-slate-800 mb-1 text-lg font-medium"><span className="font-bold text-slate-500 mr-2">Định nghĩa:</span> {selectedWord.english_definition}</div>}
+            {language === 'de' && selectedWord.german_definition && <div className="text-slate-800 mb-1 text-lg font-medium"><span className="font-bold text-slate-500 mr-2">Định nghĩa:</span> {selectedWord.german_definition}</div>}
+          </div>
+          {(selectedWord.example_english || selectedWord.example_german || selectedWord.example) && (
+            <div className="mt-4 border-t border-slate-100 pt-6">
+              <div className="flex items-start gap-3 mb-2">
+                <button onClick={() => handleSpeak(selectedWord.example_english || selectedWord.example_german || selectedWord.example, language)} className="text-slate-400 hover:text-indigo-600 mt-1 transition-colors"><Volume2 size={20} /></button>
+                <span className="text-slate-800 text-lg leading-relaxed italic">{highlightWordInSentence(selectedWord.example_english || selectedWord.example_german || selectedWord.example, selectedWord.word)}</span>
+              </div>
+              {selectedWord.example_vietnamese && <div className="ml-8 text-slate-500 text-lg">{selectedWord.example_vietnamese}</div>}
+            </div>
+          )}
+        </motion.div>
+      )}
+
       {!selectedWord && (!searchTerm || (searchTerm && suggestions.length > 0)) && (
         <div className="w-full mt-8 grid grid-cols-1 md:grid-cols-2 gap-8 items-center bg-white p-8 md:p-12 rounded-[2rem] shadow-sm border border-slate-100">
           <div className="space-y-4">
             <h3 className="text-2xl font-black text-indigo-700 mb-2">AIBTeM Dictionary</h3>
-            <div className="space-y-3 text-slate-600 text-sm md:text-base leading-relaxed">
-              <p className="flex items-center gap-2"><CheckCircle2 className="text-emerald-500 shrink-0" size={18}/> Từ điển trực tuyến miễn phí;</p>
-              <p className="flex items-center gap-2"><CheckCircle2 className="text-emerald-500 shrink-0" size={18}/> Tra cứu nhanh;</p>
-              <p className="flex items-center gap-2"><CheckCircle2 className="text-emerald-500 shrink-0" size={18}/> Kho từ đồ sộ, gợi ý thông minh;</p>
-              <p className="flex items-center gap-2"><CheckCircle2 className="text-emerald-500 shrink-0" size={18}/> Nghe được phát âm;</p>
-              <p className="flex items-center gap-2"><CheckCircle2 className="text-emerald-500 shrink-0" size={18}/> Hỗ trợ tra từ bằng giọng nói.</p>
-            </div>
+            <p className="text-slate-600 leading-relaxed">Sử dụng phím mũi tên <strong>↑ ↓</strong> để chọn từ gợi ý và <strong>Enter</strong> để xem chi tiết một cách nhanh chóng.</p>
           </div>
-          <div className="flex justify-center"><img src="https://placehold.co/300x300/4f46e5/white?text=AIBTeM+Mochi" alt="Mochi Placeholder" className="w-48 h-48 md:w-64 md:h-64 object-contain animate-[bounce_3s_infinite]" /></div>
+          <div className="flex justify-center">
+            <img src="https://placehold.co/300x300/4f46e5/white?text=AIBTeM" alt="AIBTeM" className="w-48 h-48 object-contain animate-bounce" />
+          </div>
         </div>
       )}
 
@@ -1739,9 +1823,6 @@ function DictionaryView({ language }: { language: Language }) {
                 </div>
                 <div className="flex items-center gap-3">
                   <button onClick={() => handleSpeak(searchTerm, language)} className="w-14 h-14 shrink-0 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center hover:bg-indigo-600 hover:text-white transition-all"><Volume2 size={24} /></button>
-                  <button onClick={handleSaveToDatabase} disabled={isSaving || saveSuccess} className={cn("px-6 h-14 shrink-0 rounded-2xl flex items-center justify-center font-bold transition-all gap-2", saveSuccess ? "bg-emerald-50 text-emerald-600 border border-emerald-200" : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-md")}>
-                    {isSaving ? <Loader2 className="animate-spin" size={20} /> : saveSuccess ? <CheckCircle2 size={20} /> : <Save size={20} />} {saveSuccess ? "Đã lưu CSDL" : "Lưu vào CSDL"}
-                  </button>
                 </div>
               </div>
               <div className="flex flex-wrap gap-3">
@@ -1749,39 +1830,6 @@ function DictionaryView({ language }: { language: Language }) {
                   <span key={idx} className="bg-emerald-50 border border-emerald-100 text-emerald-700 px-6 py-3 rounded-xl font-bold text-xl">{meaning}</span>
                 ))}
               </div>
-            </div>
-          )}
-        </motion.div>
-      )}
-
-      {selectedWord && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full mt-6 bg-white p-8 md:p-10 border border-slate-200 shadow-sm">
-          <div className="mb-2 flex items-baseline gap-2 flex-wrap">
-            <span className="text-3xl text-blue-700 font-bold">
-              {selectedWord.article && <span className={cn("font-normal mr-2", selectedWord.article.toLowerCase() === 'der' ? "text-blue-500" : selectedWord.article.toLowerCase() === 'die' ? "text-red-500" : "text-green-600")}>{selectedWord.article}</span>}
-              {selectedWord.word}
-            </span>
-            {selectedWord.part_of_speech && <span className="text-xl text-slate-500 font-medium">({selectedWord.part_of_speech})</span>}
-          </div>
-          {selectedWord.phonetic && (
-            <div className="flex items-center gap-3 mb-6">
-              <Volume2 className="text-indigo-600 cursor-pointer hover:text-indigo-800 hover:scale-110 transition-transform" onClick={() => handleSpeak(selectedWord.word, language)} size={22} />
-              <span className="font-mono text-slate-600 text-lg">{renderPhonetic(selectedWord.phonetic)}</span>
-            </div>
-          )}
-          <div className="mb-4">
-            {language === 'en' && selectedWord.english_definition && <div className="text-slate-800 mb-1 text-lg font-medium"><span className="font-bold text-slate-500 mr-2">def. ({isDefSentence(selectedWord.english_definition) ? 'sentence' : 'phrase'}):</span> {selectedWord.english_definition}</div>}
-            {language === 'de' && selectedWord.german_definition && <div className="text-slate-800 mb-1 text-lg font-medium"><span className="font-bold text-slate-500 mr-2">Begr. ({isDefSentence(selectedWord.german_definition) ? 'Satz' : 'Aus'}):</span> {selectedWord.german_definition}</div>}
-            {(selectedWord.synonyms || selectedWord.synonym) && <div className="text-slate-700 text-lg mt-2"><span className="font-bold text-indigo-600 mr-2">Từ đồng nghĩa:</span>{selectedWord.synonyms || selectedWord.synonym}</div>}
-          </div>
-          <div className="text-emerald-700 mb-8 text-xl font-bold flex items-start"><span className="text-emerald-600 mr-2">Nghĩa:</span><span>{selectedWord.vietnamese_meaning || selectedWord.meaning}</span></div>
-          {(selectedWord.example_english || selectedWord.example_german || selectedWord.example) && (
-            <div className="mt-4 border-t border-slate-100 pt-6">
-              <div className="flex items-start gap-3 mb-2">
-                <Volume2 className="text-slate-400 cursor-pointer hover:text-indigo-600 mt-1 flex-shrink-0 transition-colors" onClick={() => handleSpeak(selectedWord.example_english || selectedWord.example_german || selectedWord.example, language)} size={20} />
-                <span className="text-slate-800 text-lg leading-relaxed"><span className="font-bold text-slate-500 mr-2">Ví dụ:</span><span className="italic">{highlightWordInSentence(selectedWord.example_english || selectedWord.example_german || selectedWord.example, selectedWord.word)}</span></span>
-              </div>
-              {selectedWord.example_vietnamese && <div className="ml-8 pl-1 text-slate-600 text-lg">{selectedWord.example_vietnamese}</div>}
             </div>
           )}
         </motion.div>
@@ -1971,7 +2019,7 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
     if (!word) return;
 
     const currentDict = currentLanguage === 'en' ? enDictDataRaw : deDictDataRaw;
-    const localEntry = currentDict.find(item => item.word.toLowerCase() === word.toLowerCase());
+    const localEntry = currentDict.find((item: any) => item.word.toLowerCase() === word.toLowerCase());
     
     if (localEntry) {
       const meaningStr = localEntry.vietnamese_meaning || localEntry.meaning || '';
@@ -1980,9 +2028,7 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
       lastTranslatedWords.current[index] = term;
       setRows(prev => {
         const upd = [...prev];
-        if (upd[index]) {
-          upd[index] = { ...upd[index], suggestions: meaningArray, loading: false };
-        }
+        if (upd[index]) upd[index] = { ...upd[index], suggestions: meaningArray, loading: false };
         return upd;
       });
       return; 
@@ -2003,9 +2049,25 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
       let meaningArray: string[] = [];
       if (data && Array.isArray(data.translations)) meaningArray = data.translations;
       else if (typeof data === 'string' && data.trim() !== '') meaningArray = data.split(',').map(s => s.trim()).filter(s => s !== '');
+      
       translationCache.current[word] = data;
       lastTranslatedWords.current[index] = term; 
       setRows(prev => { const newRows = [...prev]; if (newRows[index]) newRows[index] = { ...newRows[index], suggestions: meaningArray, loading: false }; return newRows; });
+
+      // TÍNH NĂNG TỰ ĐỘNG THU THẬP NGẦM (Gửi về Admin)
+      if (meaningArray.length > 0) {
+        addDoc(collection(db, 'error_reports'), {
+          word: word.toLowerCase().trim(),
+          language: currentLanguage,
+          errorText: "🌟 TỪ MỚI (Nhập liệu tự động bắt)",
+          userId: user.uid || 'unknown',
+          userName: user.displayName || 'Hệ thống tự động',
+          status: 'pending',
+          createdAt: Date.now(),
+          suggestedMeaning: meaningArray.join(', ')
+        }).catch(e => console.error("Lỗi thu thập ngầm:", e));
+      }
+
     } catch (error: any) {
       if (error.message === 'Aborted') return;
       setRows(prev => { const newRows = [...prev]; if (newRows[index]) newRows[index] = { ...newRows[index], loading: false, suggestions: [] }; return newRows; });

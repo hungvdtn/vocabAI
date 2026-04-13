@@ -386,8 +386,6 @@ export default function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // --- BỔ SUNG STATE QUẢN LÝ THỰC ĐƠN ĐIỆN THOẠI ---
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
   useEffect(() => {
@@ -1352,14 +1350,14 @@ function AdminDashboardView({ language }: { language: Language }) {
   );
 }
 function TopicLibraryView({ language, lessons, userLevel, onGoToAssessment, onOpenInInput }: { language: Language, lessons: Lesson[], userLevel: string | null, onGoToAssessment: () => void, onOpenInInput: (vocab: Vocabulary[], title: string) => void }) {
-  const mergedDict = useMergedDict(language);
-  mergedDict.map
-    const rawDict = mergedDict;
-    return rawDict.map(w => {
+  const mergedDict = useMergedDict(language); // Kích hoạt phễu lọc
+
+  const currentDict = useMemo(() => {
+    return mergedDict.map((w: any) => {
       if (w.topic && KNOWN_TOPIC_IDS.includes(w.topic)) return w;
       return { ...w, topic: mapSubTopicToMainTopic(w.topic) };
     });
-  }, [language]);
+  }, [mergedDict]);
 
   const [selectedTopic, setSelectedTopic] = useState<any | null>(null);
   const [selectedWords, setSelectedWords] = useState<Set<string>>(new Set());

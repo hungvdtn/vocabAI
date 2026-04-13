@@ -2410,6 +2410,9 @@ function FlashcardGame({ vocab, onNext, onPrev, language, step, totalSteps, onFi
   const [showReportModal, setShowReportModal] = useState(false);
   const [errorText, setErrorText] = useState('');
   const [showThankYou, setShowThankYou] = useState(false);
+  
+  // STATE MỚI: Hiển thị vòng xoay tải dữ liệu khi đang gửi báo cáo lên Firebase
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
 
   const [viewedSides, setViewedSides] = useState<Set<number>>(new Set([0]));
 
@@ -2435,6 +2438,33 @@ function FlashcardGame({ vocab, onNext, onPrev, language, step, totalSteps, onFi
 
   const definition = language === 'en' ? (vocab.english_definition || vocab.definition) : (vocab.german_definition || vocab.definition);
   const exampleText = language === 'en' ? (vocab.example_english || vocab.example) : (vocab.example_german || vocab.example);
+
+  // HÀM MỚI: Đẩy dữ liệu báo cáo lên Firebase Firestore
+  const handleSubmitReport = async () => {
+    if (!errorText.trim()) return;
+    setIsSubmittingReport(true); // Bật hiệu ứng loading
+    
+    try {
+      // Gọi API đẩy dữ liệu vào thư mục 'error_reports'
+      await addDoc(collection(db, 'error_reports'), {
+        word: vocab.word,
+        language: language,
+        errorText: errorText.trim(),
+        userId: auth.currentUser?.uid || 'unknown',
+        userName: auth.currentUser?.displayName || 'Người dùng ẩn danh',
+        status: 'pending', // Trạng thái 'pending' để Admin biết lỗi này chưa được xử lý
+        createdAt: Date.now()
+      });
+      
+      // Gửi thành công mới hiện màn hình Cảm ơn
+      setShowThankYou(true);
+    } catch (error) {
+      console.error("Lỗi gửi báo cáo:", error);
+      alert("Lỗi mạng: Không thể gửi báo cáo lúc này. Vui lòng thử lại sau.");
+    } finally {
+      setIsSubmittingReport(false); // Tắt hiệu ứng loading
+    }
+  };
 
   return (
     <div className="space-y-8 w-full max-w-4xl mx-auto">
@@ -2515,7 +2545,7 @@ function FlashcardGame({ vocab, onNext, onPrev, language, step, totalSteps, onFi
       <AnimatePresence>
         {showReportModal && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => !showThankYou && setShowReportModal(false)} className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" />
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => !showThankYou && !isSubmittingReport && setShowReportModal(false)} className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" />
             <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="relative bg-white w-full max-w-lg rounded-[3rem] p-8 md:p-10 shadow-2xl overflow-hidden z-10">
               {!showThankYou ? (
                 <>
@@ -2524,18 +2554,21 @@ function FlashcardGame({ vocab, onNext, onPrev, language, step, totalSteps, onFi
                     <div><h3 className="text-2xl font-bold text-slate-900">Báo lỗi từ vựng</h3><p className="text-slate-500 text-sm">Từ: <strong className="text-indigo-600">{vocab.word}</strong></p></div>
                   </div>
                   <div className="space-y-4 mb-8">
-                    <textarea autoFocus value={errorText} onChange={(e) => setErrorText(e.target.value)} placeholder="Vui lòng nhập nội dung lỗi vào đây..." className="w-full bg-slate-50 border-2 border-slate-200 rounded-2xl px-6 py-5 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all text-lg font-medium placeholder:text-slate-400 min-h-[150px] resize-none" />
+                    <textarea autoFocus value={errorText} onChange={(e) => setErrorText(e.target.value)} disabled={isSubmittingReport} placeholder="Vui lòng nhập nội dung lỗi vào đây..." className="w-full bg-slate-50 border-2 border-slate-200 rounded-2xl px-6 py-5 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all text-lg font-medium placeholder:text-slate-400 min-h-[150px] resize-none disabled:opacity-50" />
                   </div>
                   <div className="flex gap-4">
-                    <button onClick={() => setShowReportModal(false)} className="flex-1 py-4 rounded-2xl font-bold text-slate-500 hover:bg-slate-100 transition-all">Hủy</button>
-                    <button onClick={() => setShowThankYou(true)} disabled={!errorText.trim()} className="flex-1 bg-indigo-600 text-white py-4 rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-xl disabled:opacity-50">Gửi báo cáo</button>
+                    <button onClick={() => setShowReportModal(false)} disabled={isSubmittingReport} className="flex-1 py-4 rounded-2xl font-bold text-slate-500 hover:bg-slate-100 transition-all disabled:opacity-50">Hủy</button>
+                    {/* NÚT SUBMIT ĐÃ ĐƯỢC GẮN VÀO HÀM MỚI VÀ CÓ VÒNG XOAY HIỆU ỨNG */}
+                    <button onClick={handleSubmitReport} disabled={!errorText.trim() || isSubmittingReport} className="flex-1 bg-indigo-600 text-white py-4 rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-xl disabled:opacity-50 flex items-center justify-center gap-2">
+                      {isSubmittingReport ? <Loader2 className="animate-spin" size={20} /> : "Gửi báo cáo"}
+                    </button>
                   </div>
                 </>
               ) : (
                 <div className="text-center py-8">
                   <div className="w-24 h-24 bg-emerald-100 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6"><CheckCircle2 size={48} /></div>
                   <h3 className="text-3xl font-bold text-slate-900 mb-2">Cảm ơn bạn!</h3>
-                  <p className="text-slate-500 text-lg mb-8">Cảm ơn bạn đã đóng góp để hệ thống hoàn thiện hơn.</p>
+                  <p className="text-slate-500 text-lg mb-8">Báo cáo đã được gửi đến quản trị viên để khắc phục.</p>
                   <button onClick={() => { setShowReportModal(false); setShowThankYou(false); setErrorText(''); }} className="w-full py-4 rounded-2xl font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-all">Đóng</button>
                 </div>
               )}

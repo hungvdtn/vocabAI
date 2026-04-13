@@ -344,6 +344,16 @@ export default function App() {
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
 
   const [gameResults, setGameResults] = useState<GameResult[]>([]);
+  const [userLevel, setUserLevel] = useState<string | null>(null);
+
+  // ĐỌC TRÌNH ĐỘ TỪ HỒ SƠ FIREBASE
+  useEffect(() => {
+    if (!user || isTestMode) return;
+    const unsubProfile = onSnapshot(doc(db, 'userProfiles', user.uid), (docSnap) => {
+      if (docSnap.exists()) setUserLevel(docSnap.data().cefrLevel || null);
+    });
+    return () => unsubProfile();
+  }, [user, isTestMode]);
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -587,12 +597,12 @@ export default function App() {
           )}
           {view === 'assessment' && (
             <motion.div key={`assessment-${language}`} className="w-full" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
-              <AssessmentView language={language} onGoToTopics={() => handleNavigation('topics')} setIsTestInProgress={setIsTestInProgress} />
+              <AssessmentView language={language} user={user} onGoToTopics={() => handleNavigation('topics')} setIsTestInProgress={setIsTestInProgress} />
             </motion.div>
           )}
           {view === 'topics' && (
             <motion.div key={`topics-${language}`} className="w-full" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
-              <TopicLibraryView language={language} lessons={lessons} onOpenInInput={(vocabData, generatedTitle) => {
+              <TopicLibraryView language={language} lessons={lessons} userLevel={userLevel} onGoToAssessment={() => handleNavigation('assessment')} onOpenInInput={(vocabData, generatedTitle) => {
                   setEditingLesson({ title: generatedTitle, vocabularies: vocabData, language, wordCount: vocabData.length, userId: user.uid, userName: user.displayName || '', createdAt: Date.now() } as Lesson);
                   setView('input');
                 }} 
@@ -735,14 +745,13 @@ function StatCard({ title, value, color }: { title: string, value: string, color
 }
 
 // --- ASSESSMENT VIEW (TRẮC NGHIỆM ĐÁNH GIÁ NĂNG LỰC) ---
-function AssessmentView({ language, onGoToTopics, setIsTestInProgress }: { language: Language, onGoToTopics: () => void, setIsTestInProgress: (status: boolean) => void }) {
+function AssessmentView({ language, user, onGoToTopics, setIsTestInProgress }: { language: Language, user: User, onGoToTopics: () => void, setIsTestInProgress: (status: boolean) => void }) {
   const [phase, setPhase] = useState<'intro' | 'quiz' | 'result'>('intro');
   const [questions, setQuestions] = useState<any[]>([]);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [scores, setScores] = useState<Record<string, { correct: number, total: number }>>({});
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   
-  // BỘ MÀU SẮC ĐỒNG BỘ CHO CÁC TRÌNH ĐỘ
   const LEVEL_COLORS: Record<string, { bg: string, text: string, border: string, bar: string, fill: string }> = {
     'A1': { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', bar: 'bg-emerald-100', fill: 'bg-emerald-500' },
     'A2': { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200', bar: 'bg-blue-100', fill: 'bg-blue-500' },
@@ -761,7 +770,6 @@ function AssessmentView({ language, onGoToTopics, setIsTestInProgress }: { langu
 
     standardLevels.forEach(lvl => initialScores[lvl] = { correct: 0, total: 0 });
 
-    // Bước 1: Lấy cơ bản 5 câu cho mỗi trình độ (nếu có dữ liệu)
     standardLevels.forEach(lvl => {
       const wordsInLevel = dict.filter(w => w.level?.toUpperCase() === lvl);
       const shuffled = wordsInLevel.sort(() => 0.5 - Math.random()).slice(0, 5);
@@ -770,7 +778,6 @@ function AssessmentView({ language, onGoToTopics, setIsTestInProgress }: { langu
       });
     });
 
-    // Bước 2: THUẬT TOÁN BÙ ĐẮP - Nếu thiếu C1, C2 (chưa đủ 30 câu), tự động bốc thêm từ A1-B2 để bù vào cho đủ chuẩn 30
     if (generatedQuestions.length < 30) {
       const remainingWords = dict.filter(w => w.level && standardLevels.includes(w.level.toUpperCase()) && !generatedQuestions.some(q => q.word === w.word));
       const needed = 30 - generatedQuestions.length;
@@ -780,36 +787,18 @@ function AssessmentView({ language, onGoToTopics, setIsTestInProgress }: { langu
       });
     }
 
-    if (generatedQuestions.length === 0) {
-      alert("Không đủ dữ liệu từ vựng được phân cấp trình độ để tạo bài kiểm tra.");
-      return;
-    }
+    if (generatedQuestions.length === 0) return alert("Không đủ dữ liệu từ vựng để tạo bài kiểm tra.");
 
-    // Xáo trộn ngẫu nhiên vị trí 30 câu hỏi
     generatedQuestions = generatedQuestions.sort(() => 0.5 - Math.random());
 
-    // Cập nhật lại tổng số câu thực tế cho từng Level và tạo đáp án nhiễu
     const finalQuestions = generatedQuestions.map(q => {
        initialScores[q.level].total += 1;
-       
-       let distractors = dict
-        .filter(d => d.word !== q.word && (d.vietnamese_meaning || d.meaning))
-        .sort(() => 0.5 - Math.random())
-        .slice(0, 3)
-        .map(d => d.vietnamese_meaning || d.meaning);
-      
+       let distractors = dict.filter(d => d.word !== q.word && (d.vietnamese_meaning || d.meaning)).sort(() => 0.5 - Math.random()).slice(0, 3).map(d => d.vietnamese_meaning || d.meaning);
       while (distractors.length < 3) { distractors.push("Đáp án phụ " + Math.random().toString(36).substring(7)); }
-      
-      return {
-          ...q,
-          options: [q.correctMeaning, ...distractors].sort(() => 0.5 - Math.random())
-      };
+      return { ...q, options: [q.correctMeaning, ...distractors].sort(() => 0.5 - Math.random()) };
     });
 
-    // Xóa các Level không có câu hỏi nào (VD: C1, C2 bị trống)
-    Object.keys(initialScores).forEach(k => {
-       if (initialScores[k].total === 0) delete initialScores[k];
-    });
+    Object.keys(initialScores).forEach(k => { if (initialScores[k].total === 0) delete initialScores[k]; });
 
     setScores(initialScores);
     setQuestions(finalQuestions);
@@ -819,19 +808,34 @@ function AssessmentView({ language, onGoToTopics, setIsTestInProgress }: { langu
     setIsTestInProgress(true);
   };
 
+  const calculateFinalLevel = () => {
+    const evaluatedLevels = Object.keys(scores).sort();
+    let finalLevel = 'Pre-A1';
+    for (const lvl of evaluatedLevels) {
+      if ((scores[lvl].correct / scores[lvl].total) >= 0.6) finalLevel = lvl;
+      else break;
+    }
+    return finalLevel;
+  };
+
+  // TỰ ĐỘNG LƯU KẾT QUẢ VÀO HỒ SƠ KHI KẾT THÚC
+  useEffect(() => {
+    if (phase === 'result' && user && user.uid !== 'test-user-123') {
+       const finalLvl = calculateFinalLevel();
+       setDoc(doc(db, 'userProfiles', user.uid), { cefrLevel: finalLvl, lastTested: Date.now() }, { merge: true })
+         .catch(e => console.error("Lỗi lưu hồ sơ:", e));
+    }
+  }, [phase]);
+
   const handleAnswer = (option: string) => {
     if (selectedOption) return; 
     setSelectedOption(option);
-    
     const currentQ = questions[currentIdx];
     const isCorrect = option === currentQ.correctMeaning;
     
     if (isCorrect) {
       playGameSound('correct');
-      setScores(prev => ({
-        ...prev,
-        [currentQ.level]: { ...prev[currentQ.level], correct: prev[currentQ.level].correct + 1 }
-      }));
+      setScores(prev => ({ ...prev, [currentQ.level]: { ...prev[currentQ.level], correct: prev[currentQ.level].correct + 1 } }));
     } else {
       playGameSound('wrong');
     }
@@ -847,30 +851,16 @@ function AssessmentView({ language, onGoToTopics, setIsTestInProgress }: { langu
     }, 1000);
   };
 
-  const calculateFinalLevel = () => {
-    const evaluatedLevels = Object.keys(scores).sort();
-    let finalLevel = 'Pre-A1';
-    for (const lvl of evaluatedLevels) {
-      const acc = scores[lvl].correct / scores[lvl].total;
-      if (acc >= 0.6) { 
-        finalLevel = lvl;
-      } else {
-        break;
-      }
-    }
-    return finalLevel;
-  };
-
   const getRecommendations = (level: string) => {
     switch(level) {
-      case 'Pre-A1': return "AIBTeM nhận thấy bạn cần củng cố lại từ vựng cơ bản. Hãy bắt đầu học từ Chủ đề 'Đời sống hàng ngày' và 'Thời gian' ở mức độ A1 trước nhé.";
-      case 'A1': return "Bạn đã nắm được các khái niệm rất cơ bản. Tiếp tục mở rộng vốn từ ở các chủ đề 'Gia đình', 'Du lịch' mức độ A2 để tự tin giao tiếp hơn.";
-      case 'A2': return "Nền tảng của bạn khá tốt! Hãy thử thách bản thân bằng các từ vựng B1 thuộc chuyên ngành 'Công sở & Kinh doanh' hoặc 'Sức khỏe'.";
-      case 'B1': return "Khả năng ngôn ngữ của bạn đã ở mức giao tiếp độc lập. Để lên B2, hãy tập trung vào các từ diễn đạt trừu tượng thuộc 'Xã hội & Văn hóa'.";
-      case 'B2': return "Rất xuất sắc! Vốn từ của bạn hoàn toàn đáp ứng được môi trường học thuật/làm việc. Hãy tìm hiểu thêm các thành ngữ C1 để văn phong tự nhiên hơn.";
+      case 'Pre-A1': return "AIBTeM nhận thấy bạn cần củng cố lại từ vựng cơ bản. Hãy bắt đầu học từ Chủ đề 'Đời sống hàng ngày'.";
+      case 'A1': return "Bạn đã nắm được các khái niệm rất cơ bản. Tiếp tục mở rộng vốn từ ở các chủ đề 'Gia đình', 'Du lịch' mức độ A2.";
+      case 'A2': return "Nền tảng của bạn khá tốt! Hãy thử thách bản thân bằng các từ vựng B1 thuộc chuyên ngành 'Công sở' hoặc 'Sức khỏe'.";
+      case 'B1': return "Khả năng của bạn đã ở mức giao tiếp độc lập. Để lên B2, tập trung vào từ diễn đạt trừu tượng thuộc 'Xã hội & Văn hóa'.";
+      case 'B2': return "Rất xuất sắc! Vốn từ của bạn hoàn toàn đáp ứng được môi trường học thuật/làm việc. Hãy tìm hiểu thêm thành ngữ C1.";
       case 'C1': 
-      case 'C2': return "Tuyệt vời! Bạn sở hữu lượng từ vựng ở mức chuyên gia/bản xứ. Hãy duy trì thói quen bằng cách giao tiếp Roleplay với AI thường xuyên.";
-      default: return "Hãy tiếp tục luyện tập hàng ngày cùng AIBTeM để nâng cao trình độ.";
+      case 'C2': return "Tuyệt vời! Bạn sở hữu lượng từ vựng ở mức chuyên gia. Hãy duy trì thói quen giao tiếp Roleplay với AI thường xuyên.";
+      default: return "Hãy tiếp tục luyện tập hàng ngày cùng AIBTeM.";
     }
   };
 
@@ -879,17 +869,15 @@ function AssessmentView({ language, onGoToTopics, setIsTestInProgress }: { langu
       <div className="w-full pb-32">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
           <div>
-            <h2 className="text-4xl font-bold mb-2 text-slate-900">Đánh giá Năng lực Từ vựng</h2>
+            {/* Đã hạ xuống text-3xl */}
+            <h2 className="text-3xl font-bold mb-2 text-slate-900">Đánh giá Năng lực Từ vựng</h2>
             <p className="text-slate-500 text-lg">Kiểm tra vốn từ của bạn theo Khung tham chiếu CEFR (Từ A1 đến C2).</p>
           </div>
         </div>
 
         <div className="bg-white rounded-[2.5rem] w-full p-8 md:p-12 shadow-sm border border-slate-100 flex flex-col items-start justify-start text-left">
-          
           <div className="flex items-center gap-6 mb-8">
-            <div className="w-20 h-20 bg-indigo-50 text-indigo-600 rounded-3xl flex items-center justify-center shadow-sm rotate-3 shrink-0">
-              <Target size={40} />
-            </div>
+            <div className="w-20 h-20 bg-indigo-50 text-indigo-600 rounded-3xl flex items-center justify-center shadow-sm rotate-3 shrink-0"><Target size={40} /></div>
             <div>
               <h3 className="text-2xl font-bold text-slate-800">Bạn đang ở cấp độ nào?</h3>
               <p className="text-slate-500 font-medium mt-1">Bài Test 30 câu hỏi sẽ giúp AIBTeM định vị chính xác năng lực của bạn.</p>
@@ -899,11 +887,7 @@ function AssessmentView({ language, onGoToTopics, setIsTestInProgress }: { langu
           <div className="flex flex-wrap gap-4 mb-12">
             {['A1', 'A2', 'B1', 'B2', 'C1', 'C2'].map(lvl => {
               const c = getColor(lvl);
-              return (
-                <span key={lvl} className={cn("px-8 py-4 font-black text-xl rounded-2xl border-2 shadow-sm transition-transform hover:scale-105", c.bg, c.text, c.border)}>
-                  {lvl}
-                </span>
-              );
+              return <span key={lvl} className={cn("px-8 py-4 font-black text-xl rounded-2xl border-2 shadow-sm", c.bg, c.text, c.border)}>{lvl}</span>;
             })}
           </div>
           
@@ -921,13 +905,10 @@ function AssessmentView({ language, onGoToTopics, setIsTestInProgress }: { langu
             <div className="bg-orange-50/50 p-6 rounded-2xl border border-orange-50">
               <BrainCircuit className="text-orange-500 mb-3" size={28} />
               <h4 className="font-bold text-slate-800 mb-2">Lộ trình cá nhân hóa</h4>
-              <p className="text-sm text-slate-500 font-medium">Dựa trên kết quả, AIBTeM sẽ đưa ra lời khuyên chọn chủ đề học phù hợp nhất.</p>
+              <p className="text-sm text-slate-500 font-medium">Kết quả sẽ được lưu để AIBTeM tự động gắn nhãn ưu tiên bài học cho bạn.</p>
             </div>
           </div>
-
-          <button onClick={generateQuiz} className="bg-indigo-600 text-white px-12 py-5 rounded-2xl font-bold text-xl hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200 hover:scale-105 active:scale-95 flex items-center gap-3">
-            <Play size={24} fill="currentColor" /> Bắt đầu kiểm tra
-          </button>
+          <button onClick={generateQuiz} className="bg-indigo-600 text-white px-12 py-5 rounded-2xl font-bold text-xl hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200 hover:scale-105 active:scale-95 flex items-center gap-3"><Play size={24} fill="currentColor" /> Bắt đầu kiểm tra</button>
         </div>
       </div>
     );
@@ -939,7 +920,8 @@ function AssessmentView({ language, onGoToTopics, setIsTestInProgress }: { langu
       <div className="w-full pb-32">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
           <div>
-            <h2 className="text-4xl font-bold mb-2 text-slate-900">Đang làm bài kiểm tra</h2>
+            {/* Đã hạ xuống text-3xl */}
+            <h2 className="text-3xl font-bold mb-2 text-slate-900">Đang làm bài kiểm tra</h2>
             <p className="text-slate-500 text-lg">Vui lòng không tải lại trang để bảo lưu kết quả.</p>
           </div>
           <div className="flex items-center gap-4 bg-white px-6 py-4 rounded-2xl border border-slate-100 shadow-sm">
@@ -951,11 +933,8 @@ function AssessmentView({ language, onGoToTopics, setIsTestInProgress }: { langu
         
         <div className="w-full">
           <div className="flex gap-2 w-full mb-10">
-            {questions.map((_, i) => (
-              <div key={i} className={cn("h-2 rounded-full transition-all flex-1", i < currentIdx ? "bg-indigo-600" : i === currentIdx ? "bg-indigo-400 animate-pulse" : "bg-slate-200")} />
-            ))}
+            {questions.map((_, i) => <div key={i} className={cn("h-2 rounded-full transition-all flex-1", i < currentIdx ? "bg-indigo-600" : i === currentIdx ? "bg-indigo-400 animate-pulse" : "bg-slate-200")} />)}
           </div>
-
           <div className="space-y-6">
             <div className="bg-white p-10 md:p-12 rounded-[2rem] shadow-sm border border-slate-100 text-center">
               <span className="text-slate-400 font-bold uppercase tracking-widest text-sm mb-4 block">Chọn nghĩa đúng nhất của từ</span>
@@ -964,16 +943,11 @@ function AssessmentView({ language, onGoToTopics, setIsTestInProgress }: { langu
                 <button onClick={() => handleSpeak(currentQ.word, language)} className="p-4 bg-indigo-50 text-indigo-600 rounded-full hover:bg-indigo-100 hover:scale-110 transition-all shadow-sm"><Volume2 size={24} /></button>
               </div>
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8 w-full">
               {currentQ.options.map((opt: string, i: number) => (
                 <button key={i} disabled={!!selectedOption} onClick={() => handleAnswer(opt)}
                   className={cn("p-6 rounded-3xl text-left font-bold text-lg transition-all border-2 flex items-center min-h-[100px] shadow-sm w-full", 
-                    selectedOption === opt 
-                    ? (opt === currentQ.correctMeaning ? "bg-green-50 border-[#009900] text-[#009900]" : "bg-red-50 border-red-500 text-red-600") 
-                    : selectedOption && opt === currentQ.correctMeaning 
-                      ? "bg-green-50 border-[#009900] text-[#009900]" 
-                      : "bg-white border-slate-100 hover:border-indigo-400 hover:bg-indigo-50 hover:-translate-y-1")}
+                    selectedOption === opt ? (opt === currentQ.correctMeaning ? "bg-green-50 border-[#009900] text-[#009900]" : "bg-red-50 border-red-500 text-red-600") : selectedOption && opt === currentQ.correctMeaning ? "bg-green-50 border-[#009900] text-[#009900]" : "bg-white border-slate-100 hover:border-indigo-400 hover:bg-indigo-50 hover:-translate-y-1")}
                 >
                   {opt}
                 </button>
@@ -985,7 +959,6 @@ function AssessmentView({ language, onGoToTopics, setIsTestInProgress }: { langu
     );
   }
 
-  // Phase Result
   const finalLevel = calculateFinalLevel();
   const maxAvailableLevel = Object.keys(scores).sort().pop() || 'A1';
 
@@ -994,8 +967,9 @@ function AssessmentView({ language, onGoToTopics, setIsTestInProgress }: { langu
       <Confetti />
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
         <div>
-          <h2 className="text-4xl font-bold mb-2 text-slate-900">Kết quả Đánh giá</h2>
-          <p className="text-slate-500 text-lg">Chúc mừng bạn đã hoàn thành bài khảo sát năng lực.</p>
+          {/* Đã hạ xuống text-3xl */}
+          <h2 className="text-3xl font-bold mb-2 text-slate-900">Kết quả Đánh giá</h2>
+          <p className="text-slate-500 text-lg">Hồ sơ năng lực của bạn đã được cập nhật thành công!</p>
         </div>
       </div>
 
@@ -1004,21 +978,17 @@ function AssessmentView({ language, onGoToTopics, setIsTestInProgress }: { langu
           <Trophy size={80} className="mb-6 text-indigo-200" />
           <p className="text-indigo-100 text-lg uppercase tracking-widest font-bold mb-2">Trình độ CEFR của bạn</p>
           <h1 className="text-8xl font-black mb-4 drop-shadow-lg">{finalLevel}</h1>
-          <div className="bg-white/20 px-6 py-2 rounded-full text-sm font-bold backdrop-blur-md border border-white/20">
-            Mức độ tối đa đo được từ Kho dữ liệu: {maxAvailableLevel}
-          </div>
+          <div className="bg-white/20 px-6 py-2 rounded-full text-sm font-bold backdrop-blur-md border border-white/20">Mức độ tối đa đo được: {maxAvailableLevel}</div>
           <div className="absolute -left-10 -bottom-10 opacity-10"><Target size={250} /></div>
         </div>
 
         <div className="md:col-span-7 bg-white rounded-[2.5rem] p-10 shadow-sm border border-slate-100 flex flex-col justify-center">
           <h3 className="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-3"><BrainCircuit className="text-indigo-600" /> Phân tích Từng cấp độ</h3>
-          
           <div className="space-y-5 mb-8">
             {Object.keys(scores).sort().map(lvl => {
               const data = scores[lvl];
               const pct = (data.correct / data.total) * 100;
               const c = getColor(lvl);
-              
               return (
                 <div key={lvl} className="flex items-center gap-4">
                   <span className={cn("font-bold text-lg w-10", c.text)}>{lvl}</span>
@@ -1030,16 +1000,12 @@ function AssessmentView({ language, onGoToTopics, setIsTestInProgress }: { langu
               );
             })}
           </div>
-
           <div className="bg-indigo-50 p-6 rounded-2xl border border-indigo-100">
             <h4 className="font-bold text-indigo-800 mb-2 flex items-center gap-2"><LightbulbIcon size={18} /> Khuyến nghị Lộ trình:</h4>
             <p className="text-indigo-700/80 leading-relaxed font-medium">{getRecommendations(finalLevel)}</p>
           </div>
-          
           <div className="mt-8">
-            <button onClick={onGoToTopics} className="w-full bg-indigo-600 text-white py-5 rounded-2xl font-bold text-lg hover:bg-indigo-700 transition-all shadow-lg flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98]">
-              <LayoutGrid size={24} /> Chọn Chủ đề Học ngay
-            </button>
+            <button onClick={onGoToTopics} className="w-full bg-indigo-600 text-white py-5 rounded-2xl font-bold text-lg hover:bg-indigo-700 transition-all shadow-lg flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98]"><LayoutGrid size={24} /> Chọn Chủ đề Học ngay</button>
           </div>
         </div>
       </div>
@@ -1056,7 +1022,7 @@ function LightbulbIcon(props: any) {
   );
 }
 
-function TopicLibraryView({ language, lessons, onOpenInInput }: { language: Language, lessons: Lesson[], onOpenInInput: (vocab: Vocabulary[], title: string) => void }) {
+function TopicLibraryView({ language, lessons, userLevel, onGoToAssessment, onOpenInInput }: { language: Language, lessons: Lesson[], userLevel: string | null, onGoToAssessment: () => void, onOpenInInput: (vocab: Vocabulary[], title: string) => void }) {
   const currentDict = useMemo(() => {
     const rawDict = language === 'en' ? enDictDataRaw : deDictDataRaw;
     return rawDict.map(w => {
@@ -1072,24 +1038,17 @@ function TopicLibraryView({ language, lessons, onOpenInInput }: { language: Lang
   const [showScrollTop, setShowScrollTop] = useState(false);
 
   useEffect(() => {
-    const handleScroll = () => {
-      if (window.scrollY > 300) setShowScrollTop(true);
-      else setShowScrollTop(false);
-    };
+    const handleScroll = () => { if (window.scrollY > 300) setShowScrollTop(true); else setShowScrollTop(false); };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
 
   const learnedWordsMap = useMemo(() => {
     const map = new Map<string, string>();
     lessons.filter(l => l.language === language).forEach(lesson => {
-      lesson.vocabularies.forEach(v => {
-        if (!map.has(v.word)) map.set(v.word, lesson.title);
-      });
+      lesson.vocabularies.forEach(v => { if (!map.has(v.word)) map.set(v.word, lesson.title); });
     });
     return map;
   }, [lessons, language]);
@@ -1107,42 +1066,23 @@ function TopicLibraryView({ language, lessons, onOpenInInput }: { language: Lang
   ];
 
   const getTopicWords = (topicId: string) => currentDict.filter(w => w.topic === topicId);
+  const toggleWordSelection = (word: string) => { const newSet = new Set(selectedWords); if (newSet.has(word)) newSet.delete(word); else newSet.add(word); setSelectedWords(newSet); };
 
-  const toggleWordSelection = (word: string) => {
-    const newSet = new Set(selectedWords);
-    if (newSet.has(word)) newSet.delete(word);
-    else newSet.add(word);
-    setSelectedWords(newSet);
-  };
-
-  const formatToVocab = (wordsArray: any[]): Vocabulary[] => {
-    return wordsArray.map(w => ({
-      word: w.word, meaning: w.vietnamese_meaning || w.meaning, type: w.part_of_speech, part_of_speech: w.part_of_speech, phonetic: w.phonetic, definition: language === 'en' ? w.english_definition : w.german_definition, english_definition: w.english_definition, german_definition: w.german_definition, example: language === 'en' ? w.example_english : w.example_german, example_english: w.example_english, example_german: w.example_german, example_vietnamese: w.example_vietnamese, article: w.article, plural: w.plural, synonyms: w.synonyms || w.synonym, topic: w.topic, level: w.level, language: language, userId: 'system', createdAt: Date.now()
-    }));
-  };
+  const formatToVocab = (wordsArray: any[]): Vocabulary[] => wordsArray.map(w => ({ word: w.word, meaning: w.vietnamese_meaning || w.meaning, type: w.part_of_speech, part_of_speech: w.part_of_speech, phonetic: w.phonetic, definition: language === 'en' ? w.english_definition : w.german_definition, english_definition: w.english_definition, german_definition: w.german_definition, example: language === 'en' ? w.example_english : w.example_german, example_english: w.example_english, example_german: w.example_german, example_vietnamese: w.example_vietnamese, article: w.article, plural: w.plural, synonyms: w.synonyms || w.synonym, topic: w.topic, level: w.level, language: language, userId: 'system', createdAt: Date.now() }));
 
   const generateLessonTitle = (topicName: string, prefix: 'NN' | 'TC', levelStr: string) => {
     const levelSuffix = levelStr === 'ALL' ? '' : ` (${levelStr})`;
     const baseName = `${topicName}${levelSuffix} - ${prefix}`;
     const matchingLessons = lessons.filter(l => l.language === language && l.title.startsWith(baseName));
     let maxSeq = 0;
-    matchingLessons.forEach(l => {
-      const match = l.title.match(/(\d+)$/);
-      if (match) {
-        const seq = parseInt(match[1], 10);
-        if (seq > maxSeq) maxSeq = seq;
-      }
-    });
+    matchingLessons.forEach(l => { const match = l.title.match(/(\d+)$/); if (match) { const seq = parseInt(match[1], 10); if (seq > maxSeq) maxSeq = seq; }});
     return `${baseName}${(maxSeq + 1).toString().padStart(2, '0')}`;
   };
 
   const handleLearnRandom = (topicName: string, wordsToPickFrom: any[], currentLevel: string) => {
     if (wordsToPickFrom.length === 0) return;
     let unlearnedWords = wordsToPickFrom.filter(w => !learnedWordsMap.has(w.word));
-    if (unlearnedWords.length === 0) {
-      alert("Chúc mừng! Bạn đã lưu/học toàn bộ từ vựng trong danh sách này. Hệ thống sẽ bốc lại các từ cũ nhé.");
-      unlearnedWords = wordsToPickFrom; 
-    }
+    if (unlearnedWords.length === 0) { alert("Bạn đã lưu/học toàn bộ từ vựng trong danh sách này. Hệ thống sẽ bốc lại các từ cũ nhé."); unlearnedWords = wordsToPickFrom; }
     const shuffled = [...unlearnedWords].sort(() => 0.5 - Math.random()).slice(0, 15);
     onOpenInInput(formatToVocab(shuffled), generateLessonTitle(topicName, 'NN', currentLevel));
   };
@@ -1161,64 +1101,46 @@ function TopicLibraryView({ language, lessons, onOpenInInput }: { language: Lang
 
   if (selectedTopic) {
     const allTopicWords = getTopicWords(selectedTopic.id);
-    
-    const levelCounts = allTopicWords.reduce((acc, word) => {
-      const lvl = word.level ? word.level.toUpperCase() : 'Chưa rõ';
-      acc[lvl] = (acc[lvl] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-
-    const sortedLevels = Object.keys(levelCounts).sort((a, b) => {
-      if (a === 'Chưa rõ') return 1;
-      if (b === 'Chưa rõ') return -1;
-      return a.localeCompare(b);
-    });
-
-    const filteredWords = selectedLevel === 'ALL' 
-      ? allTopicWords 
-      : allTopicWords.filter(w => (w.level ? w.level.toUpperCase() : 'Chưa rõ') === selectedLevel);
+    const levelCounts = allTopicWords.reduce((acc, word) => { const lvl = word.level ? word.level.toUpperCase() : 'Chưa rõ'; acc[lvl] = (acc[lvl] || 0) + 1; return acc; }, {} as Record<string, number>);
+    const sortedLevels = Object.keys(levelCounts).sort((a, b) => { if (a === 'Chưa rõ') return 1; if (b === 'Chưa rõ') return -1; return a.localeCompare(b); });
+    const filteredWords = selectedLevel === 'ALL' ? allTopicWords : allTopicWords.filter(w => (w.level ? w.level.toUpperCase() : 'Chưa rõ') === selectedLevel);
 
     return (
       <div className="w-full pb-32">
-        <button onClick={() => { setSelectedTopic(null); setSelectedWords(new Set()); setSelectedLevel('ALL'); scrollToTop(); }} className="flex items-center gap-2 text-slate-500 hover:text-indigo-600 font-bold mb-6 transition-colors">
-          <ChevronLeft size={20} /> Quay lại danh sách
-        </button>
+        <button onClick={() => { setSelectedTopic(null); setSelectedWords(new Set()); setSelectedLevel('ALL'); scrollToTop(); }} className="flex items-center gap-2 text-slate-500 hover:text-indigo-600 font-bold mb-6 transition-colors"><ChevronLeft size={20} /> Quay lại danh sách</button>
         
         <div className={cn("rounded-[2.5rem] p-8 md:p-12 text-white relative overflow-hidden shadow-xl mb-8", selectedTopic.color)}>
           <div className="relative z-10">
             <div className="bg-white/20 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 backdrop-blur-sm"><selectedTopic.icon size={32} /></div>
-            <h2 className="text-4xl font-bold mb-2">{selectedTopic.name}</h2>
+            <h2 className="text-3xl font-bold mb-2">{selectedTopic.name}</h2>
             <p className="text-white/80 text-lg mb-6">{selectedTopic.desc}</p>
             
             <div className="flex flex-wrap items-center gap-2 mb-8 bg-black/10 p-2 rounded-2xl border border-white/10 backdrop-blur-md w-fit">
               <span className="text-white/90 font-bold text-sm uppercase tracking-wider ml-2 mr-3 flex items-center gap-2"><BarChart3 size={16}/> Trình độ:</span>
-              <button 
-                onClick={() => { setSelectedLevel('ALL'); setSelectedWords(new Set()); }} 
-                className={cn("px-5 py-2.5 rounded-xl text-sm font-bold transition-all border", selectedLevel === 'ALL' ? "bg-white text-slate-900 border-white shadow-lg scale-105" : "bg-transparent border-transparent text-white/80 hover:bg-white/10 hover:text-white")}
-              >
+              <button onClick={() => { setSelectedLevel('ALL'); setSelectedWords(new Set()); }} className={cn("px-5 py-2.5 rounded-xl text-sm font-bold transition-all border", selectedLevel === 'ALL' ? "bg-white text-slate-900 border-white shadow-lg scale-105" : "bg-transparent border-transparent text-white/80 hover:bg-white/10 hover:text-white")}>
                 Tất cả ({allTopicWords.length})
               </button>
-              {sortedLevels.map(lvl => (
-                <button 
-                  key={lvl}
-                  onClick={() => { setSelectedLevel(lvl); setSelectedWords(new Set()); }} 
-                  className={cn("px-5 py-2.5 rounded-xl text-sm font-bold transition-all border", selectedLevel === lvl ? "bg-white text-slate-900 border-white shadow-lg scale-105" : "bg-transparent border-transparent text-white/80 hover:bg-white/10 hover:text-white")}
-                >
-                  {lvl} ({levelCounts[lvl]})
-                </button>
-              ))}
+              {sortedLevels.map(lvl => {
+                const isRecommended = lvl === userLevel;
+                return (
+                  <button key={lvl} onClick={() => { setSelectedLevel(lvl); setSelectedWords(new Set()); }} 
+                    className={cn("px-5 py-2.5 rounded-xl text-sm font-bold transition-all border relative flex items-center gap-2", 
+                      selectedLevel === lvl ? "bg-white text-slate-900 border-white shadow-lg scale-105" : "bg-transparent border-transparent text-white/80 hover:bg-white/10 hover:text-white",
+                      isRecommended && selectedLevel !== lvl && "border-emerald-400 bg-emerald-500/20 text-emerald-100")}
+                  >
+                    {lvl} ({levelCounts[lvl]})
+                    {/* HIỆU ỨNG NHẤP NHÁY NẾU KHỚP VỚI TRÌNH ĐỘ HỒ SƠ */}
+                    {isRecommended && <span className="flex h-2 w-2 relative" title="Trình độ đề xuất cho bạn"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span></span>}
+                  </button>
+                );
+              })}
             </div>
 
             <div className="flex flex-wrap items-center gap-4">
               <span className="bg-black/20 px-6 py-3 rounded-xl font-bold backdrop-blur-md">Đang hiển thị: {filteredWords.length} từ</span>
               <span className="bg-white/20 px-6 py-3 rounded-xl font-bold backdrop-blur-md text-emerald-100">Đã lưu: {filteredWords.filter(w => learnedWordsMap.has(w.word)).length} từ</span>
-              
-              <button onClick={() => handleLearnRandom(selectedTopic.name, filteredWords, selectedLevel)} disabled={filteredWords.length === 0} className="bg-white text-slate-900 px-8 py-3 rounded-xl font-bold hover:scale-105 transition-transform flex items-center gap-2 shadow-lg disabled:opacity-50 disabled:hover:scale-100">
-                <Shuffle size={20} className={selectedTopic.textCol} /> Học 15 từ ngẫu nhiên
-              </button>
-              <button onClick={() => handleLearnSelected(selectedTopic.name, selectedLevel)} disabled={selectedWords.size < 5} className={cn("px-8 py-3 rounded-xl font-bold transition-all flex items-center gap-2 shadow-lg", selectedWords.size >= 5 ? "bg-emerald-500 text-white hover:bg-emerald-400 hover:scale-105" : "bg-black/20 text-white/50 cursor-not-allowed")}>
-                <CheckSquare size={20} /> Học từ đã chọn ({selectedWords.size})
-              </button>
+              <button onClick={() => handleLearnRandom(selectedTopic.name, filteredWords, selectedLevel)} disabled={filteredWords.length === 0} className="bg-white text-slate-900 px-8 py-3 rounded-xl font-bold hover:scale-105 transition-transform flex items-center gap-2 shadow-lg disabled:opacity-50 disabled:hover:scale-100"><Shuffle size={20} className={selectedTopic.textCol} /> Học 15 từ ngẫu nhiên</button>
+              <button onClick={() => handleLearnSelected(selectedTopic.name, selectedLevel)} disabled={selectedWords.size < 5} className={cn("px-8 py-3 rounded-xl font-bold transition-all flex items-center gap-2 shadow-lg", selectedWords.size >= 5 ? "bg-emerald-500 text-white hover:bg-emerald-400 hover:scale-105" : "bg-black/20 text-white/50 cursor-not-allowed")}><CheckSquare size={20} /> Học từ đã chọn ({selectedWords.size})</button>
             </div>
             {selectedWords.size > 0 && selectedWords.size < 5 && <p className="text-sm text-orange-200 mt-3 font-medium">* Vui lòng chọn tối thiểu 5 từ để tạo bài học.</p>}
           </div>
@@ -1240,20 +1162,15 @@ function TopicLibraryView({ language, lessons, onOpenInInput }: { language: Lang
                     <input type="checkbox" checked={selectedWords.has(vocab.word)} readOnly className="w-5 h-5 mt-1 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer" />
                     <div>
                       <div className="flex items-baseline gap-2 mb-1 flex-wrap">
-                        <span className={cn("font-bold text-xl transition-colors", isLearned ? "text-emerald-700" : "text-slate-900 group-hover:text-indigo-600")}>
-                          {vocab.article && <span className={cn("font-normal mr-2", vocab.article.toLowerCase() === 'der' ? "text-blue-500" : vocab.article.toLowerCase() === 'die' ? "text-red-500" : "text-green-500")}>{vocab.article}</span>}
-                          {vocab.word}
-                        </span>
-                        {vocab.level && <span className="bg-slate-100 text-slate-500 text-[10px] font-bold px-2 py-0.5 rounded-md border border-slate-200">{vocab.level.toUpperCase()}</span>}
+                        <span className={cn("font-bold text-xl transition-colors", isLearned ? "text-emerald-700" : "text-slate-900 group-hover:text-indigo-600")}>{vocab.article && <span className={cn("font-normal mr-2", vocab.article.toLowerCase() === 'der' ? "text-blue-500" : vocab.article.toLowerCase() === 'die' ? "text-red-500" : "text-green-500")}>{vocab.article}</span>}{vocab.word}</span>
+                        {vocab.level && <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-md border", vocab.level === userLevel ? "bg-emerald-100 text-emerald-600 border-emerald-200" : "bg-slate-100 text-slate-500 border-slate-200")}>{vocab.level.toUpperCase()}</span>}
                         {vocab.phonetic && <span className="text-sm font-mono text-slate-400 ml-1">{renderPhonetic(vocab.phonetic)}</span>}
                       </div>
                       <div className={cn("mb-1", isLearned ? "text-emerald-600/80" : "text-slate-600")}>{vocab.vietnamese_meaning || vocab.meaning}</div>
                       {isLearned && <div className="text-xs font-bold text-emerald-500 flex items-center gap-1 mt-1"><CheckCircle2 size={12} /> Đã lưu trong bài: {lessonName}</div>}
                     </div>
                   </div>
-                  <button onClick={(e) => { e.stopPropagation(); handleSpeak(vocab.word, language); }} className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 hover:bg-indigo-100 hover:text-indigo-600 flex items-center justify-center transition-all ml-4 shrink-0">
-                    <Volume2 size={20} />
-                  </button>
+                  <button onClick={(e) => { e.stopPropagation(); handleSpeak(vocab.word, language); }} className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 hover:bg-indigo-100 hover:text-indigo-600 flex items-center justify-center transition-all ml-4 shrink-0"><Volume2 size={20} /></button>
                 </div>
               );
             }) : <div className="p-12 text-center text-slate-400">Không có từ vựng nào ở trình độ này.</div>}
@@ -1262,14 +1179,7 @@ function TopicLibraryView({ language, lessons, onOpenInInput }: { language: Lang
 
         <AnimatePresence>
           {showScrollTop && (
-            <motion.button
-              initial={{ opacity: 0, y: 20, scale: 0.8 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 20, scale: 0.8 }}
-              onClick={scrollToTop}
-              className="fixed bottom-24 right-6 md:right-8 bg-indigo-600 text-white p-3 md:p-4 rounded-full shadow-[0_10px_25px_rgba(79,70,229,0.4)] hover:bg-indigo-700 hover:shadow-[0_15px_30px_rgba(79,70,229,0.5)] transition-all z-50 flex items-center justify-center group border-2 border-white hover:-translate-y-1"
-              title="Về đầu trang"
-            >
+            <motion.button initial={{ opacity: 0, y: 20, scale: 0.8 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.8 }} onClick={scrollToTop} className="fixed bottom-24 right-6 md:right-8 bg-indigo-600 text-white p-3 md:p-4 rounded-full shadow-[0_10px_25px_rgba(79,70,229,0.4)] hover:bg-indigo-700 hover:shadow-[0_15px_30px_rgba(79,70,229,0.5)] transition-all z-50 flex items-center justify-center group border-2 border-white hover:-translate-y-1" title="Về đầu trang">
               <ArrowUp size={24} className="group-hover:-translate-y-1 transition-transform" />
             </motion.button>
           )}
@@ -1277,6 +1187,69 @@ function TopicLibraryView({ language, lessons, onOpenInInput }: { language: Lang
       </div>
     );
   }
+
+  return (
+    <div className="w-full pb-32 relative">
+      <div className="mb-8">
+        <h2 className="text-3xl font-bold text-slate-900 mb-2">Thư viện Chủ đề</h2>
+        <p className="text-slate-500 text-lg">Học từ vựng theo ngữ cảnh để ghi nhớ sâu hơn.</p>
+      </div>
+
+      {/* BANNER GỢI Ý ĐÁNH GIÁ NĂNG LỰC HOẶC HIỂN THỊ HỒ SƠ */}
+      {!userLevel ? (
+        <div className="bg-indigo-50 border border-indigo-100 p-6 rounded-3xl mb-8 flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm relative overflow-hidden">
+           <div className="flex items-center gap-4 z-10">
+              <div className="w-14 h-14 bg-white text-indigo-600 rounded-2xl flex items-center justify-center shrink-0 shadow-sm"><Target size={28} /></div>
+              <div>
+                <h3 className="font-bold text-indigo-900 text-lg">Bạn chưa đánh giá năng lực!</h3>
+                <p className="text-indigo-700/80 font-medium mt-1">Làm bài test nhanh để AIBTeM đề xuất từ vựng phù hợp nhất.</p>
+              </div>
+           </div>
+           <button onClick={onGoToAssessment} className="w-full md:w-auto z-10 bg-indigo-600 text-white px-8 py-4 rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-md">Kiểm tra ngay</button>
+           <div className="absolute right-0 bottom-0 opacity-5 -translate-y-4 translate-x-4"><Target size={150} /></div>
+        </div>
+      ) : (
+        <div className="bg-emerald-50 border border-emerald-100 p-6 rounded-3xl mb-8 flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm relative overflow-hidden">
+           <div className="flex items-center gap-4 z-10">
+              <div className="w-14 h-14 bg-white text-emerald-600 rounded-2xl flex items-center justify-center shrink-0 shadow-sm"><Trophy size={28} /></div>
+              <div>
+                <h3 className="font-bold text-emerald-900 text-lg">Hồ sơ năng lực: <span className="bg-emerald-600 text-white px-3 py-1 rounded-lg ml-2">{userLevel}</span></h3>
+                <p className="text-emerald-700/80 font-medium mt-1">Các từ vựng mức {userLevel} sẽ được gắn dấu <span className="inline-block w-2 h-2 bg-emerald-500 rounded-full animate-pulse mx-1"></span> để bạn dễ theo dõi.</p>
+              </div>
+           </div>
+           <button onClick={onGoToAssessment} className="w-full md:w-auto z-10 bg-white text-emerald-700 border border-emerald-200 px-8 py-4 rounded-2xl font-bold hover:bg-emerald-100 transition-all">Kiểm tra lại</button>
+           <div className="absolute right-0 bottom-0 opacity-5 -translate-y-4 translate-x-4"><Trophy size={150} /></div>
+        </div>
+      )}
+
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {topics.map((topic) => {
+          const count = getTopicWords(topic.id).length;
+          if (topic.id === 'other' && count === 0) return null;
+          return (
+            <motion.button key={topic.id} whileHover={{ y: -8 }} whileTap={{ scale: 0.98 }} onClick={() => { setSelectedTopic(topic); scrollToTop(); }} className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 text-left transition-all hover:shadow-xl group relative overflow-hidden flex flex-col h-full">
+              <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center mb-6 transition-transform group-hover:scale-110", topic.bgSoft, topic.textCol)}><topic.icon size={28} /></div>
+              <h3 className="text-xl font-bold mb-2 text-slate-900 group-hover:text-indigo-600 transition-colors">{topic.name}</h3>
+              <p className="text-slate-500 text-sm leading-relaxed mb-6 flex-grow">{topic.desc}</p>
+              <div className="mt-auto flex items-center justify-between pt-4 border-t border-slate-50">
+                <span className="text-sm font-bold text-slate-400">{count} từ</span>
+                <ChevronRight className="text-slate-300 group-hover:text-indigo-500 group-hover:translate-x-1 transition-all" size={20} />
+              </div>
+            </motion.button>
+          );
+        })}
+      </div>
+
+      <AnimatePresence>
+        {showScrollTop && (
+          <motion.button initial={{ opacity: 0, y: 20, scale: 0.8 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.8 }} onClick={scrollToTop} className="fixed bottom-24 right-6 md:right-8 bg-indigo-600 text-white p-3 md:p-4 rounded-full shadow-[0_10px_25px_rgba(79,70,229,0.4)] hover:bg-indigo-700 hover:shadow-[0_15px_30px_rgba(79,70,229,0.5)] transition-all z-50 flex items-center justify-center group border-2 border-white hover:-translate-y-1" title="Về đầu trang">
+            <ArrowUp size={24} className="group-hover:-translate-y-1 transition-transform" />
+          </motion.button>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
 
   return (
     <div className="w-full pb-32 relative">

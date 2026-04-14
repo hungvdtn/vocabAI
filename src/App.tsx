@@ -873,33 +873,33 @@ function HomeView({ setView, language, user, lessons }: { setView: (v: View) => 
     </h2>
     <div className="space-y-2">
       <p className="text-indigo-100 text-lg md:text-xl opacity-95">
-        Bạn đã sẵn sàng chinh phục từ vựng {language === 'en' ? 'Tiếng Anh' : 'Tiếng Đức'} cùng AIBTeM hôm nay chưa?
+        Bạn đã sẵn sàng học từ vựng {language === 'en' ? 'Tiếng Anh' : 'Tiếng Đức'} hôm nay chưa?
       </p>
       <p className="text-indigo-200 text-base md:text-lg italic font-medium">
         "Mỗi ngày một chút nỗ lực sẽ mang lại thành quả lớn!"
       </p>
     </div>
 
-    <div className="flex flex-wrap gap-4 pt-4">
+    <div className="flex flex-col sm:flex-row gap-4 pt-4 w-full md:max-w-3xl">
       <button 
         onClick={() => setView('topics')} 
-        className="bg-white text-indigo-600 px-8 py-4 rounded-2xl font-bold hover:bg-indigo-50 transition-all flex items-center gap-2 shadow-lg"
+        className="flex-1 bg-white text-indigo-600 px-6 py-4 rounded-2xl font-bold hover:bg-indigo-50 transition-all shadow-lg flex items-center justify-between text-left"
       >
-        Khám phá Chủ đề <ChevronRight size={20} />
+        <span>Khám phá Chủ đề</span> <ChevronRight size={20} />
       </button>
       
       <button 
         onClick={() => setView('input')} 
-        className="bg-indigo-500/30 backdrop-blur-md border border-indigo-400/50 text-white px-8 py-4 rounded-2xl font-bold hover:bg-indigo-500/40 transition-all"
+        className="flex-1 bg-indigo-500/30 backdrop-blur-md border border-indigo-400/50 text-white px-6 py-4 rounded-2xl font-bold hover:bg-indigo-500/40 transition-all flex items-center justify-between text-left"
       >
-        Thêm từ mới
+        <span>Thêm từ mới</span> <PlusCircle size={20} />
       </button>
 
       <button 
-        onClick={() => setView('assessment')} // Giả định view assessment đã được thiết lập
-        className="bg-emerald-500 text-white px-8 py-4 rounded-2xl font-bold hover:bg-emerald-600 transition-all shadow-lg flex items-center gap-2"
+        onClick={() => setView('assessment')} 
+        className="flex-1 bg-emerald-500 text-white px-6 py-4 rounded-2xl font-bold hover:bg-emerald-600 transition-all shadow-lg flex items-center justify-between text-left"
       >
-        Đánh giá năng lực {language === 'en' ? 'Tiếng Anh' : 'Tiếng Đức'}
+        <span>Kiểm tra trình độ</span> <Target size={20} />
       </button>
     </div>
   </div>
@@ -2684,7 +2684,7 @@ function GamesView({ vocabList, language, onComplete, activeGame, setActiveGame,
     if (!hasLessons) {
       return (
         <div className="text-center py-20 bg-white rounded-[3rem] shadow-xl border border-slate-100 w-full">
-          <RobotAnimation type="thinking" />
+          <AIBTeMBot emotion="search" className="w-40 h-40 md:w-48 md:h-48 mx-auto" />
           <h3 className="text-2xl font-bold mt-6">Chưa có bài học nào được tạo</h3>
           <p className="text-slate-500 mt-2 mb-8">Vui lòng tạo bài học từ Chủ đề hoặc Nhập liệu trực tiếp để bắt đầu học.</p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 px-4">
@@ -2866,7 +2866,13 @@ function GameContainer({ type, vocabList, language, onBack, onFinish, playSound,
           <div className="w-full max-w-3xl mx-auto">
               {isGood && <Confetti />}
               <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white rounded-[3rem] p-8 md:p-12 shadow-xl border border-slate-100 text-center relative overflow-hidden z-10">
-                  <img src={isGood ? "https://api.dicebear.com/7.x/fun-emoji/svg?seed=MochiHappy" : "https://api.dicebear.com/7.x/fun-emoji/svg?seed=MochiSad"} alt="Mochi" className="w-40 h-40 mx-auto mb-6 bg-indigo-50 rounded-full p-4 border-4 border-white shadow-lg" />
+                  {/* Thay thế Dicebear tĩnh bằng Linh vật AIBTeM Bot */}
+    <div className="relative mb-6 flex justify-center">
+        <AIBTeMBot 
+           emotion={isGood ? 'happy' : 'sad'} 
+           className="w-40 h-40 md:w-48 md:h-48" 
+        />
+    </div>
                   
                   <h2 className="text-3xl md:text-4xl font-black text-slate-800 mb-4">
                       {isGood ? getRandomPraise(language) : (isNeedsImprovement ? getRandomEncouragement(language) : "Cố gắng lên nhé! Đừng bỏ cuộc!")}

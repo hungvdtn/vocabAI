@@ -333,7 +333,124 @@ const getGameTitle = (type: GameType) => {
     default: return '';
   }
 };
+// ==========================================
+// LINH VẬT AIBTeM BOT (NATIVE SVG ANIMATION)
+// ==========================================
+function AIBTeMBot({ emotion = 'idle', className = "w-40 h-40" }: { emotion?: 'idle' | 'happy' | 'sad' | 'loading' | 'search', className?: string }) {
+  
+  // Thuật toán nhún nhảy lơ lửng cho cơ thể
+  const bodyFloat = {
+    y: [0, -15, 0],
+    transition: { duration: 3, repeat: Infinity, ease: "easeInOut" }
+  };
 
+  // Thuật toán vẫy tay
+  const armWave = {
+    rotate: [0, 20, -5, 10, 0],
+    transition: { duration: 2, repeat: Infinity, repeatDelay: 1 }
+  };
+
+  // Thuật toán mắt nhấp nháy tự nhiên
+  const eyeBlink = {
+    scaleY: [1, 0.1, 1],
+    transition: { duration: 3, repeat: Infinity, times: [0, 0.05, 0.1] }
+  };
+
+  return (
+    <div className={`relative flex flex-col items-center justify-center ${className}`}>
+      <motion.div animate={bodyFloat} className="relative z-10 w-full h-full">
+        <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full drop-shadow-2xl">
+          
+          {/* TAY TRÁI (Khớp Indigo, thân Trắng) */}
+          <motion.path 
+            d="M 50 110 Q 20 120 30 150" 
+            stroke="#ffffff" strokeWidth="16" strokeLinecap="round" 
+            style={{ originX: '50px', originY: '110px' }}
+            animate={emotion === 'happy' ? armWave : { rotate: [0, 5, 0], transition: { duration: 4, repeat: Infinity } }}
+          />
+          <path d="M 50 110 Q 20 120 30 150" stroke="#4f46e5" strokeWidth="6" strokeLinecap="round" />
+
+          {/* TAY PHẢI */}
+          <motion.path 
+            d="M 150 110 Q 180 120 170 150" 
+            stroke="#ffffff" strokeWidth="16" strokeLinecap="round" 
+            style={{ originX: '150px', originY: '110px' }}
+            animate={{ rotate: [0, -5, 0], transition: { duration: 4, repeat: Infinity, delay: 0.5 } }}
+          />
+          <path d="M 150 110 Q 180 120 170 150" stroke="#4f46e5" strokeWidth="6" strokeLinecap="round" />
+
+          {/* THÂN ROBOT (Bo tròn, Trắng sứ, Viền Xanh Indigo) */}
+          <rect x="50" y="40" width="100" height="110" rx="45" fill="#ffffff" stroke="#4f46e5" strokeWidth="6" />
+          
+          {/* TAI (Ăng-ten) */}
+          <path d="M 70 40 L 60 20 M 130 40 L 140 20" stroke="#4f46e5" strokeWidth="6" strokeLinecap="round" />
+          <circle cx="60" cy="20" r="6" fill="#10b981" />
+          <circle cx="140" cy="20" r="6" fill="#10b981" />
+
+          {/* MẶT MÀN HÌNH LED (Đen/Tím than) */}
+          <rect x="65" y="60" width="70" height="50" rx="20" fill="#1e1b4b" />
+
+          {/* ================================================== */}
+          {/* CẢM XÚC ĐÔI MẮT MÀN HÌNH LED XANH NGỌC LỤC BẢO */}
+          {/* ================================================== */}
+          
+          {emotion === 'idle' && (
+             <>
+               <motion.ellipse cx="85" cy="85" rx="6" ry="10" fill="#10b981" animate={eyeBlink} />
+               <motion.ellipse cx="115" cy="85" rx="6" ry="10" fill="#10b981" animate={eyeBlink} />
+             </>
+          )}
+
+          {emotion === 'happy' && (
+             <>
+               {/* Mắt hình dấu ^ ^ */}
+               <path d="M 75 90 Q 85 75 95 90" stroke="#10b981" strokeWidth="5" strokeLinecap="round" fill="none" />
+               <path d="M 105 90 Q 115 75 125 90" stroke="#10b981" strokeWidth="5" strokeLinecap="round" fill="none" />
+             </>
+          )}
+
+          {emotion === 'sad' && (
+             <>
+               {/* Mắt buồn cụp xuống */}
+               <path d="M 75 80 Q 85 95 95 80" stroke="#ef4444" strokeWidth="5" strokeLinecap="round" fill="none" />
+               <path d="M 105 80 Q 115 95 125 80" stroke="#ef4444" strokeWidth="5" strokeLinecap="round" fill="none" />
+             </>
+          )}
+
+          {emotion === 'search' && (
+             <>
+               {/* Mắt to tròn tò mò như kính lúp */}
+               <circle cx="85" cy="85" r="10" stroke="#10b981" strokeWidth="4" fill="none" />
+               <circle cx="115" cy="85" r="10" stroke="#10b981" strokeWidth="4" fill="none" />
+             </>
+          )}
+
+          {emotion === 'loading' && (
+             <>
+               {/* Mắt xoay tròn như đang tải dữ liệu */}
+               <motion.path 
+                 d="M 85 75 A 10 10 0 0 1 95 85" stroke="#10b981" strokeWidth="4" fill="none" strokeLinecap="round"
+                 animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }} style={{ originX: '85px', originY: '85px' }}
+               />
+               <motion.path 
+                 d="M 115 75 A 10 10 0 0 1 125 85" stroke="#10b981" strokeWidth="4" fill="none" strokeLinecap="round"
+                 animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }} style={{ originX: '115px', originY: '85px' }}
+               />
+             </>
+          )}
+
+        </svg>
+      </motion.div>
+      
+      {/* CÁI BÓNG Ở DƯỚI ĐẤT CO GIÃN THEO NHỊP BAY */}
+      <motion.div 
+        className="absolute -bottom-2 w-20 h-4 bg-slate-200 rounded-[100%] blur-[2px]"
+        animate={{ scale: [1, 0.6, 1], opacity: [0.8, 0.4, 0.8] }}
+        transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+      />
+    </div>
+  );
+}
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
   // TỰ ĐỘNG LƯU HỒ SƠ NGƯỜI DÙNG KHI ĐĂNG NHẬP
@@ -1868,22 +1985,29 @@ function DictionaryView({ language }: { language: Language }) {
       )}
 
       {!selectedWord && (!searchTerm || (searchTerm && suggestions.length > 0)) && (
-        <div className="w-full mt-8 grid grid-cols-1 md:grid-cols-2 gap-8 items-center bg-white p-8 md:p-12 rounded-[2rem] shadow-sm border border-slate-100">
-          <div className="space-y-4">
-            <h3 className="text-2xl font-black text-indigo-700 mb-2">AIBTeM Dictionary</h3>
-            <p className="text-slate-600 leading-relaxed">Sử dụng phím mũi tên <strong>↑ ↓</strong> để chọn từ gợi ý và <strong>Enter</strong> để xem chi tiết một cách nhanh chóng.</p>
-          </div>
-          <div className="flex justify-center">
-            <img src="https://placehold.co/300x300/4f46e5/white?text=AIBTeM" alt="AIBTeM" className="w-48 h-48 object-contain animate-bounce" />
-          </div>
-        </div>
-      )}
+  <div className="w-full mt-8 grid grid-cols-1 md:grid-cols-2 gap-8 items-center bg-white p-8 md:p-12 rounded-[2rem] shadow-sm border border-slate-100">
+    <div className="space-y-4">
+      <h3 className="text-2xl font-black text-indigo-700 mb-2">AIBTeM Dictionary</h3>
+      <div className="space-y-3 text-slate-600 text-sm md:text-base leading-relaxed">
+        <p className="flex items-center gap-2"><CheckCircle2 className="text-emerald-500 shrink-0" size={18}/> Từ điển trực tuyến miễn phí;</p>
+        <p className="flex items-center gap-2"><CheckCircle2 className="text-emerald-500 shrink-0" size={18}/> Tra cứu nhanh;</p>
+        <p className="flex items-center gap-2"><CheckCircle2 className="text-emerald-500 shrink-0" size={18}/> Kho từ đồ sộ, gợi ý thông minh;</p>
+        <p className="flex items-center gap-2"><CheckCircle2 className="text-emerald-500 shrink-0" size={18}/> Nghe được phát âm;</p>
+        <p className="flex items-center gap-2"><CheckCircle2 className="text-emerald-500 shrink-0" size={18}/> Tra từ bằng giọng nói.</p>
+      </div>
+    </div>
+    {/* PHẦN THAY THẾ LINH VẬT: Nằm trong khung bên phải */}
+    <div className="flex justify-center">
+      <AIBTeMBot emotion="idle" className="w-48 h-48 md:w-64 md:h-64" />
+    </div>
+  </div>
+)}
 
       {!selectedWord && searchTerm && suggestions.length === 0 && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full mt-6 bg-white p-12 border border-slate-200 shadow-sm text-center">
           {!aiTranslation ? (
             <>
-              <Search className="w-16 h-16 mx-auto mb-4 text-slate-200" />
+              <AIBTeMBot emotion={isTranslating ? 'loading' : 'search'} className="w-40 h-40 mx-auto mb-4" />
               <p className="text-xl text-slate-600 font-medium mb-6">Từ cần tra chưa có trong cơ sở dữ liệu.</p>
               <button onClick={handleAITranslate} disabled={isTranslating} className="bg-indigo-50 text-indigo-600 px-8 py-4 rounded-xl font-bold hover:bg-indigo-100 transition-all flex items-center justify-center gap-3 mx-auto shadow-sm">
                 {isTranslating ? <Loader2 className="animate-spin" size={24} /> : <BrainCircuit size={24} />} Dịch bằng AIBTeM ngay
@@ -3505,12 +3629,36 @@ function ReportView({ results, language, activeLessonId, onPlayAIGame, onGoToTop
         </div>
 
         <div className="bg-indigo-600 p-8 rounded-[2.5rem] shadow-xl text-white flex flex-col justify-center items-center text-center relative overflow-hidden">
-          <Trophy size={64} className="mb-4 text-indigo-200" />
-          <h3 className="text-2xl font-bold mb-2">Tổng điểm tích lũy</h3>
-          <div className="text-6xl font-black mb-4">{totalScore} <span className="text-3xl text-indigo-300">/ {totalPossible}</span></div>
-          <div className="bg-indigo-500/50 px-8 py-3 rounded-full font-bold text-xl">Độ chính xác: {accuracy}%</div>
-          <div className="absolute -right-10 -bottom-10 opacity-10"><BarChart3 size={200} /></div>
-        </div>
+  {/* LINH VẬT THAY THẾ CÁI CÚP (TROPHY) */}
+  <div className="mb-4">
+    {accuracy >= 50 ? (
+      <AIBTeMBot emotion="happy" className="w-40 h-40" />
+    ) : (
+      <AIBTeMBot emotion="sad" className="w-40 h-40" />
+    )}
+  </div>
+  
+  <h3 className="text-2xl font-bold mb-2">
+    {accuracy >= 50 ? "Tuyệt vời!" : "Cố gắng lên nhé!"}
+  </h3>
+  
+  <div className="text-6xl font-black mb-4">
+    {totalScore} <span className="text-3xl text-indigo-300">/ {totalPossible}</span>
+  </div>
+  
+  <div className="bg-indigo-500/50 px-8 py-3 rounded-full font-bold text-xl">
+    Độ chính xác: {accuracy}%
+  </div>
+  
+  {/* Hiệu ứng cổ vũ bổ sung khi đạt điểm cao */}
+  {accuracy >= 80 && (
+    <div className="absolute top-4 right-4 text-4xl animate-bounce">🎉</div>
+  )}
+  
+  <div className="absolute -right-10 -bottom-10 opacity-10">
+    <BarChart3 size={200} />
+  </div>
+</div>
       </div>
 
       <div className="bg-white p-8 md:p-10 rounded-[2.5rem] shadow-xl border border-slate-100">

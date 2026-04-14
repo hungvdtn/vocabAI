@@ -2826,8 +2826,10 @@ function GameContainer({ type, vocabList, language, onBack, onFinish, playSound,
   
   const [gameVocabs] = useState(() => {
     const enriched = vocabList.map(v => {
-        // Đã xóa bỏ dòng 'mergedDict' thừa và sửa 'currentDict' thành 'mergedDict'
-        const dictEntry = mergedDict.find((d: any) => d.word.toLowerCase() === v.word.toLowerCase());
+        // Tìm kiếm đối chiếu với từ điển gốc
+        const dictEntry = mergedDict.find((d: any) => d.word && d.word.toLowerCase() === v.word.toLowerCase());
+        
+        // Nếu có trong từ điển thì làm giàu dữ liệu
         if (dictEntry) {
             return { 
               ...v, 
@@ -2842,11 +2844,16 @@ function GameContainer({ type, vocabList, language, onBack, onFinish, playSound,
               level: v.level || (dictEntry as any).level 
             };
         }
+        
+        // [VÁ LỖI TẠI ĐÂY]: Nếu là câu dài hoặc từ không có trong từ điển, trả về nguyên bản dữ liệu đã nhập
+        return v; 
     });
+    
     return type === 'flashcards' ? enriched : [...enriched].sort(() => 0.5 - Math.random());
   });
 
   const [step, setStep] = useState(0);
+// ... (Các phần mã bên dưới của GameContainer giữ nguyên hoàn toàn)
   const [score, setScore] = useState(0);
   const [isFinished, setIsFinished] = useState(false);
   const [mistakes, setMistakes] = useState<{word: string, userAnswer: string, correctAnswer: string}[]>([]);

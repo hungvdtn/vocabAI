@@ -890,7 +890,7 @@ function HomeView({ setView, language, user, lessons }: { setView: (v: View) => 
       
       <button 
         onClick={() => setView('input')} 
-        className="flex-1 bg-indigo-500/30 backdrop-blur-md border border-indigo-400/50 text-white px-6 py-4 rounded-2xl font-bold hover:bg-indigo-500/40 transition-all flex items-center justify-between text-left"
+        className="flex-1 bg-amber-500 text-white px-6 py-4 rounded-2xl font-bold hover:bg-amber-600 transition-all shadow-lg flex items-center justify-between text-left border-2 border-amber-400/20"
       >
         <span>Thêm từ mới</span> <PlusCircle size={20} />
       </button>

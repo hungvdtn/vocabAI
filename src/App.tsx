@@ -891,7 +891,7 @@ function HomeView({ setView, language, user, lessons }: { setView: (v: View) => 
       {/* Sử dụng bg-amber-700 để có tông màu trầm và chuyên nghiệp hơn */}
       <button 
         onClick={() => setView('input')} 
-        className="flex-1 bg-amber-700 text-white px-6 py-4 rounded-2xl font-bold hover:bg-amber-800 transition-all shadow-lg flex items-center justify-between text-left border border-amber-600/20"
+        className="flex-1 bg-amber-600 text-white px-6 py-4 rounded-2xl font-bold hover:bg-amber-800 transition-all shadow-lg flex items-center justify-between text-left border border-amber-600/20"
       >
         <span>Thêm từ mới</span> <PlusCircle size={20} />
       </button>
@@ -1778,8 +1778,6 @@ function DictionaryView({ language }: { language: Language }) {
   const [aiTranslation, setAiTranslation] = useState<string[] | null>(null);
   const [isTranslating, setIsTranslating] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
-
-  // STATE ĐIỀU KHIỂN BÀN PHÍM
   const [selectedIndex, setSelectedIndex] = useState(-1);
 
   useEffect(() => { 
@@ -1817,7 +1815,35 @@ function DictionaryView({ language }: { language: Language }) {
     setSelectedIndex(-1); 
   };
 
-  // LOGIC ĐIỀU KHIỂN BÀN PHÍM (ĐÃ CHẶN XUNG ĐỘT BỘ GÕ TIẾNG VIỆT)
+  const handleAITranslate = async () => {
+    if (!searchTerm.trim()) return;
+    setIsTranslating(true);
+    try {
+      const data = await translateWord(searchTerm, language, new AbortController().signal);
+      let meaningArray: string[] = [];
+      if (data && Array.isArray(data.translations)) meaningArray = data.translations;
+      else if (typeof data === 'string' && data.trim() !== '') meaningArray = data.split(',').map((s:string) => s.trim()).filter((s:string) => s !== '');
+      setAiTranslation(meaningArray);
+
+      if (meaningArray.length > 0) {
+        addDoc(collection(db, 'error_reports'), {
+          word: searchTerm.toLowerCase().trim(),
+          language: language,
+          errorText: "🌟 TỪ MỚI (Từ điển tự động bắt)",
+          userId: auth.currentUser?.uid || 'unknown',
+          userName: auth.currentUser?.displayName || 'Hệ thống tự động',
+          status: 'pending',
+          createdAt: Date.now(),
+          suggestedMeaning: meaningArray.join(', ')
+        }).catch(e => console.error("Lỗi thu thập ngầm:", e));
+      }
+    } catch (error) { 
+      setAiTranslation(["Lỗi kết nối AIBTeM. Vui lòng thử lại sau."]); 
+    } finally { 
+      setIsTranslating(false); 
+    }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.nativeEvent.isComposing) return;
 
@@ -1844,44 +1870,17 @@ function DictionaryView({ language }: { language: Language }) {
       }
     } else if (e.key === 'Enter' && searchTerm.trim() !== '') {
       const exactMatch = mergedDict.find((item: any) => item.word && item.word.toLowerCase() === searchTerm.toLowerCase().trim());
-      if (exactMatch) handleSelectWord(exactMatch);
-    }
-  };
-
-  // TÍNH NĂNG TỰ ĐỘNG THU THẬP TỪ VỰNG NGẦM (AUTO-ENRICHMENT)
-  const handleAITranslate = async () => {
-    if (!searchTerm.trim()) return;
-    setIsTranslating(true);
-    try {
-      const data = await translateWord(searchTerm, language, new AbortController().signal);
-      let meaningArray: string[] = [];
-      if (data && Array.isArray(data.translations)) meaningArray = data.translations;
-      else if (typeof data === 'string' && data.trim() !== '') meaningArray = data.split(',').map((s:string) => s.trim()).filter((s:string) => s !== '');
-      setAiTranslation(meaningArray);
-
-      // Ghi nhận ngầm đẩy thẳng về Trang Quản Trị
-      if (meaningArray.length > 0) {
-        addDoc(collection(db, 'error_reports'), {
-          word: searchTerm.toLowerCase().trim(),
-          language: language,
-          errorText: "🌟 TỪ MỚI (Từ điển tự động bắt)",
-          userId: auth.currentUser?.uid || 'unknown',
-          userName: auth.currentUser?.displayName || 'Hệ thống tự động',
-          status: 'pending',
-          createdAt: Date.now(),
-          suggestedMeaning: meaningArray.join(', ')
-        }).catch(e => console.error("Lỗi thu thập ngầm:", e));
+      if (exactMatch) {
+        handleSelectWord(exactMatch);
+      } else {
+        // Tự động kích hoạt dịch AI khi không có kết quả chính xác
+        handleAITranslate();
       }
-
-    } catch (error) { 
-      setAiTranslation(["Lỗi kết nối AIBTeM. Vui lòng thử lại sau."]); 
-    } finally { 
-      setIsTranslating(false); 
     }
   };
 
   const startVoiceSearch = () => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitRecognition;
     if (SpeechRecognition) {
       const recognition = new SpeechRecognition(); 
       recognition.lang = language === 'en' ? 'en-US' : 'de-DE';
@@ -1910,6 +1909,20 @@ function DictionaryView({ language }: { language: Language }) {
         <h2 className="text-3xl font-black text-indigo-700">Từ điển {language === 'en' ? 'Anh - Việt' : 'Đức - Việt'}</h2>
       </div>
       
+      {/* Thông báo trạng thái dịch phía trên thanh tra từ */}
+      <AnimatePresence>
+        {isTranslating && (
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            exit={{ opacity: 0, y: 10 }}
+            className="text-center mb-4"
+          >
+            <span className="text-indigo-600 font-bold animate-pulse text-lg">AIBTeM đang dịch …..</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="relative w-full" ref={searchRef}>
         <div className="relative">
           <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 w-6 h-6" />
@@ -1929,25 +1942,22 @@ function DictionaryView({ language }: { language: Language }) {
         <AnimatePresence>
           {suggestions.length > 0 && !selectedWord && (
             <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }} className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden z-50">
-              {suggestions.map((item, idx) => {
-                const isSelected = selectedIndex === idx;
-                return (
-                  <div 
-                    key={idx} 
-                    onMouseDown={(e) => { e.preventDefault(); handleSelectWord(item); }}
-                    onMouseEnter={() => setSelectedIndex(idx)} 
-                    className={cn(
-                      "px-6 py-4 cursor-pointer border-b border-slate-100 last:border-none flex items-center justify-between transition-all", 
-                      isSelected ? "bg-indigo-50 text-indigo-800" : "hover:bg-slate-50 text-slate-800 bg-white"
-                    )}
-                  >
-                    <span className={cn("text-lg font-bold", isSelected ? "text-indigo-800" : "text-slate-800")}>{item.word}</span>
-                    <span className={cn("truncate ml-4 max-w-xs text-sm", isSelected ? "text-indigo-600" : "text-slate-500")}>
-                      {item.vietnamese_meaning || item.meaning}
-                    </span>
-                  </div>
-                );
-              })}
+              {suggestions.map((item, idx) => (
+                <div 
+                  key={idx} 
+                  onMouseDown={(e) => { e.preventDefault(); handleSelectWord(item); }}
+                  onMouseEnter={() => setSelectedIndex(idx)} 
+                  className={cn(
+                    "px-6 py-4 cursor-pointer border-b border-slate-100 last:border-none flex items-center justify-between transition-all", 
+                    selectedIndex === idx ? "bg-indigo-50 text-indigo-800" : "hover:bg-slate-50 text-slate-800 bg-white"
+                  )}
+                >
+                  <span className={cn("text-lg font-bold", selectedIndex === idx ? "text-indigo-800" : "text-slate-800")}>{item.word}</span>
+                  <span className={cn("truncate ml-4 max-w-xs text-sm", selectedIndex === idx ? "text-indigo-600" : "text-slate-500")}>
+                    {item.vietnamese_meaning || item.meaning}
+                  </span>
+                </div>
+              ))}
             </motion.div>
           )}
         </AnimatePresence>
@@ -1970,14 +1980,20 @@ function DictionaryView({ language }: { language: Language }) {
           )}
           <div className="mb-4">
             <div className="text-emerald-700 mb-8 text-xl font-bold"><span className="text-emerald-600 mr-2">Nghĩa:</span>{selectedWord.vietnamese_meaning || selectedWord.meaning}</div>
-            {language === 'en' && selectedWord.english_definition && <div className="text-slate-800 mb-1 text-lg font-medium"><span className="font-bold text-slate-500 mr-2">Định nghĩa:</span> {selectedWord.english_definition}</div>}
-            {language === 'de' && selectedWord.german_definition && <div className="text-slate-800 mb-1 text-lg font-medium"><span className="font-bold text-slate-500 mr-2">Định nghĩa:</span> {selectedWord.german_definition}</div>}
+            {(language === 'en' ? selectedWord.english_definition : selectedWord.german_definition) && (
+              <div className="text-slate-800 mb-1 text-lg font-medium">
+                <span className="font-bold text-slate-500 mr-2">Định nghĩa:</span> 
+                {language === 'en' ? selectedWord.english_definition : selectedWord.german_definition}
+              </div>
+            )}
           </div>
           {(selectedWord.example_english || selectedWord.example_german || selectedWord.example) && (
             <div className="mt-4 border-t border-slate-100 pt-6">
               <div className="flex items-start gap-3 mb-2">
                 <button onClick={() => handleSpeak(selectedWord.example_english || selectedWord.example_german || selectedWord.example, language)} className="text-slate-400 hover:text-indigo-600 mt-1 transition-colors"><Volume2 size={20} /></button>
-                <span className="text-slate-800 text-lg leading-relaxed italic">{highlightWordInSentence(selectedWord.example_english || selectedWord.example_german || selectedWord.example, selectedWord.word)}</span>
+                <span className="text-slate-800 text-lg leading-relaxed italic">
+                  {highlightWordInSentence(selectedWord.example_english || selectedWord.example_german || selectedWord.example, selectedWord.word)}
+                </span>
               </div>
               {selectedWord.example_vietnamese && <div className="ml-8 text-slate-500 text-lg">{selectedWord.example_vietnamese}</div>}
             </div>
@@ -1986,33 +2002,31 @@ function DictionaryView({ language }: { language: Language }) {
       )}
 
       {!selectedWord && (!searchTerm || (searchTerm && suggestions.length > 0)) && (
-  <div className="w-full mt-8 grid grid-cols-1 md:grid-cols-2 gap-8 items-center bg-white p-8 md:p-12 rounded-[2rem] shadow-sm border border-slate-100">
-    <div className="space-y-4">
-      <h3 className="text-2xl font-black text-indigo-700 mb-2">AIBTeM Dictionary</h3>
-      <div className="space-y-3 text-slate-600 text-sm md:text-base leading-relaxed">
-        <p className="flex items-center gap-2"><CheckCircle2 className="text-emerald-500 shrink-0" size={18}/> Từ điển trực tuyến miễn phí;</p>
-        <p className="flex items-center gap-2"><CheckCircle2 className="text-emerald-500 shrink-0" size={18}/> Tra cứu nhanh;</p>
-        <p className="flex items-center gap-2"><CheckCircle2 className="text-emerald-500 shrink-0" size={18}/> Kho từ đồ sộ, gợi ý thông minh;</p>
-        <p className="flex items-center gap-2"><CheckCircle2 className="text-emerald-500 shrink-0" size={18}/> Nghe được phát âm;</p>
-        <p className="flex items-center gap-2"><CheckCircle2 className="text-emerald-500 shrink-0" size={18}/> Tra từ bằng giọng nói.</p>
-      </div>
-    </div>
-    {/* PHẦN THAY THẾ LINH VẬT: Nằm trong khung bên phải */}
-    <div className="flex justify-center">
-      <AIBTeMBot emotion="idle" className="w-48 h-48 md:w-64 md:h-64" />
-    </div>
-  </div>
-)}
+        <div className="w-full mt-8 grid grid-cols-1 md:grid-cols-2 gap-8 items-center bg-white p-8 md:p-12 rounded-[2rem] shadow-sm border border-slate-100">
+          <div className="space-y-4">
+            <h3 className="text-2xl font-black text-indigo-700 mb-2">AIBTeM Dictionary</h3>
+            <div className="space-y-3 text-slate-600 text-sm md:text-base leading-relaxed">
+              <p className="flex items-center gap-2"><CheckCircle2 className="text-emerald-500 shrink-0" size={18}/> Từ điển trực tuyến miễn phí;</p>
+              <p className="flex items-center gap-2"><CheckCircle2 className="text-emerald-500 shrink-0" size={18}/> Tra cứu nhanh;</p>
+              <p className="flex items-center gap-2"><CheckCircle2 className="text-emerald-500 shrink-0" size={18}/> Kho từ đồ sộ, gợi ý thông minh;</p>
+              <p className="flex items-center gap-2"><CheckCircle2 className="text-emerald-500 shrink-0" size={18}/> Nghe được phát âm;</p>
+              <p className="flex items-center gap-2"><CheckCircle2 className="text-emerald-500 shrink-0" size={18}/> Tra từ bằng giọng nói.</p>
+            </div>
+          </div>
+          <div className="flex justify-center">
+            {/* Tăng kích thước Robot tại trang chủ từ điển */}
+            <AIBTeMBot emotion="idle" className="w-56 h-56 md:w-72 md:h-72" />
+          </div>
+        </div>
+      )}
 
       {!selectedWord && searchTerm && suggestions.length === 0 && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full mt-6 bg-white p-12 border border-slate-200 shadow-sm text-center">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full mt-6 bg-white p-12 border border-slate-200 shadow-sm text-center rounded-[2rem]">
           {!aiTranslation ? (
             <>
-              <AIBTeMBot emotion={isTranslating ? 'loading' : 'search'} className="w-40 h-40 mx-auto mb-4" />
-              <p className="text-xl text-slate-600 font-medium mb-6">Từ cần tra chưa có trong cơ sở dữ liệu.</p>
-              <button onClick={handleAITranslate} disabled={isTranslating} className="bg-indigo-50 text-indigo-600 px-8 py-4 rounded-xl font-bold hover:bg-indigo-100 transition-all flex items-center justify-center gap-3 mx-auto shadow-sm">
-                {isTranslating ? <Loader2 className="animate-spin" size={24} /> : <BrainCircuit size={24} />} Dịch bằng AIBTeM ngay
-              </button>
+              {/* Robot lớn hơn và đổi thông báo theo yêu cầu */}
+              <AIBTeMBot emotion={isTranslating ? 'loading' : 'search'} className="w-56 h-56 md:w-64 md:h-64 mx-auto mb-4" />
+              <p className="text-xl text-slate-600 font-bold mb-6">AIBTeM đang dịch, bạn vui lòng đợi chút xíu!</p>
             </>
           ) : (
             <div className="text-left">

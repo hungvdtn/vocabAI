@@ -2684,6 +2684,7 @@ function GamesView({ vocabList, language, onComplete, activeGame, setActiveGame,
     if (!hasLessons) {
       return (
         <div className="text-center py-20 bg-white rounded-[3rem] shadow-xl border border-slate-100 w-full">
+          {/* Đã thay thế RobotAnimation bằng AIBTeMBot trạng thái search */}
           <AIBTeMBot emotion="search" className="w-40 h-40 md:w-48 md:h-48 mx-auto" />
           <h3 className="text-2xl font-bold mt-6">Chưa có bài học nào được tạo</h3>
           <p className="text-slate-500 mt-2 mb-8">Vui lòng tạo bài học từ Chủ đề hoặc Nhập liệu trực tiếp để bắt đầu học.</p>
@@ -2696,7 +2697,8 @@ function GamesView({ vocabList, language, onComplete, activeGame, setActiveGame,
     }
     return (
       <div className="text-center py-20 bg-white rounded-[3rem] shadow-xl border border-slate-100 w-full">
-        <RobotAnimation type="sad" />
+        {/* Đã thay thế RobotAnimation tĩnh bằng AIBTeMBot trạng thái idle */}
+        <AIBTeMBot emotion="idle" className="w-40 h-40 md:w-48 md:h-48 mx-auto" />
         <h3 className="text-2xl font-bold mt-6">Chưa có bài học nào được chọn</h3>
         <p className="text-slate-500 mt-2 mb-8">Vui lòng chọn một Bài học để bắt đầu chơi.</p>
         <button onClick={onGoToLibrary} className="bg-indigo-600 text-white px-8 py-4 rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg flex items-center gap-2 mx-auto"><BookOpen size={20} /> Đến Thư viện ngay</button>

@@ -2728,7 +2728,20 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
               <div className="space-y-6">
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Tên bài học</label>
-                  <input type="text" autoFocus value={lessonTitle} onChange={(e) => setLessonTitle(e.target.value)} placeholder="Ví dụ: Bài học ngày..." className="w-full bg-slate-50 border-2 border-transparent rounded-2xl px-6 py-5 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all text-xl font-bold" />
+                  <input 
+  type="text" 
+  autoFocus 
+  value={lessonTitle} 
+  onChange={(e) => setLessonTitle(e.target.value)} 
+  onKeyDown={(e) => {
+    if (e.key === 'Enter' && lessonTitle.trim() && !loading) {
+      e.preventDefault();
+      saveLesson();
+    }
+  }}
+  placeholder="Ví dụ: Bài học ngày..." 
+  className="w-full bg-slate-50 border-2 border-transparent rounded-2xl px-6 py-5 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all text-xl font-bold" 
+/>
                 </div>
                 <div className="flex gap-4 pt-4">
                   <button onClick={() => setShowSaveModal(false)} className="flex-1 py-5 rounded-2xl font-bold text-slate-500 hover:bg-slate-100 transition-all">Hủy</button>
@@ -3713,7 +3726,9 @@ function ReportView({ results, language, activeLessonId, onPlayAIGame, onGoToTop
         <div className="bg-indigo-600 p-8 rounded-[2.5rem] shadow-xl text-white flex flex-col justify-center items-center text-center relative overflow-hidden">
   {/* LINH VẬT THAY THẾ CÁI CÚP (TROPHY) */}
   <div className="mb-4">
-    {accuracy >= 50 ? (
+    {currentSessionResults.length === 0 ? (
+      <AIBTeMBot emotion="idle" className="w-40 h-40" />
+    ) : accuracy >= 50 ? (
       <AIBTeMBot emotion="happy" className="w-40 h-40" />
     ) : (
       <AIBTeMBot emotion="sad" className="w-40 h-40" />
@@ -3721,7 +3736,11 @@ function ReportView({ results, language, activeLessonId, onPlayAIGame, onGoToTop
   </div>
   
   <h3 className="text-2xl font-bold mb-2">
-    {accuracy >= 50 ? "Tuyệt vời!" : "Cố gắng lên nhé!"}
+    {currentSessionResults.length === 0 
+      ? "Chưa có thông tin" 
+      : accuracy >= 50 
+        ? "Tuyệt vời!" 
+        : "Cố gắng lên nhé!"}
   </h3>
   
   <div className="text-6xl font-black mb-4">

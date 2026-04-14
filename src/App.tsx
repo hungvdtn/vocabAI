@@ -339,20 +339,20 @@ import { motion } from 'framer-motion';
 import robotHello from './assets/robot_hello.json'; 
 
 // ==========================================
-// LINH VẬT AIBTeM BOT (THAO TÚNG CẢM XÚC TỪ 1 FILE JSON)
+// LINH VẬT AIBTeM BOT (BẢN HOÀN CHỈNH: KÍCH THƯỚC CHUẨN + ĐA CẢM XÚC)
 // ==========================================
-function AIBTeMBot({ emotion = 'idle', className = "w-40 h-40" }: { emotion?: 'idle' | 'happy' | 'sad' | 'loading' | 'search', className?: string }) {
+function AIBTeMBot({ emotion = 'idle', className = "" }: { emotion?: 'idle' | 'happy' | 'sad' | 'loading' | 'search', className?: string }) {
   const lottieRef = useRef<any>(null);
 
-  // 1. CAN THIỆP TỐC ĐỘ (Speed): Vui thì chạy nhanh, Buồn thì chạy chậm
+  // 1. CAN THIỆP TỐC ĐỘ (Speed)
   useEffect(() => {
     if (lottieRef.current) {
       if (emotion === 'sad') {
-        lottieRef.current.setSpeed(0.4); // Cử động chậm chạp, ủ rũ
+        lottieRef.current.setSpeed(0.4); 
       } else if (emotion === 'happy' || emotion === 'loading') {
-        lottieRef.current.setSpeed(1.5); // Cử động nhanh nhẹn, phấn khích
+        lottieRef.current.setSpeed(1.5); 
       } else {
-        lottieRef.current.setSpeed(1); // Bình thường
+        lottieRef.current.setSpeed(1); 
       }
     }
   }, [emotion]);
@@ -363,36 +363,35 @@ function AIBTeMBot({ emotion = 'idle', className = "w-40 h-40" }: { emotion?: 'i
 
   switch (emotion) {
     case 'happy':
-      // Vui: Nhún nhảy liên tục lên xuống, tỏa hào quang màu Xanh ngọc
       motionProps = { y: [0, -25, 0], transition: { repeat: Infinity, duration: 0.5, ease: "easeInOut" } };
       filterStyle = "drop-shadow(0px 0px 20px rgba(16, 185, 129, 0.6)) brightness(1.1)"; 
       break;
     
     case 'sad':
-      // Buồn: Gục xuống (xoay 15 độ, hạ thấp y), thu nhỏ lại, chuyển màu xám xịt buồn bã
       motionProps = { y: 15, rotate: 15, scale: 0.9, transition: { duration: 0.5 } };
       filterStyle = "grayscale(80%) sepia(30%) hue-rotate(-30deg) opacity(80%)"; 
       break;
     
     case 'search':
     case 'loading':
-      // Đang tìm kiếm/dịch: Trôi bồng bềnh, phóng to nhẹ, tập trung cao độ
       motionProps = { y: [0, -10, 0], scale: [1, 1.05, 1], transition: { repeat: Infinity, duration: 1.5, ease: "easeInOut" } };
       filterStyle = "drop-shadow(0px 10px 15px rgba(79, 70, 229, 0.3))"; 
       break;
     
-    default: // idle (Chào mừng)
-      // Thở nhẹ nhàng, trôi lơ lửng
+    default: 
       motionProps = { y: [0, -5, 0], transition: { repeat: Infinity, duration: 3, ease: "easeInOut" } };
       filterStyle = "drop-shadow(0px 5px 10px rgba(0,0,0,0.1))";
       break;
   }
 
+  // TỐI ƯU KÍCH THƯỚC: Mặc định trên Mobile là w-48, trên PC là w-80
+  const finalClass = className || "w-48 h-48 md:w-80 md:h-80";
+
   return (
     <motion.div 
-      className={`relative flex items-center justify-center ${className}`}
+      className={`relative flex items-center justify-center ${finalClass}`}
       animate={motionProps}
-      style={{ filter: filterStyle, transition: 'filter 0.8s ease' }} // Đổi màu mượt mà
+      style={{ filter: filterStyle, transition: 'filter 0.8s ease' }} 
     >
       <Lottie 
         lottieRef={lottieRef}
@@ -403,15 +402,15 @@ function AIBTeMBot({ emotion = 'idle', className = "w-40 h-40" }: { emotion?: 'i
       
       {/* 3. THÊM HIỆU ỨNG TRỰC QUAN BỔ SUNG */}
       {emotion === 'sad' && (
-        <span className="absolute -top-2 right-4 text-2xl opacity-70 animate-pulse">💧</span>
+        <span className="absolute -top-2 right-4 md:right-8 text-2xl md:text-4xl opacity-70 animate-pulse">💧</span>
       )}
       {emotion === 'happy' && (
-        <span className="absolute -top-4 text-4xl animate-bounce">✨</span>
+        <span className="absolute -top-4 text-4xl md:text-5xl animate-bounce">✨</span>
       )}
       {emotion === 'loading' && (
-        <span className="absolute -top-2 -right-2 flex h-6 w-6">
+        <span className="absolute -top-2 -right-2 md:right-4 flex h-6 w-6 md:h-8 md:w-8">
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-6 w-6 bg-indigo-500"></span>
+          <span className="relative inline-flex rounded-full h-6 w-6 md:h-8 md:w-8 bg-indigo-500"></span>
         </span>
       )}
     </motion.div>
@@ -866,21 +865,56 @@ function HomeView({ setView, language, user, lessons }: { setView: (v: View) => 
         </motion.div>
       )}
 
-      <div className="bg-indigo-600 rounded-[2.5rem] p-8 md:p-12 text-white relative overflow-hidden shadow-2xl">
-        <div className="relative z-10 max-w-2xl">
-          <h2 className="text-4xl md:text-5xl font-bold mb-4 leading-tight">Chào bạn, {user.displayName?.split(' ')[0]}!</h2>
-          <p className="text-indigo-100 text-lg mb-8 opacity-90">Bạn đã sẵn sàng chinh phục {language === 'en' ? 'Tiếng Anh' : 'Tiếng Đức'} hôm nay chưa?</p>
-          <div className="flex flex-wrap gap-4">
-            <button onClick={() => setView('topics')} className="bg-white text-indigo-600 px-8 py-4 rounded-2xl font-bold hover:bg-indigo-50 transition-all flex items-center gap-2 shadow-lg">
-              Khám phá Chủ đề <ChevronRight size={20} />
-            </button>
-            <button onClick={() => setView('input')} className="bg-indigo-500/30 backdrop-blur-md border border-indigo-400/50 text-white px-8 py-4 rounded-2xl font-bold hover:bg-indigo-500/40 transition-all">
-              Thêm từ mới
-            </button>
-          </div>
-        </div>
-        <div className="absolute right-[-5%] bottom-[-10%] opacity-20 rotate-12"><Languages size={300} /></div>
-      </div>
+      <div className="bg-indigo-600 rounded-[2.5rem] p-8 md:p-12 text-white relative overflow-hidden shadow-2xl flex flex-col md:flex-row items-center justify-between gap-8">
+  {/* NỬA BÊN TRÁI: THÔNG ĐIỆP CHÀO MỪNG VÀ HỆ THỐNG NÚT */}
+  <div className="relative z-10 max-w-2xl space-y-6 w-full md:w-2/3">
+    <h2 className="text-3xl md:text-5xl font-bold leading-tight">
+      Chào bạn, {user.displayName}!
+    </h2>
+    <div className="space-y-2">
+      <p className="text-indigo-100 text-lg md:text-xl opacity-95">
+        Bạn đã sẵn sàng chinh phục từ vựng {language === 'en' ? 'Tiếng Anh' : 'Tiếng Đức'} cùng AIBTeM hôm nay chưa?
+      </p>
+      <p className="text-indigo-200 text-base md:text-lg italic font-medium">
+        "Mỗi ngày một chút nỗ lực sẽ mang lại thành quả lớn!"
+      </p>
+    </div>
+
+    <div className="flex flex-wrap gap-4 pt-4">
+      <button 
+        onClick={() => setView('topics')} 
+        className="bg-white text-indigo-600 px-8 py-4 rounded-2xl font-bold hover:bg-indigo-50 transition-all flex items-center gap-2 shadow-lg"
+      >
+        Khám phá Chủ đề <ChevronRight size={20} />
+      </button>
+      
+      <button 
+        onClick={() => setView('input')} 
+        className="bg-indigo-500/30 backdrop-blur-md border border-indigo-400/50 text-white px-8 py-4 rounded-2xl font-bold hover:bg-indigo-500/40 transition-all"
+      >
+        Thêm từ mới
+      </button>
+
+      <button 
+        onClick={() => setView('assessment')} // Giả định view assessment đã được thiết lập
+        className="bg-emerald-500 text-white px-8 py-4 rounded-2xl font-bold hover:bg-emerald-600 transition-all shadow-lg flex items-center gap-2"
+      >
+        Đánh giá năng lực {language === 'en' ? 'Tiếng Anh' : 'Tiếng Đức'}
+      </button>
+    </div>
+  </div>
+
+  {/* NỬA BÊN PHẢI: LINH VẬT AIBTeM BOT */}
+  <div className="w-full md:w-1/3 flex justify-center md:justify-end relative z-10">
+    <AIBTeMBot emotion="idle" className="w-48 h-48 md:w-64 md:h-64 lg:w-72 lg:h-72" />
+  </div>
+
+  {/* HIỆU ỨNG TRANG TRÍ NỀN */}
+  <div className="absolute right-[-5%] bottom-[-10%] opacity-10 rotate-12 pointer-events-none">
+    <Languages size={350} />
+  </div>
+  <div className="absolute top-0 right-0 w-80 h-80 bg-white opacity-5 rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
+</div>
 
       <div className="grid md:grid-cols-3 gap-6">
         <StatCard title="Bài học cá nhân" value={lessons.filter(l=>l.language === language).length.toString()} color="bg-blue-500" />

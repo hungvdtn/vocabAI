@@ -888,9 +888,9 @@ function HomeView({ setView, language, user, lessons }: { setView: (v: View) => 
         <span>Khám phá Chủ đề</span> <ChevronRight size={20} />
       </button>
       
+      {/* Sử dụng bg-amber-700 để có tông màu trầm và chuyên nghiệp hơn */}
       <button 
         onClick={() => setView('input')} 
-        {/* Sử dụng bg-amber-700 để có tông màu trầm và chuyên nghiệp hơn */}
         className="flex-1 bg-amber-700 text-white px-6 py-4 rounded-2xl font-bold hover:bg-amber-800 transition-all shadow-lg flex items-center justify-between text-left border border-amber-600/20"
       >
         <span>Thêm từ mới</span> <PlusCircle size={20} />
@@ -900,7 +900,7 @@ function HomeView({ setView, language, user, lessons }: { setView: (v: View) => 
         onClick={() => setView('assessment')} 
         className="flex-1 bg-emerald-600 text-white px-6 py-4 rounded-2xl font-bold hover:bg-emerald-700 transition-all shadow-lg flex items-center justify-between text-left"
       >
-        <span>Đánh giá năng lực</span> <Target size={20} />
+        <span>Kiểm tra trình độ</span> <Target size={20} />
       </button>
     </div>
   </div>

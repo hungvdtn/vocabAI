@@ -890,16 +890,17 @@ function HomeView({ setView, language, user, lessons }: { setView: (v: View) => 
       
       <button 
         onClick={() => setView('input')} 
-        className="flex-1 bg-amber-500 text-white px-6 py-4 rounded-2xl font-bold hover:bg-amber-600 transition-all shadow-lg flex items-center justify-between text-left border-2 border-amber-400/20"
+        {/* Sử dụng bg-amber-700 để có tông màu trầm và chuyên nghiệp hơn */}
+        className="flex-1 bg-amber-700 text-white px-6 py-4 rounded-2xl font-bold hover:bg-amber-800 transition-all shadow-lg flex items-center justify-between text-left border border-amber-600/20"
       >
         <span>Thêm từ mới</span> <PlusCircle size={20} />
       </button>
 
       <button 
         onClick={() => setView('assessment')} 
-        className="flex-1 bg-emerald-500 text-white px-6 py-4 rounded-2xl font-bold hover:bg-emerald-600 transition-all shadow-lg flex items-center justify-between text-left"
+        className="flex-1 bg-emerald-600 text-white px-6 py-4 rounded-2xl font-bold hover:bg-emerald-700 transition-all shadow-lg flex items-center justify-between text-left"
       >
-        <span>Kiểm tra trình độ</span> <Target size={20} />
+        <span>Đánh giá năng lực</span> <Target size={20} />
       </button>
     </div>
   </div>

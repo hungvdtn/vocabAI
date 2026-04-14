@@ -333,122 +333,88 @@ const getGameTitle = (type: GameType) => {
     default: return '';
   }
 };
+import { useRef, useEffect } from 'react';
+import Lottie from 'lottie-react';
+import { motion } from 'framer-motion';
+import robotHello from './assets/robot_hello.json'; 
+
 // ==========================================
-// LINH VẬT AIBTeM BOT (NATIVE SVG ANIMATION)
+// LINH VẬT AIBTeM BOT (THAO TÚNG CẢM XÚC TỪ 1 FILE JSON)
 // ==========================================
 function AIBTeMBot({ emotion = 'idle', className = "w-40 h-40" }: { emotion?: 'idle' | 'happy' | 'sad' | 'loading' | 'search', className?: string }) {
-  
-  // Thuật toán nhún nhảy lơ lửng cho cơ thể
-  const bodyFloat = {
-    y: [0, -15, 0],
-    transition: { duration: 3, repeat: Infinity, ease: "easeInOut" }
-  };
+  const lottieRef = useRef<any>(null);
 
-  // Thuật toán vẫy tay
-  const armWave = {
-    rotate: [0, 20, -5, 10, 0],
-    transition: { duration: 2, repeat: Infinity, repeatDelay: 1 }
-  };
+  // 1. CAN THIỆP TỐC ĐỘ (Speed): Vui thì chạy nhanh, Buồn thì chạy chậm
+  useEffect(() => {
+    if (lottieRef.current) {
+      if (emotion === 'sad') {
+        lottieRef.current.setSpeed(0.4); // Cử động chậm chạp, ủ rũ
+      } else if (emotion === 'happy' || emotion === 'loading') {
+        lottieRef.current.setSpeed(1.5); // Cử động nhanh nhẹn, phấn khích
+      } else {
+        lottieRef.current.setSpeed(1); // Bình thường
+      }
+    }
+  }, [emotion]);
 
-  // Thuật toán mắt nhấp nháy tự nhiên
-  const eyeBlink = {
-    scaleY: [1, 0.1, 1],
-    transition: { duration: 3, repeat: Infinity, times: [0, 0.05, 0.1] }
-  };
+  // 2. CAN THIỆP CHUYỂN ĐỘNG & MÀU SẮC (Framer Motion & CSS Filter)
+  let motionProps: any = {};
+  let filterStyle = "";
+
+  switch (emotion) {
+    case 'happy':
+      // Vui: Nhún nhảy liên tục lên xuống, tỏa hào quang màu Xanh ngọc
+      motionProps = { y: [0, -25, 0], transition: { repeat: Infinity, duration: 0.5, ease: "easeInOut" } };
+      filterStyle = "drop-shadow(0px 0px 20px rgba(16, 185, 129, 0.6)) brightness(1.1)"; 
+      break;
+    
+    case 'sad':
+      // Buồn: Gục xuống (xoay 15 độ, hạ thấp y), thu nhỏ lại, chuyển màu xám xịt buồn bã
+      motionProps = { y: 15, rotate: 15, scale: 0.9, transition: { duration: 0.5 } };
+      filterStyle = "grayscale(80%) sepia(30%) hue-rotate(-30deg) opacity(80%)"; 
+      break;
+    
+    case 'search':
+    case 'loading':
+      // Đang tìm kiếm/dịch: Trôi bồng bềnh, phóng to nhẹ, tập trung cao độ
+      motionProps = { y: [0, -10, 0], scale: [1, 1.05, 1], transition: { repeat: Infinity, duration: 1.5, ease: "easeInOut" } };
+      filterStyle = "drop-shadow(0px 10px 15px rgba(79, 70, 229, 0.3))"; 
+      break;
+    
+    default: // idle (Chào mừng)
+      // Thở nhẹ nhàng, trôi lơ lửng
+      motionProps = { y: [0, -5, 0], transition: { repeat: Infinity, duration: 3, ease: "easeInOut" } };
+      filterStyle = "drop-shadow(0px 5px 10px rgba(0,0,0,0.1))";
+      break;
+  }
 
   return (
-    <div className={`relative flex flex-col items-center justify-center ${className}`}>
-      <motion.div animate={bodyFloat} className="relative z-10 w-full h-full">
-        <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full drop-shadow-2xl">
-          
-          {/* TAY TRÁI (Khớp Indigo, thân Trắng) */}
-          <motion.path 
-            d="M 50 110 Q 20 120 30 150" 
-            stroke="#ffffff" strokeWidth="16" strokeLinecap="round" 
-            style={{ originX: '50px', originY: '110px' }}
-            animate={emotion === 'happy' ? armWave : { rotate: [0, 5, 0], transition: { duration: 4, repeat: Infinity } }}
-          />
-          <path d="M 50 110 Q 20 120 30 150" stroke="#4f46e5" strokeWidth="6" strokeLinecap="round" />
-
-          {/* TAY PHẢI */}
-          <motion.path 
-            d="M 150 110 Q 180 120 170 150" 
-            stroke="#ffffff" strokeWidth="16" strokeLinecap="round" 
-            style={{ originX: '150px', originY: '110px' }}
-            animate={{ rotate: [0, -5, 0], transition: { duration: 4, repeat: Infinity, delay: 0.5 } }}
-          />
-          <path d="M 150 110 Q 180 120 170 150" stroke="#4f46e5" strokeWidth="6" strokeLinecap="round" />
-
-          {/* THÂN ROBOT (Bo tròn, Trắng sứ, Viền Xanh Indigo) */}
-          <rect x="50" y="40" width="100" height="110" rx="45" fill="#ffffff" stroke="#4f46e5" strokeWidth="6" />
-          
-          {/* TAI (Ăng-ten) */}
-          <path d="M 70 40 L 60 20 M 130 40 L 140 20" stroke="#4f46e5" strokeWidth="6" strokeLinecap="round" />
-          <circle cx="60" cy="20" r="6" fill="#10b981" />
-          <circle cx="140" cy="20" r="6" fill="#10b981" />
-
-          {/* MẶT MÀN HÌNH LED (Đen/Tím than) */}
-          <rect x="65" y="60" width="70" height="50" rx="20" fill="#1e1b4b" />
-
-          {/* ================================================== */}
-          {/* CẢM XÚC ĐÔI MẮT MÀN HÌNH LED XANH NGỌC LỤC BẢO */}
-          {/* ================================================== */}
-          
-          {emotion === 'idle' && (
-             <>
-               <motion.ellipse cx="85" cy="85" rx="6" ry="10" fill="#10b981" animate={eyeBlink} />
-               <motion.ellipse cx="115" cy="85" rx="6" ry="10" fill="#10b981" animate={eyeBlink} />
-             </>
-          )}
-
-          {emotion === 'happy' && (
-             <>
-               {/* Mắt hình dấu ^ ^ */}
-               <path d="M 75 90 Q 85 75 95 90" stroke="#10b981" strokeWidth="5" strokeLinecap="round" fill="none" />
-               <path d="M 105 90 Q 115 75 125 90" stroke="#10b981" strokeWidth="5" strokeLinecap="round" fill="none" />
-             </>
-          )}
-
-          {emotion === 'sad' && (
-             <>
-               {/* Mắt buồn cụp xuống */}
-               <path d="M 75 80 Q 85 95 95 80" stroke="#ef4444" strokeWidth="5" strokeLinecap="round" fill="none" />
-               <path d="M 105 80 Q 115 95 125 80" stroke="#ef4444" strokeWidth="5" strokeLinecap="round" fill="none" />
-             </>
-          )}
-
-          {emotion === 'search' && (
-             <>
-               {/* Mắt to tròn tò mò như kính lúp */}
-               <circle cx="85" cy="85" r="10" stroke="#10b981" strokeWidth="4" fill="none" />
-               <circle cx="115" cy="85" r="10" stroke="#10b981" strokeWidth="4" fill="none" />
-             </>
-          )}
-
-          {emotion === 'loading' && (
-             <>
-               {/* Mắt xoay tròn như đang tải dữ liệu */}
-               <motion.path 
-                 d="M 85 75 A 10 10 0 0 1 95 85" stroke="#10b981" strokeWidth="4" fill="none" strokeLinecap="round"
-                 animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }} style={{ originX: '85px', originY: '85px' }}
-               />
-               <motion.path 
-                 d="M 115 75 A 10 10 0 0 1 125 85" stroke="#10b981" strokeWidth="4" fill="none" strokeLinecap="round"
-                 animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }} style={{ originX: '115px', originY: '85px' }}
-               />
-             </>
-          )}
-
-        </svg>
-      </motion.div>
-      
-      {/* CÁI BÓNG Ở DƯỚI ĐẤT CO GIÃN THEO NHỊP BAY */}
-      <motion.div 
-        className="absolute -bottom-2 w-20 h-4 bg-slate-200 rounded-[100%] blur-[2px]"
-        animate={{ scale: [1, 0.6, 1], opacity: [0.8, 0.4, 0.8] }}
-        transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+    <motion.div 
+      className={`relative flex items-center justify-center ${className}`}
+      animate={motionProps}
+      style={{ filter: filterStyle, transition: 'filter 0.8s ease' }} // Đổi màu mượt mà
+    >
+      <Lottie 
+        lottieRef={lottieRef}
+        animationData={robotHello} 
+        loop={true} 
+        className="w-full h-full" 
       />
-    </div>
+      
+      {/* 3. THÊM HIỆU ỨNG TRỰC QUAN BỔ SUNG */}
+      {emotion === 'sad' && (
+        <span className="absolute -top-2 right-4 text-2xl opacity-70 animate-pulse">💧</span>
+      )}
+      {emotion === 'happy' && (
+        <span className="absolute -top-4 text-4xl animate-bounce">✨</span>
+      )}
+      {emotion === 'loading' && (
+        <span className="absolute -top-2 -right-2 flex h-6 w-6">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-6 w-6 bg-indigo-500"></span>
+        </span>
+      )}
+    </motion.div>
   );
 }
 export default function App() {

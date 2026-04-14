@@ -1139,16 +1139,25 @@ function LightbulbIcon(props: any) {
 }
 // --- TRANG QUẢN TRỊ ẨN (ADMIN DASHBOARD) ---
 // --- TRANG QUẢN TRỊ ẨN (ADMIN DASHBOARD) ---
+// --- TRANG QUẢN TRỊ ẨN (ADMIN DASHBOARD) ---
 function AdminDashboardView({ language }: { language: Language }) {
   const [activeTab, setActiveTab] = useState<'dictionary' | 'users'>('dictionary');
+  
+  // STATE CỦA QUẢN LÝ TỪ ĐIỂN
   const [reports, setReports] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingReportId, setEditingReportId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<any>(null);
   const [isSaving, setIsSaving] = useState(false);
+  
+  // STATE MỚI: Tải danh sách các từ đã sửa để phục vụ Xuất Excel
+  const [overridesList, setOverridesList] = useState<any[]>([]);
+
+  // STATE CỦA QUẢN LÝ NGƯỜI DÙNG
   const [appUsers, setAppUsers] = useState<any[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
 
+  // 1. Tải danh sách báo lỗi
   useEffect(() => {
     const q = query(collection(db, 'error_reports'), where('status', '==', 'pending'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -1159,6 +1168,16 @@ function AdminDashboardView({ language }: { language: Language }) {
     return () => unsubscribe();
   }, []);
 
+  // 2. Tải danh sách từ vựng đã được sửa (Overrides)
+  useEffect(() => {
+    const q = query(collection(db, 'dictionary_overrides'), where('language', '==', language));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setOverridesList(snapshot.docs.map(doc => doc.data()));
+    });
+    return () => unsubscribe();
+  }, [language]);
+
+  // 3. Tải danh sách người dùng
   useEffect(() => {
     if (activeTab === 'users') {
       setLoadingUsers(true);
@@ -1176,12 +1195,16 @@ function AdminDashboardView({ language }: { language: Language }) {
     const dict = language === 'en' ? enDictDataRaw : deDictDataRaw;
     const entry = dict.find((item: any) => item.word.toLowerCase() === report.word.toLowerCase());
     setEditingReportId(report.id);
+    
     const initialForm = entry || { 
       word: report.word, meaning: report.suggestedMeaning || '', vietnamese_meaning: report.suggestedMeaning || '',
       part_of_speech: '', phonetic: '', english_definition: '', german_definition: '',
       example_english: '', example_german: '', example_vietnamese: '', topic: 'other', level: 'A1' 
     };
-    if (!initialForm.vietnamese_meaning && initialForm.meaning) initialForm.vietnamese_meaning = initialForm.meaning;
+    
+    if (!initialForm.vietnamese_meaning && initialForm.meaning) {
+        initialForm.vietnamese_meaning = initialForm.meaning;
+    }
     setEditForm(initialForm);
   };
 
@@ -1197,8 +1220,49 @@ function AdminDashboardView({ language }: { language: Language }) {
     } catch (error) { alert("Lỗi khi lưu vào CSDL."); } finally { setIsSaving(false); }
   };
 
-  // CƠ CHẾ XUẤT DỮ LIỆU EXCEL/CSV CHUẨN ĐỊNH DẠNG TIẾNG VIỆT (UTF-8)
-  const handleExportData = () => {
+  // TÍNH NĂNG MỚI: XÓA BÁO CÁO LỖI (NẾU BÁO SAI)
+  const handleDeleteReport = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Ngăn chặn việc tự động bấm vào nút Sửa
+    if (!window.confirm("Xóa bỏ báo cáo này?")) return;
+    try {
+      // Đánh dấu là đã bị từ chối/xóa
+      await updateDoc(doc(db, 'error_reports', id), { status: 'rejected', resolvedAt: Date.now() });
+      if (editingReportId === id) { setEditingReportId(null); setEditForm(null); }
+    } catch (error) { alert("Lỗi khi xóa báo cáo!"); }
+  };
+
+  // TÍNH NĂNG MỚI: XUẤT EXCEL TỪ VỰNG ĐÃ SỬA ĐỂ CẬP NHẬT FILE JSON
+  const handleExportDictData = () => {
+    if (overridesList.length === 0) return alert("Chưa có từ vựng nào được sửa trên Đám mây để xuất!");
+    
+    const headers = ["Thuật ngữ", "Phiên âm", "Loại từ", "Trình độ", "Chủ đề", "Nghĩa Tiếng Việt", "Định nghĩa gốc", "Ví dụ", "Nghĩa ví dụ"];
+    const csvRows = overridesList.map(w => {
+      const word = w.word ? w.word.replace(/"/g, '""') : '';
+      const phonetic = w.phonetic ? w.phonetic.replace(/"/g, '""') : '';
+      const partOfSpeech = w.part_of_speech ? w.part_of_speech.replace(/"/g, '""') : '';
+      const level = w.level ? w.level.replace(/"/g, '""') : '';
+      const topic = w.topic ? w.topic.replace(/"/g, '""') : '';
+      const meaning = w.vietnamese_meaning ? w.vietnamese_meaning.replace(/"/g, '""') : '';
+      const def = (w.english_definition || w.german_definition || '') ? (w.english_definition || w.german_definition).replace(/"/g, '""') : '';
+      const ex = (w.example_english || w.example_german || w.example || '') ? (w.example_english || w.example_german || w.example).replace(/"/g, '""') : '';
+      const exVn = w.example_vietnamese ? w.example_vietnamese.replace(/"/g, '""') : '';
+      
+      return `"${word}","${phonetic}","${partOfSpeech}","${level}","${topic}","${meaning}","${def}","${ex}","${exVn}"`;
+    });
+    
+    const csvContent = "\uFEFF" + headers.join(",") + "\n" + csvRows.join("\n");
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `TuVung_DaSua_${language.toUpperCase()}_${new Date().toLocaleDateString('vi-VN').replace(/\//g, '-')}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // XUẤT EXCEL NGƯỜI DÙNG (Giữ nguyên)
+  const handleExportUsersData = () => {
     if (appUsers.length === 0) return alert("Không có dữ liệu để xuất!");
     const headers = ["Tên hiển thị", "Email", "Trình độ CEFR", "Cấp bậc", "Ngày gia nhập", "Lần đăng nhập cuối"];
     const csvRows = appUsers.map(u => {
@@ -1210,7 +1274,6 @@ function AdminDashboardView({ language }: { language: Language }) {
       return `"${name}","${email}","${u.cefrLevel || 'Chưa kiểm tra'}","${role}","${joinDate}","${lastLogin}"`;
     });
     
-    // Thêm ký tự \uFEFF vào đầu file để Excel hiểu đây là font Unicode Tiếng Việt
     const csvContent = "\uFEFF" + headers.join(",") + "\n" + csvRows.join("\n");
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -1241,7 +1304,14 @@ function AdminDashboardView({ language }: { language: Language }) {
       {activeTab === 'dictionary' && (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="grid lg:grid-cols-12 gap-8">
           <div className="lg:col-span-5 xl:col-span-4 space-y-4">
-            <h3 className="font-bold text-slate-700 flex items-center gap-2 mb-4"><AlertCircle size={20} className="text-red-500" /> Cần duyệt ({reports.length})</h3>
+            
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-slate-700 flex items-center gap-2"><AlertCircle size={20} className="text-red-500" /> Cần duyệt ({reports.length})</h3>
+              <button onClick={handleExportDictData} className="px-3 py-2 bg-emerald-50 text-emerald-600 rounded-lg text-xs font-bold hover:bg-emerald-100 flex items-center gap-1 transition-all shadow-sm">
+                <Download size={14} /> Xuất file sửa
+              </button>
+            </div>
+
             {reports.length === 0 ? (
               <div className="bg-white p-10 rounded-[2rem] border border-dashed text-center text-slate-400">Hệ thống đang sạch sẽ.</div>
             ) : (
@@ -1249,8 +1319,14 @@ function AdminDashboardView({ language }: { language: Language }) {
                 {reports.map(r => (
                   <div key={r.id} onClick={() => startEdit(r)} className={cn("bg-white p-5 rounded-[1.5rem] border shadow-sm hover:shadow-md transition-all cursor-pointer", editingReportId === r.id ? "border-indigo-500 ring-2 ring-indigo-500/20" : "border-slate-100")}>
                     <div className="flex justify-between items-start mb-3">
-                      <div><span className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-lg font-black text-lg">{r.word}</span><p className="text-[10px] text-slate-400 mt-2 font-bold uppercase tracking-widest">Nguồn: {r.userName}</p></div>
-                      <Edit2 size={18} className={editingReportId === r.id ? "text-indigo-600" : "text-slate-300"} />
+                      <div>
+                        <span className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-lg font-black text-lg">{r.word}</span>
+                        <p className="text-[10px] text-slate-400 mt-2 font-bold uppercase tracking-widest">Nguồn: {r.userName}</p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button onClick={(e) => handleDeleteReport(r.id, e)} className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all" title="Xóa bỏ báo cáo"><Trash2 size={16} /></button>
+                        <button className={cn("p-2 rounded-lg transition-all", editingReportId === r.id ? "bg-indigo-100 text-indigo-600" : "text-slate-400 hover:bg-slate-100 hover:text-indigo-600")} title="Chỉnh sửa"><Edit2 size={16} /></button>
+                      </div>
                     </div>
                     <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 text-sm italic text-slate-600 line-clamp-3">"{r.errorText}"</div>
                   </div>
@@ -1293,9 +1369,7 @@ function AdminDashboardView({ language }: { language: Language }) {
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden">
           <div className="p-8 border-b border-slate-100 flex items-center justify-between">
             <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2"><UserIcon className="text-indigo-600" /> Danh sách Học viên ({appUsers.length})</h3>
-            
-            {/* NÚT XUẤT DỮ LIỆU ĐÃ ĐƯỢC KẾT NỐI HÀM XỬ LÝ */}
-            <button onClick={handleExportData} className="px-5 py-3 bg-indigo-50 text-indigo-600 rounded-xl text-sm font-bold hover:bg-indigo-100 flex items-center gap-2 transition-all">
+            <button onClick={handleExportUsersData} className="px-5 py-3 bg-indigo-50 text-indigo-600 rounded-xl text-sm font-bold hover:bg-indigo-100 flex items-center gap-2 transition-all">
               <Download size={18} /> Xuất file Excel (CSV)
             </button>
           </div>

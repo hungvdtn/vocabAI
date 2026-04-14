@@ -336,6 +336,21 @@ const getGameTitle = (type: GameType) => {
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
+  // TỰ ĐỘNG LƯU HỒ SƠ NGƯỜI DÙNG KHI ĐĂNG NHẬP
+  useEffect(() => {
+    if (!user) return;
+    // Bóc tách ngày giờ tạo tài khoản gốc từ Firebase Auth
+    const joinDate = user.metadata?.creationTime ? new Date(user.metadata.creationTime).getTime() : Date.now();
+    
+    // Đẩy dữ liệu vào CSDL (dùng merge: true để không làm mất trình độ CEFR cũ nếu đã thi)
+    const userRef = doc(db, 'userProfiles', user.uid);
+    setDoc(userRef, {
+      displayName: user.displayName || 'Học viên ẩn danh',
+      email: user.email || 'Chưa cập nhật email',
+      createdAt: joinDate,
+      lastLoginAt: Date.now()
+    }, { merge: true }).catch(e => console.error("Lỗi đồng bộ hồ sơ:", e));
+  }, [user]);
   const [view, setView] = useState<View>('home');
   const [language, setLanguage] = useState<Language>('en');
   const [activeGame, setActiveGame] = useState<GameType | null>(null);
@@ -1123,22 +1138,17 @@ function LightbulbIcon(props: any) {
   );
 }
 // --- TRANG QUẢN TRỊ ẨN (ADMIN DASHBOARD) ---
+// --- TRANG QUẢN TRỊ ẨN (ADMIN DASHBOARD) ---
 function AdminDashboardView({ language }: { language: Language }) {
-  // STATE ĐIỀU HƯỚNG TAB CHỨC NĂNG
   const [activeTab, setActiveTab] = useState<'dictionary' | 'users'>('dictionary');
-
-  // STATE CỦA QUẢN LÝ TỪ ĐIỂN
   const [reports, setReports] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingReportId, setEditingReportId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<any>(null);
   const [isSaving, setIsSaving] = useState(false);
-
-  // STATE CỦA QUẢN LÝ NGƯỜI DÙNG
   const [appUsers, setAppUsers] = useState<any[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
 
-  // 1. Tải danh sách báo lỗi từ điển
   useEffect(() => {
     const q = query(collection(db, 'error_reports'), where('status', '==', 'pending'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -1149,40 +1159,29 @@ function AdminDashboardView({ language }: { language: Language }) {
     return () => unsubscribe();
   }, []);
 
-  // 2. Tải danh sách người dùng khi chuyển sang tab Users
   useEffect(() => {
     if (activeTab === 'users') {
       setLoadingUsers(true);
       const q = query(collection(db, 'userProfiles'));
       const unsubscribe = onSnapshot(q, (snapshot) => {
         const usersList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        // Sắp xếp người dùng mới nhất lên đầu
-        setAppUsers(usersList.sort((a: any, b: any) => (b.createdAt || 0) - (a.createdAt || 0)));
+        setAppUsers(usersList.sort((a: any, b: any) => (b.lastLoginAt || 0) - (a.lastLoginAt || 0)));
         setLoadingUsers(false);
       });
       return () => unsubscribe();
     }
   }, [activeTab]);
 
-  // LOGIC SỬA TỪ ĐIỂN
   const startEdit = (report: any) => {
     const dict = language === 'en' ? enDictDataRaw : deDictDataRaw;
     const entry = dict.find((item: any) => item.word.toLowerCase() === report.word.toLowerCase());
     setEditingReportId(report.id);
-    
     const initialForm = entry || { 
-      word: report.word, 
-      meaning: report.suggestedMeaning || '', 
-      vietnamese_meaning: report.suggestedMeaning || '',
-      part_of_speech: '', phonetic: '',
-      english_definition: '', german_definition: '',
-      example_english: '', example_german: '', example_vietnamese: '',
-      topic: 'other', level: 'A1' 
+      word: report.word, meaning: report.suggestedMeaning || '', vietnamese_meaning: report.suggestedMeaning || '',
+      part_of_speech: '', phonetic: '', english_definition: '', german_definition: '',
+      example_english: '', example_german: '', example_vietnamese: '', topic: 'other', level: 'A1' 
     };
-    
-    if (!initialForm.vietnamese_meaning && initialForm.meaning) {
-        initialForm.vietnamese_meaning = initialForm.meaning;
-    }
+    if (!initialForm.vietnamese_meaning && initialForm.meaning) initialForm.vietnamese_meaning = initialForm.meaning;
     setEditForm(initialForm);
   };
 
@@ -1191,20 +1190,36 @@ function AdminDashboardView({ language }: { language: Language }) {
     setIsSaving(true);
     try {
       const overrideRef = doc(db, 'dictionary_overrides', `${language}_${editForm.word.toLowerCase()}`);
-      await setDoc(overrideRef, {
-          ...editForm, language: language, updatedAt: Date.now(), updatedBy: auth.currentUser?.uid
-      }, { merge: true });
+      await setDoc(overrideRef, { ...editForm, language: language, updatedAt: Date.now(), updatedBy: auth.currentUser?.uid }, { merge: true });
+      await updateDoc(doc(db, 'error_reports', editingReportId), { status: 'resolved', resolvedAt: Date.now(), resolutionNote: 'Đã cập nhật hệ thống' });
+      alert("Đã lưu trực tiếp vào Hệ thống Đám mây.");
+      setEditForm(null); setEditingReportId(null);
+    } catch (error) { alert("Lỗi khi lưu vào CSDL."); } finally { setIsSaving(false); }
+  };
 
-      await updateDoc(doc(db, 'error_reports', editingReportId), { 
-          status: 'resolved', resolvedAt: Date.now(), resolutionNote: 'Đã cập nhật hệ thống'
-      });
-
-      alert("Tuyệt vời! Dữ liệu đã được lưu trực tiếp vào Hệ thống Đám mây.");
-      setEditForm(null);
-      setEditingReportId(null);
-    } catch (error) {
-      alert("Đã xảy ra lỗi khi lưu vào CSDL. Vui lòng kiểm tra lại kết nối.");
-    } finally { setIsSaving(false); }
+  // CƠ CHẾ XUẤT DỮ LIỆU EXCEL/CSV CHUẨN ĐỊNH DẠNG TIẾNG VIỆT (UTF-8)
+  const handleExportData = () => {
+    if (appUsers.length === 0) return alert("Không có dữ liệu để xuất!");
+    const headers = ["Tên hiển thị", "Email", "Trình độ CEFR", "Cấp bậc", "Ngày gia nhập", "Lần đăng nhập cuối"];
+    const csvRows = appUsers.map(u => {
+      const joinDate = u.createdAt ? new Date(u.createdAt).toLocaleDateString('vi-VN') : 'Không rõ';
+      const lastLogin = u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleDateString('vi-VN') : 'Không rõ';
+      const role = u.id === auth.currentUser?.uid ? 'Quản trị viên' : 'Học viên';
+      const name = u.displayName ? u.displayName.replace(/"/g, '""') : 'Học viên ẩn danh';
+      const email = u.email ? u.email.replace(/"/g, '""') : 'Không rõ';
+      return `"${name}","${email}","${u.cefrLevel || 'Chưa kiểm tra'}","${role}","${joinDate}","${lastLogin}"`;
+    });
+    
+    // Thêm ký tự \uFEFF vào đầu file để Excel hiểu đây là font Unicode Tiếng Việt
+    const csvContent = "\uFEFF" + headers.join(",") + "\n" + csvRows.join("\n");
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `DanhSachHocVien_AIBTeM_${new Date().toLocaleDateString('vi-VN').replace(/\//g, '-')}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   if (loading) return <div className="py-20 text-center"><Loader2 className="animate-spin mx-auto text-indigo-600" size={40} /></div>;
@@ -1217,25 +1232,12 @@ function AdminDashboardView({ language }: { language: Language }) {
           <h2 className="text-3xl font-bold text-slate-900 mb-2">Trung tâm Quản trị AIBTeM</h2>
           <p className="text-slate-500">Quản lý toàn diện hệ thống dữ liệu và hồ sơ người học.</p>
         </div>
-        
-        {/* THANH ĐIỀU HƯỚNG TAB CHỨC NĂNG */}
         <div className="flex p-1 bg-slate-100 rounded-2xl shrink-0">
-          <button 
-            onClick={() => setActiveTab('dictionary')} 
-            className={cn("px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2 transition-all", activeTab === 'dictionary' ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-700")}
-          >
-            <BookOpen size={18} /> Dữ liệu Từ vựng
-          </button>
-          <button 
-            onClick={() => setActiveTab('users')} 
-            className={cn("px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2 transition-all", activeTab === 'users' ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-700")}
-          >
-            <UserIcon size={18} /> Hồ sơ Người dùng
-          </button>
+          <button onClick={() => setActiveTab('dictionary')} className={cn("px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2 transition-all", activeTab === 'dictionary' ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-700")}><BookOpen size={18} /> Dữ liệu Từ vựng</button>
+          <button onClick={() => setActiveTab('users')} className={cn("px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2 transition-all", activeTab === 'users' ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-700")}><UserIcon size={18} /> Hồ sơ Người dùng</button>
         </div>
       </div>
 
-      {/* ================= TAB 1: QUẢN LÝ TỪ ĐIỂN ================= */}
       {activeTab === 'dictionary' && (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="grid lg:grid-cols-12 gap-8">
           <div className="lg:col-span-5 xl:col-span-4 space-y-4">
@@ -1247,10 +1249,7 @@ function AdminDashboardView({ language }: { language: Language }) {
                 {reports.map(r => (
                   <div key={r.id} onClick={() => startEdit(r)} className={cn("bg-white p-5 rounded-[1.5rem] border shadow-sm hover:shadow-md transition-all cursor-pointer", editingReportId === r.id ? "border-indigo-500 ring-2 ring-indigo-500/20" : "border-slate-100")}>
                     <div className="flex justify-between items-start mb-3">
-                      <div>
-                        <span className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-lg font-black text-lg">{r.word}</span>
-                        <p className="text-[10px] text-slate-400 mt-2 font-bold uppercase tracking-widest">Nguồn: {r.userName}</p>
-                      </div>
+                      <div><span className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-lg font-black text-lg">{r.word}</span><p className="text-[10px] text-slate-400 mt-2 font-bold uppercase tracking-widest">Nguồn: {r.userName}</p></div>
                       <Edit2 size={18} className={editingReportId === r.id ? "text-indigo-600" : "text-slate-300"} />
                     </div>
                     <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 text-sm italic text-slate-600 line-clamp-3">"{r.errorText}"</div>
@@ -1259,81 +1258,45 @@ function AdminDashboardView({ language }: { language: Language }) {
               </div>
             )}
           </div>
-
           <div className="lg:col-span-7 xl:col-span-8">
             <div className="bg-white border border-slate-200 p-8 rounded-[2.5rem] shadow-xl sticky top-24">
               <h3 className="text-2xl font-bold mb-6 flex items-center gap-2 text-indigo-700"><BrainCircuit size={28} /> Chỉnh sửa Từ vựng</h3>
               {editForm ? (
                 <div className="space-y-6">
-                  {/* ... (Các trường nhập liệu giữ nguyên như cũ để tiết kiệm không gian hiển thị, đoạn này không có thay đổi gì về code nhập liệu) ... */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                     <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Thuật ngữ gốc</label>
-                        <input type="text" value={editForm.word || ''} onChange={e => setEditForm({...editForm, word: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-base font-bold focus:bg-white focus:border-indigo-500 outline-none transition-all" />
-                     </div>
-                     <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Phiên âm Quốc tế</label>
-                        <input type="text" value={editForm.phonetic || ''} onChange={e => setEditForm({...editForm, phonetic: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-base font-mono text-slate-600 focus:bg-white focus:border-indigo-500 outline-none transition-all" />
-                     </div>
+                     <div className="space-y-1"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Thuật ngữ gốc</label><input type="text" value={editForm.word || ''} onChange={e => setEditForm({...editForm, word: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-base font-bold focus:bg-white focus:border-indigo-500 outline-none transition-all" /></div>
+                     <div className="space-y-1"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Phiên âm Quốc tế</label><input type="text" value={editForm.phonetic || ''} onChange={e => setEditForm({...editForm, phonetic: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-base font-mono text-slate-600 focus:bg-white focus:border-indigo-500 outline-none transition-all" /></div>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                     <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Loại từ</label>
-                        <input type="text" value={editForm.part_of_speech || ''} placeholder="n, v, adj, adv..." onChange={e => setEditForm({...editForm, part_of_speech: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-base focus:bg-white focus:border-indigo-500 outline-none transition-all" />
-                     </div>
-                     <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Trình độ CEFR</label>
-                        <select value={editForm.level || 'A1'} onChange={e => setEditForm({...editForm, level: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-base font-bold text-indigo-700 outline-none cursor-pointer">
-                          {['A1','A2','B1','B2','C1','C2'].map(l => <option key={l} value={l}>{l}</option>)}
-                        </select>
-                     </div>
-                     <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Nhóm Chủ đề</label>
-                        <select value={editForm.topic || 'other'} onChange={e => setEditForm({...editForm, topic: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-base outline-none cursor-pointer truncate">
-                          <option value="education_and_learning">Giáo dục & Học tập</option>
-                          <option value="work_and_business">Công sở & Kinh doanh</option>
-                          <option value="daily_life">Đời sống</option>
-                          <option value="other">Chủ đề khác</option>
-                        </select>
-                     </div>
+                     <div className="space-y-1"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Loại từ</label><input type="text" value={editForm.part_of_speech || ''} placeholder="n, v, adj, adv..." onChange={e => setEditForm({...editForm, part_of_speech: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-base focus:bg-white focus:border-indigo-500 outline-none transition-all" /></div>
+                     <div className="space-y-1"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Trình độ CEFR</label><select value={editForm.level || 'A1'} onChange={e => setEditForm({...editForm, level: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-base font-bold text-indigo-700 outline-none cursor-pointer">{['A1','A2','B1','B2','C1','C2'].map(l => <option key={l} value={l}>{l}</option>)}</select></div>
+                     <div className="space-y-1"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Nhóm Chủ đề</label><select value={editForm.topic || 'other'} onChange={e => setEditForm({...editForm, topic: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-base outline-none cursor-pointer truncate"><option value="education_and_learning">Giáo dục & Học tập</option><option value="work_and_business">Công sở & Kinh doanh</option><option value="daily_life">Đời sống</option><option value="other">Chủ đề khác</option></select></div>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                     <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest ml-1">Nghĩa tiếng Việt</label>
-                        <textarea value={editForm.vietnamese_meaning || ''} onChange={e => setEditForm({...editForm, vietnamese_meaning: e.target.value})} className="w-full bg-emerald-50 border border-emerald-100 rounded-xl p-3 text-base font-medium focus:bg-white focus:border-emerald-500 outline-none transition-all min-h-[100px] resize-none" />
-                     </div>
-                     <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-blue-600 uppercase tracking-widest ml-1">Định nghĩa ({language.toUpperCase()})</label>
-                        <textarea value={isEn ? (editForm.english_definition || '') : (editForm.german_definition || '')} onChange={e => { if (isEn) setEditForm({...editForm, english_definition: e.target.value}); else setEditForm({...editForm, german_definition: e.target.value}); }} className="w-full bg-blue-50 border border-blue-100 rounded-xl p-3 text-base focus:bg-white focus:border-blue-500 outline-none transition-all min-h-[100px] resize-none" />
-                     </div>
+                     <div className="space-y-1"><label className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest ml-1">Nghĩa tiếng Việt</label><textarea value={editForm.vietnamese_meaning || ''} onChange={e => setEditForm({...editForm, vietnamese_meaning: e.target.value})} className="w-full bg-emerald-50 border border-emerald-100 rounded-xl p-3 text-base font-medium focus:bg-white focus:border-emerald-500 outline-none transition-all min-h-[100px] resize-none" /></div>
+                     <div className="space-y-1"><label className="text-[10px] font-bold text-blue-600 uppercase tracking-widest ml-1">Định nghĩa ({language.toUpperCase()})</label><textarea value={isEn ? (editForm.english_definition || '') : (editForm.german_definition || '')} onChange={e => { if (isEn) setEditForm({...editForm, english_definition: e.target.value}); else setEditForm({...editForm, german_definition: e.target.value}); }} className="w-full bg-blue-50 border border-blue-100 rounded-xl p-3 text-base focus:bg-white focus:border-blue-500 outline-none transition-all min-h-[100px] resize-none" /></div>
                   </div>
                   <div className="pt-6 border-t border-slate-100 flex items-center justify-end gap-4">
                     <button onClick={() => {setEditForm(null); setEditingReportId(null);}} className="px-6 py-4 rounded-2xl font-bold text-slate-500 hover:bg-slate-100 transition-all">Hủy bỏ</button>
-                    <button onClick={handleResolveAndSave} disabled={isSaving} className="bg-indigo-600 text-white px-8 py-4 rounded-2xl font-bold text-lg hover:bg-indigo-700 transition-all shadow-xl flex items-center gap-2">
-                      {isSaving ? <Loader2 className="animate-spin" size={24} /> : <CheckCircle2 size={24} />} Lưu đè lên Hệ thống
-                    </button>
+                    <button onClick={handleResolveAndSave} disabled={isSaving} className="bg-indigo-600 text-white px-8 py-4 rounded-2xl font-bold text-lg hover:bg-indigo-700 transition-all shadow-xl flex items-center gap-2">{isSaving ? <Loader2 className="animate-spin" size={24} /> : <CheckCircle2 size={24} />} Lưu đè lên Hệ thống</button>
                   </div>
                 </div>
               ) : (
-                <div className="text-center py-20 text-slate-500">
-                  <div className="w-24 h-24 bg-slate-50 text-slate-300 rounded-full flex items-center justify-center mx-auto mb-4"><Edit2 size={40} /></div>
-                  <p className="text-lg">Chọn một từ mới cần duyệt ở danh sách bên trái.</p>
-                </div>
+                <div className="text-center py-20 text-slate-500"><div className="w-24 h-24 bg-slate-50 text-slate-300 rounded-full flex items-center justify-center mx-auto mb-4"><Edit2 size={40} /></div><p className="text-lg">Chọn một từ mới cần duyệt ở danh sách bên trái.</p></div>
               )}
             </div>
           </div>
         </motion.div>
       )}
 
-      {/* ================= TAB 2: QUẢN LÝ NGƯỜI DÙNG ================= */}
       {activeTab === 'users' && (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden">
           <div className="p-8 border-b border-slate-100 flex items-center justify-between">
-            <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-              <UserIcon className="text-indigo-600" /> Danh sách Học viên ({appUsers.length})
-            </h3>
-            <button className="px-4 py-2 bg-slate-100 text-slate-600 rounded-lg text-sm font-bold hover:bg-slate-200 flex items-center gap-2">
-              <Download size={16} /> Xuất dữ liệu
+            <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2"><UserIcon className="text-indigo-600" /> Danh sách Học viên ({appUsers.length})</h3>
+            
+            {/* NÚT XUẤT DỮ LIỆU ĐÃ ĐƯỢC KẾT NỐI HÀM XỬ LÝ */}
+            <button onClick={handleExportData} className="px-5 py-3 bg-indigo-50 text-indigo-600 rounded-xl text-sm font-bold hover:bg-indigo-100 flex items-center gap-2 transition-all">
+              <Download size={18} /> Xuất file Excel (CSV)
             </button>
           </div>
           
@@ -1349,7 +1312,7 @@ function AdminDashboardView({ language }: { language: Language }) {
                     <th className="p-6 font-bold">Học viên</th>
                     <th className="p-6 font-bold">Trình độ CEFR</th>
                     <th className="p-6 font-bold">Cấp bậc</th>
-                    <th className="p-6 font-bold">Ngày gia nhập</th>
+                    <th className="p-6 font-bold">Lần đăng nhập cuối</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -1362,26 +1325,19 @@ function AdminDashboardView({ language }: { language: Language }) {
                           </div>
                           <div>
                             <p className="font-bold text-slate-900 text-base">{u.displayName || 'Học viên ẩn danh'}</p>
-                            <p className="text-slate-500 text-sm flex items-center gap-1 mt-1"><Mail size={12} /> {u.email || 'Đăng nhập ẩn danh'}</p>
+                            <p className="text-slate-500 text-sm flex items-center gap-1 mt-1"><Mail size={12} /> {u.email || 'Không rõ'}</p>
+                            <p className="text-slate-400 text-xs mt-1">Tham gia: {u.createdAt ? new Date(u.createdAt).toLocaleDateString('vi-VN') : 'Không rõ'}</p>
                           </div>
                         </div>
                       </td>
                       <td className="p-6">
-                        {u.cefrLevel ? (
-                          <span className="px-3 py-1 bg-emerald-50 text-emerald-700 font-bold rounded-lg border border-emerald-100">{u.cefrLevel}</span>
-                        ) : (
-                          <span className="text-slate-400 italic text-sm">Chưa kiểm tra</span>
-                        )}
+                        {u.cefrLevel ? <span className="px-3 py-1 bg-emerald-50 text-emerald-700 font-bold rounded-lg border border-emerald-100">{u.cefrLevel}</span> : <span className="text-slate-400 italic text-sm">Chưa kiểm tra</span>}
                       </td>
                       <td className="p-6">
-                        {u.id === auth.currentUser?.uid ? (
-                          <span className="px-3 py-1 bg-indigo-600 text-white font-bold rounded-lg text-xs">Quản trị viên</span>
-                        ) : (
-                          <span className="px-3 py-1 bg-slate-100 text-slate-600 font-medium rounded-lg text-xs">Học viên</span>
-                        )}
+                        {u.id === auth.currentUser?.uid ? <span className="px-3 py-1 bg-indigo-600 text-white font-bold rounded-lg text-xs shadow-sm">Quản trị viên</span> : <span className="px-3 py-1 bg-slate-100 text-slate-600 font-medium rounded-lg text-xs">Học viên</span>}
                       </td>
                       <td className="p-6 text-slate-500 text-sm font-medium">
-                        {u.createdAt ? new Date(u.createdAt).toLocaleDateString('vi-VN') : 'Không rõ'}
+                        {u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleDateString('vi-VN') : 'Không rõ'}
                       </td>
                     </tr>
                   ))}
@@ -3522,7 +3478,7 @@ function ReportView({ results, language, activeLessonId, onPlayAIGame, onGoToTop
             <span className="text-2xl">🚀</span> Thử thách Nâng cao: Giao tiếp cùng AI
           </h3>
           <p className="text-slate-700 text-base mb-3 leading-relaxed">
-            Chúc mừng anh đã hoàn thành bài học! Để vận dụng ngay các từ vựng này vào thực tế, hãy thử sức trò chuyện trực tiếp với <strong>Trợ lý AI AIBTeM</strong>.
+            Chúc mừng bạn đã hoàn thành bài học! Để vận dụng ngay các từ vựng này vào thực tế, hãy thử sức trò chuyện trực tiếp với <strong>Trợ lý AIBTeM</strong>.
           </p>
           <ul className="list-disc list-inside text-indigo-700/80 text-sm font-medium">
             <li>Hình thức: Đóng vai (Role-play) tình huống thực tế.</li>

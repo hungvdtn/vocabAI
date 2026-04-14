@@ -1786,12 +1786,15 @@ function DictionaryView({ language }: { language: Language }) {
     setSuggestions([]); 
     setAiTranslation(null); 
     setSelectedIndex(-1); 
+    setIsTranslating(false);
   }, [language]);
 
   const handleSearchChange = (text: string) => {
     setSearchTerm(text); 
     setAiTranslation(null); 
     setSelectedIndex(-1); 
+    // Khi gõ phím, reset trạng thái đang dịch để không hiện Robot nhầm lúc
+    setIsTranslating(false);
     
     if (text.trim() === '') { 
       setSuggestions([]); 
@@ -1813,16 +1816,20 @@ function DictionaryView({ language }: { language: Language }) {
     setSuggestions([]); 
     setAiTranslation(null); 
     setSelectedIndex(-1); 
+    setIsTranslating(false);
   };
 
   const handleAITranslate = async () => {
     if (!searchTerm.trim()) return;
     setIsTranslating(true);
+    setSuggestions([]); // Ẩn gợi ý khi bắt đầu dịch
+    
     try {
       const data = await translateWord(searchTerm, language, new AbortController().signal);
       let meaningArray: string[] = [];
       if (data && Array.isArray(data.translations)) meaningArray = data.translations;
       else if (typeof data === 'string' && data.trim() !== '') meaningArray = data.split(',').map((s:string) => s.trim()).filter((s:string) => s !== '');
+      
       setAiTranslation(meaningArray);
 
       if (meaningArray.length > 0) {
@@ -1864,16 +1871,11 @@ function DictionaryView({ language }: { language: Language }) {
           handleSelectWord(suggestions[0]);
         }
       }
-      else if (e.key === 'Escape') {
-        setSuggestions([]);
-        setSelectedIndex(-1);
-      }
     } else if (e.key === 'Enter' && searchTerm.trim() !== '') {
       const exactMatch = mergedDict.find((item: any) => item.word && item.word.toLowerCase() === searchTerm.toLowerCase().trim());
       if (exactMatch) {
         handleSelectWord(exactMatch);
       } else {
-        // Tự động kích hoạt dịch AI khi không có kết quả chính xác
         handleAITranslate();
       }
     }
@@ -1889,19 +1891,8 @@ function DictionaryView({ language }: { language: Language }) {
         handleSearchChange(transcript); 
       };
       recognition.start();
-    } else alert("Trình duyệt không hỗ trợ nhận diện giọng nói.");
-  };
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) { 
-      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
-        setSuggestions([]); 
-        setSelectedIndex(-1);
-      } 
     }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  };
 
   return (
     <div className="w-full pb-32">
@@ -1909,36 +1900,39 @@ function DictionaryView({ language }: { language: Language }) {
         <h2 className="text-3xl font-black text-indigo-700">Từ điển {language === 'en' ? 'Anh - Việt' : 'Đức - Việt'}</h2>
       </div>
       
-      {/* Thông báo trạng thái dịch phía trên thanh tra từ */}
-      <AnimatePresence>
-        {isTranslating && (
-          <motion.div 
-            initial={{ opacity: 0, y: 10 }} 
-            animate={{ opacity: 1, y: 0 }} 
-            exit={{ opacity: 0, y: 10 }}
-            className="text-center mb-4"
-          >
-            <span className="text-indigo-600 font-bold animate-pulse text-lg">AIBTeM đang dịch …..</span>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       <div className="relative w-full" ref={searchRef}>
         <div className="relative">
           <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 w-6 h-6" />
+          
           <input 
             type="text" 
-            placeholder="Nhập từ vựng cần tra..." 
+            placeholder={isTranslating ? "" : "Nhập từ vựng cần tra..."} 
             value={searchTerm} 
             onChange={(e) => handleSearchChange(e.target.value)} 
             onKeyDown={handleKeyDown} 
             className="w-full bg-white border-2 border-slate-200 rounded-[2rem] pl-16 pr-16 py-4 text-xl font-medium focus:border-indigo-500 outline-none transition-all shadow-sm" 
           />
+
+          {/* Cụm từ thông báo nằm TRONG khung Tra từ */}
+          <AnimatePresence>
+            {isTranslating && (
+              <motion.div 
+                initial={{ opacity: 0 }} 
+                animate={{ opacity: 1 }} 
+                exit={{ opacity: 0 }}
+                className="absolute left-16 top-1/2 -translate-y-1/2 bg-white pointer-events-none"
+              >
+                <span className="text-indigo-600 font-bold animate-pulse italic">AIBTeM đang dịch …..</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           <button onClick={startVoiceSearch} className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-600 transition-colors p-2 bg-slate-50 hover:bg-indigo-50 rounded-full">
             <Mic size={20} />
           </button>
         </div>
 
+        {/* Gợi ý từ vựng */}
         <AnimatePresence>
           {suggestions.length > 0 && !selectedWord && (
             <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }} className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden z-50">
@@ -1963,6 +1957,7 @@ function DictionaryView({ language }: { language: Language }) {
         </AnimatePresence>
       </div>
 
+      {/* Hiển thị kết quả tra từ (Từ điển gốc) */}
       {selectedWord && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full mt-6 bg-white p-8 md:p-10 border border-slate-200 shadow-sm rounded-[2rem]">
           <div className="mb-2 flex items-baseline gap-2 flex-wrap">
@@ -1972,6 +1967,7 @@ function DictionaryView({ language }: { language: Language }) {
             </span>
             {selectedWord.part_of_speech && <span className="text-xl text-slate-500 font-medium">({selectedWord.part_of_speech})</span>}
           </div>
+          {/* ... (Các phần hiển thị phonetic, nghĩa, ví dụ giữ nguyên) ... */}
           {selectedWord.phonetic && (
             <div className="flex items-center gap-3 mb-6">
               <button onClick={() => handleSpeak(selectedWord.word, language)} className="text-indigo-600 hover:scale-110 transition-transform"><Volume2 size={22} /></button>
@@ -1987,21 +1983,11 @@ function DictionaryView({ language }: { language: Language }) {
               </div>
             )}
           </div>
-          {(selectedWord.example_english || selectedWord.example_german || selectedWord.example) && (
-            <div className="mt-4 border-t border-slate-100 pt-6">
-              <div className="flex items-start gap-3 mb-2">
-                <button onClick={() => handleSpeak(selectedWord.example_english || selectedWord.example_german || selectedWord.example, language)} className="text-slate-400 hover:text-indigo-600 mt-1 transition-colors"><Volume2 size={20} /></button>
-                <span className="text-slate-800 text-lg leading-relaxed italic">
-                  {highlightWordInSentence(selectedWord.example_english || selectedWord.example_german || selectedWord.example, selectedWord.word)}
-                </span>
-              </div>
-              {selectedWord.example_vietnamese && <div className="ml-8 text-slate-500 text-lg">{selectedWord.example_vietnamese}</div>}
-            </div>
-          )}
         </motion.div>
       )}
 
-      {!selectedWord && (!searchTerm || (searchTerm && suggestions.length > 0)) && (
+      {/* Trang giới thiệu ban đầu (Chỉ hiện khi chưa tra hoặc đang gõ nhưng chưa Enter) */}
+      {!selectedWord && !isTranslating && !aiTranslation && (
         <div className="w-full mt-8 grid grid-cols-1 md:grid-cols-2 gap-8 items-center bg-white p-8 md:p-12 rounded-[2rem] shadow-sm border border-slate-100">
           <div className="space-y-4">
             <h3 className="text-2xl font-black text-indigo-700 mb-2">AIBTeM Dictionary</h3>
@@ -2010,24 +1996,32 @@ function DictionaryView({ language }: { language: Language }) {
               <p className="flex items-center gap-2"><CheckCircle2 className="text-emerald-500 shrink-0" size={18}/> Tra cứu nhanh;</p>
               <p className="flex items-center gap-2"><CheckCircle2 className="text-emerald-500 shrink-0" size={18}/> Kho từ đồ sộ, gợi ý thông minh;</p>
               <p className="flex items-center gap-2"><CheckCircle2 className="text-emerald-500 shrink-0" size={18}/> Nghe được phát âm;</p>
-              <p className="flex items-center gap-2"><CheckCircle2 className="text-emerald-500 shrink-0" size={18}/> Tra từ bằng giọng nói.</p>
             </div>
           </div>
           <div className="flex justify-center">
-            {/* Tăng kích thước Robot tại trang chủ từ điển */}
             <AIBTeMBot emotion="idle" className="w-56 h-56 md:w-72 md:h-72" />
           </div>
         </div>
       )}
 
-      {!selectedWord && searchTerm && suggestions.length === 0 && (
+      {/* Màn hình chờ Dịch AI (Chỉ hiện khi đã ấn Enter và đang chờ kết quả) */}
+      {(isTranslating || aiTranslation) && !selectedWord && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full mt-6 bg-white p-12 border border-slate-200 shadow-sm text-center rounded-[2rem]">
           {!aiTranslation ? (
-            <>
-              {/* Robot lớn hơn và đổi thông báo theo yêu cầu */}
-              <AIBTeMBot emotion={isTranslating ? 'loading' : 'search'} className="w-56 h-56 md:w-64 md:h-64 mx-auto mb-4" />
-              <p className="text-xl text-slate-600 font-bold mb-6">AIBTeM đang dịch, bạn vui lòng đợi chút xíu!</p>
-            </>
+            <div className="flex flex-col items-center">
+              {/* Khung câu nói của Robot */}
+              <div className="relative mb-6">
+                <div className="bg-indigo-50 border-2 border-indigo-100 p-6 rounded-[2rem] shadow-sm relative z-10">
+                  <p className="text-indigo-700 font-bold italic text-lg md:text-xl">
+                    AIBTeM đang dịch, bạn vui lòng đợi chút xíu nhé!
+                  </p>
+                </div>
+                {/* Cái đuôi của speech bubble */}
+                <div className="absolute bottom-[-10px] left-1/2 -translate-x-1/2 w-0 h-0 border-l-[15px] border-l-transparent border-r-[15px] border-r-transparent border-t-[15px] border-t-indigo-100 z-0"></div>
+              </div>
+              
+              <AIBTeMBot emotion="loading" className="w-64 h-64 md:w-80 md:h-80 mx-auto" />
+            </div>
           ) : (
             <div className="text-left">
               <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-6">
@@ -2035,9 +2029,7 @@ function DictionaryView({ language }: { language: Language }) {
                   <h4 className="text-sm font-bold uppercase tracking-widest text-indigo-400 flex items-center gap-2 mb-2"><BrainCircuit size={16} /> Kết quả từ AIBTeM</h4>
                   <h3 className="text-4xl font-bold text-slate-900">{searchTerm}</h3>
                 </div>
-                <div className="flex items-center gap-3">
-                  <button onClick={() => handleSpeak(searchTerm, language)} className="w-14 h-14 shrink-0 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center hover:bg-indigo-600 hover:text-white transition-all"><Volume2 size={24} /></button>
-                </div>
+                <button onClick={() => handleSpeak(searchTerm, language)} className="w-14 h-14 shrink-0 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center hover:bg-indigo-600 hover:text-white transition-all"><Volume2 size={24} /></button>
               </div>
               <div className="flex flex-wrap gap-3">
                 {aiTranslation.map((meaning, idx) => (

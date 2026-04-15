@@ -3840,15 +3840,17 @@ function ReportView({ results, language, activeLessonId, onPlayAIGame, onGoToTop
       {/* Nút Xem hướng dẫn nổi ở góc dưới bên phải */}
       <button 
         onClick={() => window.open('https://lamchuaigiaoduc.vn/hoc_tu_vung_vocab/', '_blank')}
-        className="fixed bottom-6 right-6 z-[100] bg-white text-indigo-600 w-14 h-14 rounded-full shadow-2xl border-2 border-indigo-100 flex items-center justify-center hover:scale-110 hover:bg-indigo-50 transition-all group"
+        className="fixed bottom-8 right-8 z-[9999] bg-white text-indigo-600 w-16 h-16 rounded-full shadow-2xl border-2 border-indigo-100 flex items-center justify-center hover:scale-110 hover:bg-indigo-50 transition-all group"
         title="Xem hướng dẫn sử dụng"
       >
-        <BookOpen size={24} />
-        {/* Nhãn chữ sẽ hiện ra khi di chuột vào (trên máy tính) */}
-        <span className="absolute right-16 bg-slate-800 text-white text-xs px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none shadow-xl">
+        <BookOpen size={28} />
+        <span className="absolute right-20 bg-slate-800 text-white text-xs px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none shadow-xl">
           Hướng dẫn sử dụng
         </span>
       </button>
+
     </div>
   );
 }
+
+export default App;

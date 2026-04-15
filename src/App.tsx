@@ -3839,7 +3839,7 @@ function ReportView({ results, language, activeLessonId, onPlayAIGame, onGoToTop
       </div>
       {/* Nút Xem hướng dẫn nổi ở góc dưới bên phải */}
       <button 
-        onClick={() => window.open('LINK_BÀI_VIẾT_CỦA_TIẾN_SĨ_TẠI_ĐÂY', '_blank')}
+        onClick={() => window.open('https://lamchuaigiaoduc.vn/hoc_tu_vung_vocab/', '_blank')}
         className="fixed bottom-6 right-6 z-[100] bg-white text-indigo-600 w-14 h-14 rounded-full shadow-2xl border-2 border-indigo-100 flex items-center justify-center hover:scale-110 hover:bg-indigo-50 transition-all group"
         title="Xem hướng dẫn sử dụng"
       >

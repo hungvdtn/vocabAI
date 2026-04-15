@@ -3135,7 +3135,7 @@ function FlashcardGame({ vocab, onNext, onPrev, language, step, totalSteps, onFi
       <div className="perspective-[1000px] w-full min-h-[220px]">
         <AnimatePresence mode="wait">
           <motion.div key={side} initial={{ rotateX: 90, opacity: 0 }} animate={{ rotateX: 0, opacity: 1 }} exit={{ rotateX: -90, opacity: 0 }} transition={{ duration: 0.3, ease: "easeInOut" }} onClick={() => setSide((side + 1) % 3)} className="w-full min-h-[220px] bg-white rounded-[2rem] shadow-xl border border-slate-100 flex flex-col p-6 md:p-10 cursor-pointer relative overflow-hidden group">
-            <div className="flex-grow flex flex-col justify-center w-full">
+           <div className="flex-grow flex flex-col justify-center w-full">
               {side === 0 && (
                 <div className="text-left w-full space-y-2">
                    <div className="text-xl text-slate-800 leading-relaxed">
@@ -3171,12 +3171,25 @@ function FlashcardGame({ vocab, onNext, onPrev, language, step, totalSteps, onFi
                       </button>
                    </div>
                    
-                   {/* Phần phiên âm chỉ hiện nếu có dữ liệu (dành cho từ đơn trong từ điển) */}
+                   {/* Phần phiên âm chỉ hiện nếu có dữ liệu */}
                    {vocab.phonetic && (
                      <div className="text-slate-500">
                         <span className="text-lg font-mono ml-1">{renderPhonetic(vocab.phonetic)}</span>
                      </div>
                    )}
+                   
+                   {/* Phần ví dụ */}
+                   {(exampleText) && (
+                     <div className="flex items-start gap-3 mt-4 pt-4 border-t border-slate-100">
+                        <button onClick={(e) => {e.stopPropagation(); handleSpeak(exampleText || '', language)}} className="hover:text-indigo-600 transition-colors text-slate-400 mt-1 shrink-0 p-1.5 bg-white rounded-full shadow-sm border border-slate-100"><Volume2 size={18} /></button>
+                        <div className="space-y-1">
+                           <div className="text-lg text-slate-700 leading-relaxed italic">{highlightWordInSentence(exampleText || '', vocab.word)}</div>
+                           {vocab.example_vietnamese && <div className="text-base text-slate-500">{vocab.example_vietnamese}</div>}
+                        </div>
+                     </div>
+                   )}
+                </div>
+              )}
             </div>
             <div className="absolute bottom-4 right-6 text-slate-300 font-bold text-xs uppercase tracking-widest flex items-center gap-2 group-hover:text-indigo-300 transition-colors">
                <RefreshCw size={14} className="group-hover:rotate-180 transition-transform duration-500" /> Nhấn lật thẻ

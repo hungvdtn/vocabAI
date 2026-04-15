@@ -3157,26 +3157,26 @@ function FlashcardGame({ vocab, onNext, onPrev, language, step, totalSteps, onFi
               )}
               {side === 2 && (
                 <div className="text-left w-full space-y-4">
-                   <div className="text-xl font-bold text-indigo-600">
-                      {vocab.word} {vocab.part_of_speech && <span className="font-normal text-slate-500">({vocab.part_of_speech})</span>}
+                   {/* Khung hiển thị thuật ngữ/câu kèm nút loa luôn hiển thị */}
+                   <div className="flex items-center gap-3 flex-wrap">
+                      <div className="text-xl font-bold text-indigo-600">
+                        {vocab.word} {vocab.part_of_speech && <span className="font-normal text-slate-500">({vocab.part_of_speech})</span>}
+                      </div>
+                      <button 
+                        onClick={(e) => {e.stopPropagation(); handleSpeak(vocab.word, language)}} 
+                        className="p-2 bg-indigo-50 text-indigo-600 rounded-full hover:bg-indigo-100 transition-all shadow-sm shrink-0"
+                        title="Nghe lại"
+                      >
+                        <Volume2 size={20} />
+                      </button>
                    </div>
+                   
+                   {/* Phần phiên âm chỉ hiện nếu có dữ liệu (dành cho từ đơn trong từ điển) */}
                    {vocab.phonetic && (
-                     <div className="flex items-center gap-3 text-slate-500">
-                         <button onClick={(e) => {e.stopPropagation(); handleSpeak(vocab.word, language)}} className="hover:text-indigo-600 transition-colors p-2 bg-slate-50 rounded-full hover:bg-indigo-50 border border-slate-100 shadow-sm"><Volume2 size={20} /></button>
-                         <span className="text-lg font-mono">{renderPhonetic(vocab.phonetic)}</span>
+                     <div className="text-slate-500">
+                        <span className="text-lg font-mono ml-1">{renderPhonetic(vocab.phonetic)}</span>
                      </div>
                    )}
-                   {(exampleText) && (
-                     <div className="flex items-start gap-3 mt-4 pt-4 border-t border-slate-100">
-                        <button onClick={(e) => {e.stopPropagation(); handleSpeak(exampleText || '', language)}} className="hover:text-indigo-600 transition-colors text-slate-400 mt-1 shrink-0 p-1.5 bg-white rounded-full shadow-sm border border-slate-100"><Volume2 size={18} /></button>
-                        <div className="space-y-1">
-                           <div className="text-lg text-slate-700 leading-relaxed italic">{highlightWordInSentence(exampleText || '', vocab.word)}</div>
-                           {vocab.example_vietnamese && <div className="text-base text-slate-500">{vocab.example_vietnamese}</div>}
-                        </div>
-                     </div>
-                   )}
-                </div>
-              )}
             </div>
             <div className="absolute bottom-4 right-6 text-slate-300 font-bold text-xs uppercase tracking-widest flex items-center gap-2 group-hover:text-indigo-300 transition-colors">
                <RefreshCw size={14} className="group-hover:rotate-180 transition-transform duration-500" /> Nhấn lật thẻ

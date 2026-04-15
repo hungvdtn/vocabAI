@@ -3852,5 +3852,3 @@ function ReportView({ results, language, activeLessonId, onPlayAIGame, onGoToTop
     </div>
   );
 }
-
-export default App;

@@ -856,7 +856,7 @@ function HomeView({ setView, language, user, lessons }: { setView: (v: View) => 
             <div className="bg-orange-100 p-3 rounded-full text-orange-600 shrink-0"><AlertCircle size={28} /></div>
             <div>
               <h3 className="font-bold text-orange-800 text-lg">AIBTeM nhắc nhở ôn tập!</h3>
-              <p className="text-orange-600/80">Anh có <strong className="text-orange-700">{needsReview.length} bài học</strong> đã tới hạn luyện tập lại.</p>
+              <p className="text-orange-600/80">Bạn có <strong className="text-orange-700">{needsReview.length} bài học</strong> đã tới hạn luyện tập lại.</p>
             </div>
           </div>
           <button onClick={() => setView('library')} className="bg-orange-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-orange-700 transition-all shrink-0 shadow-md">
@@ -2538,7 +2538,7 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
     if (!file) return;
 
     if (file.name.toLowerCase().endsWith('.doc')) {
-      alert("Hệ thống AIBTeM chỉ hỗ trợ chuẩn lưu trữ hiện đại (.docx, .txt, .csv).\n\nĐịnh dạng .doc cũ (trước 2007) không còn được các trình duyệt web bảo mật hỗ trợ. Tiến sĩ vui lòng mở file này bằng phần mềm MS Word, sau đó chọn 'Save As' (Lưu dưới dạng) thành định dạng .docx rồi tải lên lại nhé!");
+      alert("Hệ thống AIBTeM chỉ hỗ trợ chuẩn lưu trữ hiện đại (.docx, .txt, .csv).\n\nĐịnh dạng .doc cũ (trước 2007) không còn được các trình duyệt web bảo mật hỗ trợ. Bạn vui lòng mở file này bằng phần mềm MS Word, sau đó chọn 'Save As' (Lưu dưới dạng) thành định dạng .docx rồi tải lên lại nhé!");
       e.target.value = '';
       return;
     }
@@ -3837,6 +3837,18 @@ function ReportView({ results, language, activeLessonId, onPlayAIGame, onGoToTop
           </button>
         </div>
       </div>
+      {/* Nút Xem hướng dẫn nổi ở góc dưới bên phải */}
+      <button 
+        onClick={() => window.open('LINK_BÀI_VIẾT_CỦA_TIẾN_SĨ_TẠI_ĐÂY', '_blank')}
+        className="fixed bottom-6 right-6 z-[100] bg-white text-indigo-600 w-14 h-14 rounded-full shadow-2xl border-2 border-indigo-100 flex items-center justify-center hover:scale-110 hover:bg-indigo-50 transition-all group"
+        title="Xem hướng dẫn sử dụng"
+      >
+        <BookOpen size={24} />
+        {/* Nhãn chữ sẽ hiện ra khi di chuột vào (trên máy tính) */}
+        <span className="absolute right-16 bg-slate-800 text-white text-xs px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none shadow-xl">
+          Hướng dẫn sử dụng
+        </span>
+      </button>
     </div>
   );
 }

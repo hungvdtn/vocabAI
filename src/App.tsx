@@ -3840,7 +3840,7 @@ function ReportView({ results, language, activeLessonId, onPlayAIGame, onGoToTop
       {/* Nút Xem hướng dẫn nổi ở góc dưới bên phải */}
       <button 
         onClick={() => window.open('https://lamchuaigiaoduc.vn/hoc_tu_vung_vocab/', '_blank')}
-        className="fixed bottom-8 right-8 z-[9999] bg-white text-indigo-600 w-16 h-16 rounded-full shadow-2xl border-2 border-indigo-100 flex items-center justify-center hover:scale-110 hover:bg-indigo-50 transition-all group"
+        className="fixed bottom-8 right-8 z-[9999] bg-white text-indigo-600 w-16 h-16 rounded-full shadow-2xl border-2 border-indigo-100 flex items-center justify-center hover:scale-110 hover:bg-indigo-50 transition-all group cursor-pointer"
         title="Xem hướng dẫn sử dụng"
       >
         <BookOpen size={28} />
@@ -3852,5 +3852,3 @@ function ReportView({ results, language, activeLessonId, onPlayAIGame, onGoToTop
     </div>
   );
 }
-
-export default App;

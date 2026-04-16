@@ -3552,6 +3552,7 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
   }, [language]);
 
   const handleSend = async (textToSend: string) => {
+     // 1. LỌC TIN NHẮN RỖNG & CHỐNG GỬI DỒN DẬP
      const cleanText = textToSend.trim();
      if (!cleanText || isLoading) return; 
 
@@ -3561,39 +3562,39 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
      setIsLoading(true);
 
      try {
-        // --- BƯỚC CHẨN ĐOÁN (XEM TRONG CONSOLE F12) ---
-        const rawKey = import.meta.env.VITE_GEMINI_API_KEY;
-        const apiKey = rawKey?.trim() || ""; 
+        // 2. CHUYỂN SANG CỔNG v1 (STABLE) - LOẠI BỎ LỖI 404
+        const apiKey = import.meta.env.VITE_GEMINI_API_KEY?.trim() || ""; 
+        const endpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
         
-        // Chẩn đoán 1: Kiểm tra xem Key có tồn tại không?
-        console.log("%c 🔍 [AIBTeM DEBUG] API Key check:", "color: yellow", apiKey ? "Đã nhận Key (OK)" : "LỖI: API Key đang bị UNDEFINED!");
-
-        // Chẩn đoán 2: Thử nghiệm Endpoint với phiên bản v1beta
-        const modelName = "gemini-1.5-flash";
-        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
-        
-        console.log("%c 🔍 [AIBTeM DEBUG] Full Endpoint:", "color: cyan", endpoint.split('key=')[0] + "key=***");
-
+        // 3. THIẾT LẬP KỊCH BẢN SƯ PHẠM
         const systemPrompt = `BẠN LÀ: ${aiRole}. NGÔN NGỮ: ${language === 'en' ? 'Tiếng Anh' : 'Tiếng Đức'}. 
-        NHIỆM VỤ: Dùng các từ: ${targetWordsWithLevel.join(', ')}. 
-        QUY TẮC: 1. Sửa lỗi ngữ pháp trong (...). 2. Luôn kết thúc bằng câu hỏi.`;
+        NHIỆM VỤ: Dùng từ mục tiêu: ${targetWordsWithLevel.join(', ')}. 
+        QUY TẮC: 1. Sửa lỗi ngữ pháp trong ngoặc đơn (...) ở đầu câu. 2. Luôn kết thúc bằng câu hỏi.`;
 
+        // 4. CHUẨN HÓA LỊCH SỬ (BẮT BUỘC BẮT ĐẦU BẰNG USER)
         let history = newMessages.map(m => ({
             role: m.role === 'ai' ? 'model' : 'user',
             parts: [{ text: m.text }]
         }));
 
-        if (history.length > 0 && history[0].role === 'model') { history.shift(); }
+        // Xóa lời chào của AI nếu nó nằm ở vị trí đầu tiên (Luật Google)
+        if (history.length > 0 && history[0].role === 'model') {
+            history.shift(); 
+        }
 
+        // 5. CẤU TRÚC JSON CHO CỔNG V1
         const reqBody = {
             contents: history,
-            // Đưa systemInstruction vào đúng vị trí của v1beta
-            systemInstruction: { parts: [{ text: systemPrompt }] },
-            generationConfig: { temperature: 0.7, maxOutputTokens: 300 }
+            // Ở cổng v1, system_instruction phải đi kèm trong cấu trúc chuẩn
+            system_instruction: {
+                parts: [{ text: systemPrompt }]
+            },
+            generationConfig: {
+                temperature: 0.7,
+                maxOutputTokens: 350,
+                topP: 0.95
+            }
         };
-
-        // Chẩn đoán 3: Kiểm tra Body gửi đi
-        console.log("%c 🔍 [AIBTeM DEBUG] Request Body:", "color: orange", reqBody);
 
         const res = await fetch(endpoint, {
             method: 'POST',
@@ -3603,9 +3604,9 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
 
         if (!res.ok) {
             const errorData = await res.json(); 
-            // ĐÂY LÀ DÒNG QUAN TRỌNG NHẤT: Nó sẽ hiện lý do Google từ chối
-            console.error("%c 🚨 GOOGLE REJECTION DETAIL:", "background: red; color: white", errorData);
-            throw new Error(`Google API Error: ${res.status}`);
+            console.error("%c 🚨 GOOGLE API ERROR:", "background: red; color: white", errorData);
+            // Nếu vẫn 404, hãy thử đổi tên model thành gemini-pro trong endpoint ở dòng số 12
+            throw new Error(`Google API Rejection: ${res.status}`);
         }
 
         const data = await res.json();
@@ -3616,8 +3617,8 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
         }
 
      } catch (error) {
-         console.error("Lỗi Gemini:", error);
-         setMessages(prev => [...prev, { role: 'ai', text: "Đang kiểm tra kết nối AI... Vui lòng xem bảng Console (F12) để biết chi tiết." }]);
+         console.error("Lỗi kết nối Gemini:", error);
+         setMessages(prev => [...prev, { role: 'ai', text: "AIBTeM đang tối ưu lại kết nối AI. Vui lòng thử lại câu trả lời này." }]);
      } finally {
          setIsLoading(false);
      }

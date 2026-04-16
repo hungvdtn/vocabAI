@@ -3599,8 +3599,8 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
             }
         };
 
-        // 6. Gọi API với tính năng bắt lỗi chuyên sâu
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`, {
+        // 6. Gọi API (Sử dụng đúng mô hình Gemini 2.5 Flash như Tiến sĩ đề xuất)
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(reqBody)

@@ -3552,84 +3552,86 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
   }, [language]);
 
   const handleSend = async (textToSend: string) => {
-     if (!textToSend.trim()) return;
-     const newMessages = [...messages, { role: 'user' as const, text: textToSend }];
+     // 1. BỘ LỌC TẠP ÂM & CHỐNG GỬI DỒN DẬP (Race Condition)
+     const cleanText = textToSend.trim();
+     if (!cleanText || isLoading) return; 
+
+     const newMessages = [...messages, { role: 'user' as const, text: cleanText }];
      setMessages(newMessages);
      setInput('');
      setIsLoading(true);
 
      try {
-        // 1. Lấy khóa API
+        // 2. LẤY API KEY & KIỂM TRA ĐỊNH DANH (gemini-1.5-flash)
         const apiKey = import.meta.env.VITE_GEMINI_API_KEY?.trim() || ""; 
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
         
-        // 2. Kịch bản sư phạm
+        // 3. THIẾT LẬP KỊCH BẢN SƯ PHẠM (System Prompt)
         const systemPrompt = `Bạn đang đóng vai: ${aiRole}. Ngôn ngữ: ${language === 'en' ? 'Tiếng Anh' : 'Tiếng Đức'}. 
-        Mục tiêu: Ép học viên dùng các từ: ${targetWordsWithLevel.join(', ')}.
-        Quy tắc bắt buộc:
-        1. LUÔN LUÔN KẾT THÚC BẰNG MỘT CÂU HỎI: Sau khi nhận xét câu trả lời của học viên, bạn phải đặt ngay một câu hỏi mới hoặc tạo ra một tình huống tiếp nối. TUYỆT ĐỐI không được chỉ xác nhận rồi im lặng.
-        2. VAI TRÒ CHỦ ĐỘNG: Bạn là người dẫn dắt câu chuyện. Nếu học viên trả lời ngắn, hãy gợi ý thêm hoặc hỏi sâu hơn để họ phải dùng từ vựng mục tiêu.
-        3. SỬA LỖI: Luôn sửa lỗi ngữ pháp trong ngoặc đơn (...) ở đầu phản hồi nếu học viên nói sai.
-        4. ĐỘ KHÓ: Điều chỉnh câu hỏi theo trình độ (A1-B2) của từ vựng đang học.`;
+        Mục tiêu: Khuyến khích/Ép học viên dùng các từ: ${targetWordsWithLevel.join(', ')}.
+        Quy tắc bắt buộc (Pedagogical Rules):
+        1. SỬA LỖI: Luôn sửa lỗi ngữ pháp/từ vựng của người dùng đặt trong ngoặc đơn (...) ở đầu mỗi phản hồi.
+        2. VAI TRÒ CHỦ ĐỘNG: Dẫn dắt câu chuyện, không trả lời hời hợt.
+        3. LUÔN LUÔN KẾT THÚC BẰNG MỘT CÂU HỎI: Để duy trì luồng hội thoại.
+        4. ĐỘ KHÓ: Điều chỉnh ngôn ngữ theo chuẩn A1-B2.`;
 
-        // 3. LỌC TẠP ÂM: Loại bỏ tin nhắn rỗng do Micro tự ngắt
-        const validMessages = newMessages.filter(m => m.text && m.text.trim() !== "");
-
-        let rawContents = validMessages.map(m => ({
+        // 4. THUẬT TOÁN GỘP TIN NHẮN & LUÂN PHIÊN (Luật của Google)
+        // Loại bỏ tin nhắn rỗng và gộp các tin cùng vai trò liên tiếp
+        let rawContents = newMessages.map(m => ({
             role: m.role === 'ai' ? 'model' : 'user',
             parts: [{ text: m.text }]
         }));
 
-        // 4. GỘP TIN NHẮN: Khắc phục lỗi nói 2 câu liên tiếp
         let finalContents = [];
         for (let i = 0; i < rawContents.length; i++) {
-            let currentMsg = rawContents[i];
-            if (finalContents.length > 0 && finalContents[finalContents.length - 1].role === currentMsg.role) {
-                finalContents[finalContents.length - 1].parts[0].text += " " + currentMsg.parts[0].text;
+            if (finalContents.length > 0 && finalContents[finalContents.length - 1].role === rawContents[i].role) {
+                finalContents[finalContents.length - 1].parts[0].text += " " + rawContents[i].parts[0].text;
             } else {
-                finalContents.push(currentMsg);
+                finalContents.push(rawContents[i]);
             }
         }
 
-        // 5. ĐẢM BẢO QUY TẮC: NGƯỜI NÓI CUỐI LÀ USER
-        if (finalContents.length === 0) {
-            finalContents = [{ role: 'user', parts: [{ text: "Hãy bắt đầu cuộc hội thoại theo đúng kịch bản và vai trò của bạn!" }] }];
-        } else if (finalContents[finalContents.length - 1].role === 'model') {
-            finalContents.push({ role: 'user', parts: [{ text: "Vui lòng đợi tôi nói tiếp..." }] });
+        // Đảm bảo tin nhắn cuối cùng gửi lên Google phải là của 'user'
+        if (finalContents[finalContents.length - 1].role === 'model') {
+            finalContents.push({ role: 'user', parts: [{ text: "Hãy trả lời tôi." }] });
         }
 
-        // 6. ĐÓNG GÓI DỮ LIỆU (Đây chính là phần bị thiếu gây ra lỗi reqBody is not defined)
+        // 5. KHAI BÁO reqBody CHUẨN (Fix lỗi reqBody is not defined)
         const reqBody = {
             systemInstruction: { parts: [{ text: systemPrompt }] },
             contents: finalContents,
-            generationConfig: { temperature: 0.7, maxOutputTokens: 200 }
+            generationConfig: { 
+                temperature: 0.8, 
+                maxOutputTokens: 300,
+                topP: 0.9
+            }
         };
 
-        // 7. GỌI API (Sử dụng cổng gemini-1.5-flash cực kỳ ổn định)
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+        // 6. GỌI API & BẮT LỖI CHI TIẾT RA CONSOLE F12
+        const res = await fetch(endpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(reqBody)
         });
 
-        // 8. BỘ LỌC BẮT LỖI TỪ GOOGLE
         if (!res.ok) {
             const errorData = await res.json(); 
-            console.error("🚨 CHI TIẾT LỖI TỪ GOOGLE:", errorData); 
-            throw new Error(`Lỗi Google API: ${errorData.error?.message || 'Không xác định'}`);
+            // In lỗi màu đỏ rực để quản trị viên dễ nhận diện lỗi 400 hoặc 429
+            console.error("%c 🚨 GOOGLE API ERROR:", "background: red; color: white; padding: 5px;", errorData);
+            throw new Error(`Google API Error: ${res.status}`);
         }
 
         const data = await res.json();
         if (data.candidates && data.candidates[0].content.parts[0].text) {
             let reply = data.candidates[0].content.parts[0].text;
-            reply = reply.replace(/\*/g, ''); 
+            reply = reply.replace(/\*/g, ''); // Loại bỏ ký tự markdown của AI
             setMessages(prev => [...prev, { role: 'ai', text: reply }]);
             handleSpeak(reply, language);
-        } else {
-            throw new Error("Lỗi API");
         }
+
      } catch (error) {
-         console.error("Lỗi gọi Gemini:", error);
-         setMessages(prev => [...prev, { role: 'ai', text: "Lỗi kết nối AI. Vui lòng tải lại và thử lại." }]);
+         console.error("Lỗi kết nối Gemini:", error);
+         setMessages(prev => [...prev, { role: 'ai', text: "AIBTeM đang gặp sự cố kết nối AI. Vui lòng kiểm tra lại mạng hoặc khóa API Key." }]);
      } finally {
          setIsLoading(false);
      }

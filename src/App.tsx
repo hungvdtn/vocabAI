@@ -1710,7 +1710,14 @@ function TopicLibraryView({ language, lessons, userLevel, onGoToAssessment, onOp
 
         <AnimatePresence>
           {showScrollTop && (
-            <motion.button initial={{ opacity: 0, y: 20, scale: 0.8 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.8 }} onClick={scrollToTop} className="fixed bottom-24 right-6 md:right-8 bg-indigo-600 text-white p-3 md:p-4 rounded-full shadow-[0_10px_25px_rgba(79,70,229,0.4)] hover:bg-indigo-700 hover:shadow-[0_15px_30px_rgba(79,70,229,0.5)] transition-all z-50 flex items-center justify-center group border-2 border-white hover:-translate-y-1" title="Về đầu trang">
+            <motion.button 
+              initial={{ opacity: 0, y: 20, scale: 0.8 }} 
+              animate={{ opacity: 1, y: 0, scale: 1 }} 
+              exit={{ opacity: 0, y: 20, scale: 0.8 }} 
+              onClick={scrollToTop} 
+              className="fixed bottom-20 md:bottom-24 right-6 md:right-8 w-14 h-14 bg-indigo-600 text-white rounded-full shadow-[0_10px_25px_rgba(79,70,229,0.4)] hover:bg-indigo-700 hover:shadow-[0_15px_30px_rgba(79,70,229,0.5)] transition-all z-50 flex items-center justify-center group border-2 border-white hover:-translate-y-1" 
+              title="Về đầu trang"
+            >
               <ArrowUp size={24} className="group-hover:-translate-y-1 transition-transform" />
             </motion.button>
           )}
@@ -1771,12 +1778,19 @@ function TopicLibraryView({ language, lessons, userLevel, onGoToAssessment, onOp
       </div>
 
       <AnimatePresence>
-        {showScrollTop && (
-          <motion.button initial={{ opacity: 0, y: 20, scale: 0.8 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.8 }} onClick={scrollToTop} className="fixed bottom-24 right-6 md:right-8 bg-indigo-600 text-white p-3 md:p-4 rounded-full shadow-[0_10px_25px_rgba(79,70,229,0.4)] hover:bg-indigo-700 hover:shadow-[0_15px_30px_rgba(79,70,229,0.5)] transition-all z-50 flex items-center justify-center group border-2 border-white hover:-translate-y-1" title="Về đầu trang">
-            <ArrowUp size={24} className="group-hover:-translate-y-1 transition-transform" />
-          </motion.button>
-        )}
-      </AnimatePresence>
+          {showScrollTop && (
+            <motion.button 
+              initial={{ opacity: 0, y: 20, scale: 0.8 }} 
+              animate={{ opacity: 1, y: 0, scale: 1 }} 
+              exit={{ opacity: 0, y: 20, scale: 0.8 }} 
+              onClick={scrollToTop} 
+              className="fixed bottom-20 md:bottom-24 right-6 md:right-8 w-14 h-14 bg-indigo-600 text-white rounded-full shadow-[0_10px_25px_rgba(79,70,229,0.4)] hover:bg-indigo-700 hover:shadow-[0_15px_30px_rgba(79,70,229,0.5)] transition-all z-50 flex items-center justify-center group border-2 border-white hover:-translate-y-1" 
+              title="Về đầu trang"
+            >
+              <ArrowUp size={24} className="group-hover:-translate-y-1 transition-transform" />
+            </motion.button>
+          )}
+        </AnimatePresence>
     </div>
   );
 }

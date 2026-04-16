@@ -623,13 +623,14 @@ export default function App() {
   return (
     <div className="min-h-[100dvh] bg-slate-50 text-slate-900 font-sans flex flex-col relative">
       {/* DÁN NÚT BẤM VÀO ĐÂY ĐỂ LUÔN HIỂN THỊ */}
+      {/* Nút Xem hướng dẫn nổi ở góc dưới bên phải */}
       <button 
         onClick={() => window.open('https://lamchuaigiaoduc.vn/hoc_tu_vung_vocab/', '_blank')}
-        className="fixed bottom-8 right-8 z-[9999] bg-white text-indigo-600 w-16 h-16 rounded-full shadow-2xl border-2 border-indigo-100 flex items-center justify-center hover:scale-110 hover:bg-indigo-50 transition-all group cursor-pointer"
+        className="fixed bottom-4 md:bottom-6 right-6 md:right-8 z-[9999] bg-blue-400 text-white w-14 h-14 rounded-full shadow-2xl flex items-center justify-center hover:scale-110 hover:bg-blue-500 transition-all group cursor-pointer border-2 border-white"
         title="Xem hướng dẫn sử dụng"
       >
-        <BookOpen size={28} />
-        <span className="absolute right-20 bg-slate-800 text-white text-xs px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none shadow-xl">
+        <BookOpen size={24} />
+        <span className="absolute right-16 bg-slate-800 text-white text-xs px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none shadow-xl">
           Hướng dẫn sử dụng
         </span>
       </button>

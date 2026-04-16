@@ -3552,7 +3552,7 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
   }, [language]);
 
   const handleSend = async (textToSend: string) => {
-     // 1. LỌC TIN NHẮN RỖNG & CHỐNG GỬI DỒN DẬP
+     // 1. LỌC TIN NHẮN RỖNG & CHỐNG RACE CONDITION
      const cleanText = textToSend.trim();
      if (!cleanText || isLoading) return; 
 
@@ -3562,37 +3562,42 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
      setIsLoading(true);
 
      try {
-        // 2. CHUYỂN SANG CỔNG v1 (STABLE) - LOẠI BỎ LỖI 404
+        // 2. SỬ DỤNG ENDPOINT v1beta (Linh hoạt nhất cho mô hình Flash)
         const apiKey = import.meta.env.VITE_GEMINI_API_KEY?.trim() || ""; 
-        const endpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
         
-        // 3. THIẾT LẬP KỊCH BẢN SƯ PHẠM
-        const systemPrompt = `BẠN LÀ: ${aiRole}. NGÔN NGỮ: ${language === 'en' ? 'Tiếng Anh' : 'Tiếng Đức'}. 
-        NHIỆM VỤ: Dùng từ mục tiêu: ${targetWordsWithLevel.join(', ')}. 
-        QUY TẮC: 1. Sửa lỗi ngữ pháp trong ngoặc đơn (...) ở đầu câu. 2. Luôn kết thúc bằng câu hỏi.`;
+        // 3. KỊCH BẢN SƯ PHẠM (Nhúng trực tiếp vào hội thoại)
+        const systemPrompt = `BẠN ĐANG ĐÓNG VAI: ${aiRole}. 
+        NGÔN NGỮ: ${language === 'en' ? 'Tiếng Anh' : 'Tiếng Đức'}. 
+        MỤC TIÊU: Ép học viên dùng từ: ${targetWordsWithLevel.join(', ')}.
+        QUY TẮC BẮT BUỘC:
+        1. LUÔN LUÔN KẾT THÚC BẰNG MỘT CÂU HỎI.
+        2. SỬA LỖI ngữ pháp trong ngoặc đơn (...) ở ngay đầu phản hồi.
+        3. Điều chỉnh độ khó A1-B2.`;
 
-        // 4. CHUẨN HÓA LỊCH SỬ (BẮT BUỘC BẮT ĐẦU BẰNG USER)
+        // 4. CHUẨN HÓA LỊCH SỬ (QUY TẮC LUÂN PHIÊN)
         let history = newMessages.map(m => ({
             role: m.role === 'ai' ? 'model' : 'user',
             parts: [{ text: m.text }]
         }));
 
-        // Xóa lời chào của AI nếu nó nằm ở vị trí đầu tiên (Luật Google)
+        // BẮT BUỘC: Xóa lời chào khởi đầu của AI để User luôn là người nói đầu tiên (Tránh lỗi 400)
         if (history.length > 0 && history[0].role === 'model') {
             history.shift(); 
         }
 
-        // 5. CẤU TRÚC JSON CHO CỔNG V1
+        // PHƯƠNG PHÁP NHÚNG: Đưa kịch bản vào tin nhắn đầu tiên của User
+        // Cách này giúp tránh lỗi "Unknown field" hoặc "system_instruction not found"
+        if (history.length > 0 && history[0].role === 'user') {
+           history[0].parts[0].text = `[HƯỚNG DẪN HỆ THỐNG: ${systemPrompt}]\n\nCâu trả lời của tôi là: ${history[0].parts[0].text}`;
+        }
+
+        // 5. CẤU TRÚC JSON TỐI GIẢN (Chỉ gửi contents)
         const reqBody = {
             contents: history,
-            // Ở cổng v1, system_instruction phải đi kèm trong cấu trúc chuẩn
-            system_instruction: {
-                parts: [{ text: systemPrompt }]
-            },
-            generationConfig: {
-                temperature: 0.7,
-                maxOutputTokens: 350,
-                topP: 0.95
+            generationConfig: { 
+                temperature: 0.7, 
+                maxOutputTokens: 300 
             }
         };
 
@@ -3605,8 +3610,7 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
         if (!res.ok) {
             const errorData = await res.json(); 
             console.error("%c 🚨 GOOGLE API ERROR:", "background: red; color: white", errorData);
-            // Nếu vẫn 404, hãy thử đổi tên model thành gemini-pro trong endpoint ở dòng số 12
-            throw new Error(`Google API Rejection: ${res.status}`);
+            throw new Error(`API Error: ${res.status}`);
         }
 
         const data = await res.json();
@@ -3617,8 +3621,8 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
         }
 
      } catch (error) {
-         console.error("Lỗi kết nối Gemini:", error);
-         setMessages(prev => [...prev, { role: 'ai', text: "AIBTeM đang tối ưu lại kết nối AI. Vui lòng thử lại câu trả lời này." }]);
+         console.error("Lỗi Gemini:", error);
+         setMessages(prev => [...prev, { role: 'ai', text: "AIBTeM đang kết nối lại... Vui lòng thử lại tin nhắn này." }]);
      } finally {
          setIsLoading(false);
      }

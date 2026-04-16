@@ -3571,18 +3571,35 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
         3. SỬA LỖI: Luôn sửa lỗi ngữ pháp trong ngoặc đơn (...) ở đầu phản hồi nếu học viên nói sai.
         4. ĐỘ KHÓ: Điều chỉnh câu hỏi theo trình độ (A1-B2) của từ vựng đang học.`;
 
-        // 3. Chuyển đổi lịch sử tin nhắn sang chuẩn của Google
-        let finalContents = newMessages.map(m => ({
+        // 3. Chuyển đổi và XỬ LÝ LỖI LUÂN PHIÊN (Gộp các tin nhắn trùng lặp)
+        let rawContents = newMessages.map(m => ({
             role: m.role === 'ai' ? 'model' : 'user',
-            parts: [{ text: m.text || " " }] // Dự phòng thêm dấu cách để tránh lỗi gửi tin nhắn rỗng
+            parts: [{ text: m.text || " " }]
         }));
 
-        // 4. Xử lý lỗi khi mới bắt đầu Game (Tránh việc AI là người nói cuối cùng)
+        let finalContents = [];
+        for (let i = 0; i < rawContents.length; i++) {
+            let currentMsg = rawContents[i];
+            // Nếu tin nhắn hiện tại có cùng vai trò với tin nhắn liền trước nó -> Gộp chung lại
+            if (finalContents.length > 0 && finalContents[finalContents.length - 1].role === currentMsg.role) {
+                finalContents[finalContents.length - 1].parts[0].text += "\n\n" + currentMsg.parts[0].text;
+            } else {
+                finalContents.push(currentMsg);
+            }
+        }
+
+        // 4. Đảm bảo quy tắc: NGƯỜI NÓI CUỐI CÙNG LUÔN PHẢI LÀ USER
         if (finalContents.length === 0) {
             finalContents = [{
                 role: 'user',
                 parts: [{ text: "Hãy bắt đầu cuộc hội thoại theo đúng kịch bản và vai trò của bạn!" }]
             }];
+        } else if (finalContents[finalContents.length - 1].role === 'model') {
+            // Nếu do lỗi hệ thống mà AI đang là người nói cuối cùng, tự động chèn thêm 1 câu mồi của User
+            finalContents.push({
+                role: 'user',
+                parts: [{ text: "Vui lòng tiếp tục." }]
+            });
         }
 
         // 5. Đóng gói dữ liệu chuẩn API Gemini 1.5

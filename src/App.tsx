@@ -3571,53 +3571,40 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
         3. SỬA LỖI: Luôn sửa lỗi ngữ pháp trong ngoặc đơn (...) ở đầu phản hồi nếu học viên nói sai.
         4. ĐỘ KHÓ: Điều chỉnh câu hỏi theo trình độ (A1-B2) của từ vựng đang học.`;
 
-        // 3. Chuyển đổi và XỬ LÝ LỖI LUÂN PHIÊN (Gộp các tin nhắn trùng lặp)
-        let rawContents = newMessages.map(m => ({
+        // 3. LỌC TẠP ÂM & CHUYỂN ĐỔI (Xóa bỏ các tin nhắn rỗng do Micro ngắt quãng)
+        const validMessages = newMessages.filter(m => m.text && m.text.trim() !== "");
+
+        let rawContents = validMessages.map(m => ({
             role: m.role === 'ai' ? 'model' : 'user',
-            parts: [{ text: m.text || " " }]
+            parts: [{ text: m.text }]
         }));
 
+        // 4. THUẬT TOÁN GỘP TIN NHẮN (Khắc phục lỗi người dùng nói 2 câu liên tiếp)
         let finalContents = [];
         for (let i = 0; i < rawContents.length; i++) {
             let currentMsg = rawContents[i];
-            // Nếu tin nhắn hiện tại có cùng vai trò với tin nhắn liền trước nó -> Gộp chung lại
             if (finalContents.length > 0 && finalContents[finalContents.length - 1].role === currentMsg.role) {
-                finalContents[finalContents.length - 1].parts[0].text += "\n\n" + currentMsg.parts[0].text;
+                finalContents[finalContents.length - 1].parts[0].text += " " + currentMsg.parts[0].text;
             } else {
                 finalContents.push(currentMsg);
             }
         }
 
-        // 4. Đảm bảo quy tắc: NGƯỜI NÓI CUỐI CÙNG LUÔN PHẢI LÀ USER
+        // 5. ĐẢM BẢO QUY TẮC: NGƯỜI NÓI CUỐI CÙNG LÀ USER
         if (finalContents.length === 0) {
             finalContents = [{
                 role: 'user',
                 parts: [{ text: "Hãy bắt đầu cuộc hội thoại theo đúng kịch bản và vai trò của bạn!" }]
             }];
         } else if (finalContents[finalContents.length - 1].role === 'model') {
-            // Nếu do lỗi hệ thống mà AI đang là người nói cuối cùng, tự động chèn thêm 1 câu mồi của User
             finalContents.push({
                 role: 'user',
-                parts: [{ text: "Vui lòng tiếp tục." }]
+                parts: [{ text: "Vui lòng đợi tôi nói tiếp..." }] // Câu đệm chống sập khi Micro gửi lỗi
             });
         }
 
-        // 5. Đóng gói dữ liệu chuẩn API Gemini 1.5
-        const reqBody = {
-            // Khu vực chuẩn mực dành riêng cho Lệnh hệ thống
-            systemInstruction: {
-                parts: [{ text: systemPrompt }]
-            },
-            // Nội dung hội thoại
-            contents: finalContents,
-            generationConfig: { 
-                temperature: 0.7, 
-                maxOutputTokens: 200 
-            }
-        };
-
         // 6. Gọi API (Sử dụng đúng mô hình Gemini 2.5 Flash như Tiến sĩ đề xuất)
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(reqBody)

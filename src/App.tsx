@@ -3559,10 +3559,10 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
      setIsLoading(true);
 
      try {
-        // 1. Lấy khóa API và loại bỏ khoảng trắng thừa
+        // 1. Lấy khóa API
         const apiKey = import.meta.env.VITE_GEMINI_API_KEY?.trim() || ""; 
         
-        // 2. Lệnh hệ thống (Bảo toàn nguyên vẹn kịch bản sư phạm của Tiến sĩ)
+        // 2. Kịch bản sư phạm
         const systemPrompt = `Bạn đang đóng vai: ${aiRole}. Ngôn ngữ: ${language === 'en' ? 'Tiếng Anh' : 'Tiếng Đức'}. 
         Mục tiêu: Ép học viên dùng các từ: ${targetWordsWithLevel.join(', ')}.
         Quy tắc bắt buộc:
@@ -3571,7 +3571,7 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
         3. SỬA LỖI: Luôn sửa lỗi ngữ pháp trong ngoặc đơn (...) ở đầu phản hồi nếu học viên nói sai.
         4. ĐỘ KHÓ: Điều chỉnh câu hỏi theo trình độ (A1-B2) của từ vựng đang học.`;
 
-        // 3. LỌC TẠP ÂM & CHUYỂN ĐỔI (Xóa bỏ các tin nhắn rỗng do Micro ngắt quãng)
+        // 3. LỌC TẠP ÂM: Loại bỏ tin nhắn rỗng do Micro tự ngắt
         const validMessages = newMessages.filter(m => m.text && m.text.trim() !== "");
 
         let rawContents = validMessages.map(m => ({
@@ -3579,7 +3579,7 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
             parts: [{ text: m.text }]
         }));
 
-        // 4. THUẬT TOÁN GỘP TIN NHẮN (Khắc phục lỗi người dùng nói 2 câu liên tiếp)
+        // 4. GỘP TIN NHẮN: Khắc phục lỗi nói 2 câu liên tiếp
         let finalContents = [];
         for (let i = 0; i < rawContents.length; i++) {
             let currentMsg = rawContents[i];
@@ -3590,27 +3590,28 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
             }
         }
 
-        // 5. ĐẢM BẢO QUY TẮC: NGƯỜI NÓI CUỐI CÙNG LÀ USER
+        // 5. ĐẢM BẢO QUY TẮC: NGƯỜI NÓI CUỐI LÀ USER
         if (finalContents.length === 0) {
-            finalContents = [{
-                role: 'user',
-                parts: [{ text: "Hãy bắt đầu cuộc hội thoại theo đúng kịch bản và vai trò của bạn!" }]
-            }];
+            finalContents = [{ role: 'user', parts: [{ text: "Hãy bắt đầu cuộc hội thoại theo đúng kịch bản và vai trò của bạn!" }] }];
         } else if (finalContents[finalContents.length - 1].role === 'model') {
-            finalContents.push({
-                role: 'user',
-                parts: [{ text: "Vui lòng đợi tôi nói tiếp..." }] // Câu đệm chống sập khi Micro gửi lỗi
-            });
+            finalContents.push({ role: 'user', parts: [{ text: "Vui lòng đợi tôi nói tiếp..." }] });
         }
 
-        // 6. Gọi API (Sử dụng đúng mô hình Gemini 2.5 Flash như Tiến sĩ đề xuất)
+        // 6. ĐÓNG GÓI DỮ LIỆU (Đây chính là phần bị thiếu gây ra lỗi reqBody is not defined)
+        const reqBody = {
+            systemInstruction: { parts: [{ text: systemPrompt }] },
+            contents: finalContents,
+            generationConfig: { temperature: 0.7, maxOutputTokens: 200 }
+        };
+
+        // 7. GỌI API (Sử dụng cổng gemini-1.5-flash cực kỳ ổn định)
         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(reqBody)
         });
 
-        // 7. BỘ LỌC BẮT BỆNH TỪ GOOGLE
+        // 8. BỘ LỌC BẮT LỖI TỪ GOOGLE
         if (!res.ok) {
             const errorData = await res.json(); 
             console.error("🚨 CHI TIẾT LỖI TỪ GOOGLE:", errorData); 

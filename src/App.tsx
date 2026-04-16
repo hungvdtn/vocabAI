@@ -3552,80 +3552,79 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
   }, [language]);
 
   const handleSend = async (textToSend: string) => {
-     // 1. LỌC TIN NHẮN RỖNG & CHỐNG RACE CONDITION
-     const cleanText = textToSend.trim();
-     if (!cleanText || isLoading) return; 
+    // 1. BỘ LỌC TẠP ÂM (Chặn gửi tin rỗng hoặc gửi khi đang load)
+    const cleanText = textToSend.trim();
+    if (!cleanText || isLoading) return; 
 
-     const newMessages = [...messages, { role: 'user' as const, text: cleanText }];
-     setMessages(newMessages);
-     setInput('');
-     setIsLoading(true);
+    const newMessages = [...messages, { role: 'user' as const, text: cleanText }];
+    setMessages(newMessages);
+    setInput('');
+    setIsLoading(true);
 
-     try {
-        // 2. SỬ DỤNG ENDPOINT v1beta (Linh hoạt nhất cho mô hình Flash)
-        const apiKey = import.meta.env.VITE_GEMINI_API_KEY?.trim() || ""; 
-        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-        
-        // 3. KỊCH BẢN SƯ PHẠM (Nhúng trực tiếp vào hội thoại)
-        const systemPrompt = `BẠN ĐANG ĐÓNG VAI: ${aiRole}. 
-        NGÔN NGỮ: ${language === 'en' ? 'Tiếng Anh' : 'Tiếng Đức'}. 
-        MỤC TIÊU: Ép học viên dùng từ: ${targetWordsWithLevel.join(', ')}.
-        QUY TẮC BẮT BUỘC:
-        1. LUÔN LUÔN KẾT THÚC BẰNG MỘT CÂU HỎI.
-        2. SỬA LỖI ngữ pháp trong ngoặc đơn (...) ở ngay đầu phản hồi.
-        3. Điều chỉnh độ khó A1-B2.`;
+    try {
+      // 2. CỔNG KẾT NỐI & KHÓA API
+      const apiKey = (import.meta.env.VITE_GEMINI_API_KEY || "").trim();
+      // Sử dụng gemini-1.5-flash là bản nhanh và ổn định nhất
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
-        // 4. CHUẨN HÓA LỊCH SỬ (QUY TẮC LUÂN PHIÊN)
-        let history = newMessages.map(m => ({
-            role: m.role === 'ai' ? 'model' : 'user',
-            parts: [{ text: m.text }]
-        }));
+      // 3. KỊCH BẢN SƯ PHẠM (Đóng gói gọn trong 1 chuỗi duy nhất)
+      const pedagogicalContext = `HƯỚNG DẪN HỆ THỐNG: Bạn là ${aiRole}. Giao tiếp bằng ${language === 'en' ? 'Tiếng Anh' : 'Tiếng Đức'}. 
+      Yêu cầu: 1. Sửa lỗi ngữ pháp của người học (nếu có) trong ngoặc đơn (...) ở đầu phản hồi. 
+      2. Ép người học dùng từ: ${targetWordsWithLevel.join(', ')}. 
+      3. Luôn kết thúc bằng một câu hỏi. 4. Độ khó A1-B2.`;
 
-        // BẮT BUỘC: Xóa lời chào khởi đầu của AI để User luôn là người nói đầu tiên (Tránh lỗi 400)
-        if (history.length > 0 && history[0].role === 'model') {
-            history.shift(); 
+      // 4. CHUẨN HÓA LỊCH SỬ (Quy tắc luân phiên: User -> Model -> User)
+      // Loại bỏ tin nhắn đầu tiên của AI (lời chào) vì Google bắt buộc mảng phải bắt đầu bằng User
+      let conversation = newMessages.map(m => ({
+        role: m.role === 'ai' ? 'model' : 'user',
+        parts: [{ text: m.text }]
+      }));
+
+      if (conversation.length > 0 && conversation[0].role === 'model') {
+        conversation.shift();
+      }
+
+      // NHÚNG KỊCH BẢN VÀO TIN NHẮN ĐẦU TIÊN CỦA USER (Để tránh lỗi 400 Unknown field)
+      if (conversation.length > 0) {
+        conversation[0].parts[0].text = `[BỐI CẢNH: ${pedagogicalContext}]\n\nCâu trả lời của tôi: ${conversation[0].parts[0].text}`;
+      }
+
+      // 5. CẤU TRÚC REQBODY TỐI GIẢN (Chỉ gửi nội dung, không gửi systemInstruction riêng)
+      const reqBody = {
+        contents: conversation,
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 300,
+          topP: 0.8
         }
+      };
 
-        // PHƯƠNG PHÁP NHÚNG: Đưa kịch bản vào tin nhắn đầu tiên của User
-        // Cách này giúp tránh lỗi "Unknown field" hoặc "system_instruction not found"
-        if (history.length > 0 && history[0].role === 'user') {
-           history[0].parts[0].text = `[HƯỚNG DẪN HỆ THỐNG: ${systemPrompt}]\n\nCâu trả lời của tôi là: ${history[0].parts[0].text}`;
-        }
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(reqBody)
+      });
 
-        // 5. CẤU TRÚC JSON TỐI GIẢN (Chỉ gửi contents)
-        const reqBody = {
-            contents: history,
-            generationConfig: { 
-                temperature: 0.7, 
-                maxOutputTokens: 300 
-            }
-        };
+      // 6. BẮT LỖI CHI TIẾT TỪ GOOGLE
+      if (!res.ok) {
+        const errorDetail = await res.json();
+        console.error("%c 🚨 LỖI PHẢN HỒI TỪ GOOGLE:", "background: red; color: white; padding: 5px;", errorDetail);
+        throw new Error(`API Rejection: ${res.status}`);
+      }
 
-        const res = await fetch(endpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(reqBody)
-        });
+      const data = await res.json();
+      if (data.candidates && data.candidates[0].content.parts[0].text) {
+        const aiReply = data.candidates[0].content.parts[0].text.replace(/\*/g, '');
+        setMessages(prev => [...prev, { role: 'ai', text: aiReply }]);
+        handleSpeak(aiReply, language);
+      }
 
-        if (!res.ok) {
-            const errorData = await res.json(); 
-            console.error("%c 🚨 GOOGLE API ERROR:", "background: red; color: white", errorData);
-            throw new Error(`API Error: ${res.status}`);
-        }
-
-        const data = await res.json();
-        if (data.candidates && data.candidates[0].content.parts[0].text) {
-            let reply = data.candidates[0].content.parts[0].text;
-            setMessages(prev => [...prev, { role: 'ai', text: reply.replace(/\*/g, '') }]);
-            handleSpeak(reply, language);
-        }
-
-     } catch (error) {
-         console.error("Lỗi Gemini:", error);
-         setMessages(prev => [...prev, { role: 'ai', text: "AIBTeM đang kết nối lại... Vui lòng thử lại tin nhắn này." }]);
-     } finally {
-         setIsLoading(false);
-     }
+    } catch (error) {
+      console.error("Lỗi kết nối AI:", error);
+      setMessages(prev => [...prev, { role: 'ai', text: "AIBTeM đang cấu hình lại đường truyền AI. Vui lòng gõ lại câu trả lời của bạn." }]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const startListening = () => {

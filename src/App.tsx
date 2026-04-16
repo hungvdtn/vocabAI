@@ -3569,19 +3569,35 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
         3. SỬA LỖI: Luôn sửa lỗi ngữ pháp trong ngoặc đơn (...) ở đầu phản hồi nếu học viên nói sai.
         4. ĐỘ KHÓ: Điều chỉnh câu hỏi theo trình độ (A1-B2) của từ vựng đang học.`;
 
-        const reqBody = {
-            contents: [
-                { role: 'user', parts: [{ text: `[Lệnh hệ thống: ${systemPrompt}]\n\nBắt đầu hội thoại!` }] },
-                { role: 'model', parts: [{ text: "Đã hiểu kịch bản và vai trò! Tôi sẽ chủ động đặt câu hỏi." }] },
-                ...newMessages.map(m => ({
-                    role: m.role === 'ai' ? 'model' : 'user',
-                    parts: [{ text: m.text }]
-                }))
-            ],
-            generationConfig: { temperature: 0.7, maxOutputTokens: 200 }
-        };
+        // 1. Chuyển đổi lịch sử tin nhắn sang chuẩn của Google
+let finalContents = newMessages.map(m => ({
+    role: m.role === 'ai' ? 'model' : 'user',
+    parts: [{ text: m.text || " " }] // Dự phòng thêm dấu cách để tránh lỗi gửi tin nhắn rỗng
+}));
 
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+// 2. Xử lý lỗi khi mới bắt đầu Game (Tránh việc AI là người nói cuối cùng)
+if (finalContents.length === 0) {
+    finalContents = [{
+        role: 'user',
+        parts: [{ text: "Hãy bắt đầu cuộc hội thoại theo đúng kịch bản và vai trò của bạn!" }]
+    }];
+}
+
+// 3. Đóng gói dữ liệu chuẩn API Gemini 1.5
+const reqBody = {
+    // Khu vực chuẩn mực dành riêng cho Lệnh hệ thống
+    systemInstruction: {
+        parts: [{ text: systemPrompt }]
+    },
+    // Nội dung hội thoại
+    contents: finalContents,
+    generationConfig: { 
+        temperature: 0.7, 
+        maxOutputTokens: 200 
+    }
+};
+
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(reqBody)

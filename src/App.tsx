@@ -3552,7 +3552,7 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
   }, [language]);
 
   const handleSend = async (textToSend: string) => {
-     // 1. BỘ LỌC TẠP ÂM & CHỐNG GỬI DỒN DẬP (Race Condition)
+     // 1. CHỐNG TIN NHẮN RỖNG & RACE CONDITION
      const cleanText = textToSend.trim();
      if (!cleanText || isLoading) return; 
 
@@ -3562,26 +3562,25 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
      setIsLoading(true);
 
      try {
-        // 2. LẤY API KEY & KIỂM TRA ĐỊNH DANH (gemini-1.5-flash)
+        // 2. BẢN VÁ LỖI 404: CHUYỂN SANG CỔNG STABLE (v1)
         const apiKey = import.meta.env.VITE_GEMINI_API_KEY?.trim() || ""; 
-        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+        const endpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
         
-        // 3. THIẾT LẬP KỊCH BẢN SƯ PHẠM (System Prompt)
+        // 3. KỊCH BẢN SƯ PHẠM (System Instruction)
         const systemPrompt = `Bạn đang đóng vai: ${aiRole}. Ngôn ngữ: ${language === 'en' ? 'Tiếng Anh' : 'Tiếng Đức'}. 
-        Mục tiêu: Khuyến khích/Ép học viên dùng các từ: ${targetWordsWithLevel.join(', ')}.
-        Quy tắc bắt buộc (Pedagogical Rules):
-        1. SỬA LỖI: Luôn sửa lỗi ngữ pháp/từ vựng của người dùng đặt trong ngoặc đơn (...) ở đầu mỗi phản hồi.
-        2. VAI TRÒ CHỦ ĐỘNG: Dẫn dắt câu chuyện, không trả lời hời hợt.
-        3. LUÔN LUÔN KẾT THÚC BẰNG MỘT CÂU HỎI: Để duy trì luồng hội thoại.
-        4. ĐỘ KHÓ: Điều chỉnh ngôn ngữ theo chuẩn A1-B2.`;
+        Mục tiêu: Ép học viên dùng các từ: ${targetWordsWithLevel.join(', ')}.
+        Quy tắc:
+        1. TRẢ LỜI NGẮN GỌN, LUÔN LUÔN KẾT THÚC BẰNG MỘT CÂU HỎI.
+        2. SỬA LỖI ngữ pháp/từ vựng trong ngoặc đơn (...) ở đầu câu nếu học viên nói sai, cũng ngắn gọn, không giải thích dài dòng.
+        3. Điều chỉnh độ khó theo chuẩn A1-B2.`;
 
-        // 4. THUẬT TOÁN GỘP TIN NHẮN & LUÂN PHIÊN (Luật của Google)
-        // Loại bỏ tin nhắn rỗng và gộp các tin cùng vai trò liên tiếp
+        // 4. CHUẨN HÓA DỮ LIỆU GỬI ĐI (contents luân phiên)
         let rawContents = newMessages.map(m => ({
             role: m.role === 'ai' ? 'model' : 'user',
             parts: [{ text: m.text }]
         }));
 
+        // Gộp tin nhắn trùng vai trò (nếu có)
         let finalContents = [];
         for (let i = 0; i < rawContents.length; i++) {
             if (finalContents.length > 0 && finalContents[finalContents.length - 1].role === rawContents[i].role) {
@@ -3591,23 +3590,13 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
             }
         }
 
-        // Đảm bảo tin nhắn cuối cùng gửi lên Google phải là của 'user'
-        if (finalContents[finalContents.length - 1].role === 'model') {
-            finalContents.push({ role: 'user', parts: [{ text: "Hãy trả lời tôi." }] });
-        }
-
-        // 5. KHAI BÁO reqBody CHUẨN (Fix lỗi reqBody is not defined)
         const reqBody = {
             systemInstruction: { parts: [{ text: systemPrompt }] },
             contents: finalContents,
-            generationConfig: { 
-                temperature: 0.8, 
-                maxOutputTokens: 300,
-                topP: 0.9
-            }
+            generationConfig: { temperature: 0.7, maxOutputTokens: 250 }
         };
 
-        // 6. GỌI API & BẮT LỖI CHI TIẾT RA CONSOLE F12
+        // 5. GỌI API & BẮT LỖI CHI TIẾT
         const res = await fetch(endpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -3616,7 +3605,6 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
 
         if (!res.ok) {
             const errorData = await res.json(); 
-            // In lỗi màu đỏ rực để quản trị viên dễ nhận diện lỗi 400 hoặc 429
             console.error("%c 🚨 GOOGLE API ERROR:", "background: red; color: white; padding: 5px;", errorData);
             throw new Error(`Google API Error: ${res.status}`);
         }
@@ -3624,14 +3612,14 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
         const data = await res.json();
         if (data.candidates && data.candidates[0].content.parts[0].text) {
             let reply = data.candidates[0].content.parts[0].text;
-            reply = reply.replace(/\*/g, ''); // Loại bỏ ký tự markdown của AI
+            reply = reply.replace(/\*/g, ''); 
             setMessages(prev => [...prev, { role: 'ai', text: reply }]);
             handleSpeak(reply, language);
         }
 
      } catch (error) {
-         console.error("Lỗi kết nối Gemini:", error);
-         setMessages(prev => [...prev, { role: 'ai', text: "AIBTeM đang gặp sự cố kết nối AI. Vui lòng kiểm tra lại mạng hoặc khóa API Key." }]);
+         console.error("Lỗi Gemini:", error);
+         setMessages(prev => [...prev, { role: 'ai', text: "AIBTeM đang gặp sự cố kết nối AI (Lỗi 404/400). Vui lòng thử lại sau giây lát." }]);
      } finally {
          setIsLoading(false);
      }

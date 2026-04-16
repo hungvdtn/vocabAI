@@ -545,7 +545,7 @@ export default function App() {
 
   const enterTestMode = () => {
     setIsTestMode(true);
-    setUser({ uid: 'test-user-123', displayName: 'Người dùng Thử nghiệm', email: 'test@example.com', photoURL: 'https://api.dicebear.com/7.x/avataaars/svg?seed=test' } as any);
+    setUser({ uid: 'test-user-123', displayName: 'Dùng tạm', email: 'test@example.com', photoURL: 'https://api.dicebear.com/7.x/avataaars/svg?seed=test' } as any);
   };
 
   useEffect(() => {
@@ -3581,7 +3581,7 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
             generationConfig: { temperature: 0.7, maxOutputTokens: 200 }
         };
 
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${apiKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(reqBody)

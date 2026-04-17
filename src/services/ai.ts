@@ -142,19 +142,19 @@ export const translateWord = async (word: string, language: string, signal?: Abo
 
       // KỊCH BẢN ĐÃ ÉP BUỘC TRẢ VỀ TỪ LOẠI, TRÌNH ĐỘ VÀ CHỦ ĐỀ
       const systemInstruction = `You are a professional lexicographer. Return a strictly formatted JSON object for the word in ${langName}. 
-      DO NOT use markdown wrappers.
-      Structure:
-      {
-        "word": "exact word",
-        "phonetic": "/IPA/",
-        "part_of_speech": "noun/verb/adj",
-        "vietnamese_meaning": "meanings separated by commas",
-        "${defKey}": "definition in ${langName}",
-        "${exKey}": "example sentence in ${langName}",
-        "example_vietnamese": "Vietnamese translation of example",
-        "level": "A1, A2, B1, B2, C1, or C2",
-        "topic": "education_and_learning, work_and_business, daily_life, health_and_body, science_and_technology, society_and_culture, nature_and_environment, travel_and_transport, or other"
-      }`;
+DO NOT use markdown wrappers.
+Structure:
+{
+  "word": "exact word",
+  "phonetic": "/IPA/",
+  "part_of_speech": "noun/verb/adj",
+  "vietnamese_meaning": "meanings separated by commas",
+  "${defKey}": "definition in ${langName}",
+  "${exKey}": "example sentence in ${langName}",
+  "example_vietnamese": "Vietnamese translation of example",
+  "level": "Assign CEFR level (A1, A2, B1, B2, C1, or C2)",
+  "topic": "Assign ONE exact ID: education_and_learning, work_and_business, daily_life, health_and_body, science_and_technology, society_and_culture, nature_and_environment, travel_and_transport, or other"
+}`;
 
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview", 

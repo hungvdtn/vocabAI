@@ -3553,37 +3553,53 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
 
   const handleSend = async (textToSend: string) => {
     const cleanText = textToSend.trim();
-    // Nếu đang gửi thì chặn đứng, không cho gửi cái thứ 2
     if (!cleanText || isLoading) return; 
 
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-    if (!apiKey || apiKey.includes("YOUR_GEMINI_API_KEY")) return;
+    if (!apiKey) return;
 
     setIsLoading(true);
+    // Hiển thị tin nhắn của người dùng lên màn hình ngay
     setMessages(prev => [...prev, { role: 'user', text: cleanText }]);
     setInput('');
 
     try {
-      // CHUYỂN SANG V1 ĐỂ HẾT LỖI 404
-      const endpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+      // 1. SỬA LỖI 404: Quay lại v1beta vì gemini-1.5-flash thuộc về bản này
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
-      const conversation = messages
+      const systemPrompt = `SYSTEM: You are acting as ${aiRole}. Speak ${language === 'en' ? 'English' : 'German'}. 
+      RULES: 1. Correct user's grammar in (...) at the start. 
+      2. Force use of: ${targetWords.join(', ')}. 
+      3. End with a question.`;
+
+      // 2. CHUẨN HÓA LỊCH SỬ: Đảm bảo mảng hội thoại luôn bắt đầu bằng 'user'
+      let conversation = messages
         .filter((m, idx) => !(idx === 0 && m.role === 'ai'))
         .map(m => ({
           role: m.role === 'ai' ? 'model' : 'user',
           parts: [{ text: m.text }]
         }));
       
+      // Thêm câu nói hiện tại của người dùng
       conversation.push({ role: 'user', parts: [{ text: cleanText }] });
+
+      // 3. SỬA LỖI 400: Nhúng kịch bản vào tin nhắn đầu tiên (Cách ổn định nhất)
+      if (conversation.length > 0 && conversation[0].role === 'user') {
+        conversation[0].parts[0].text = `[CONTEXT: ${systemPrompt}]\n\nUser input: ${conversation[0].parts[0].text}`;
+      }
 
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: conversation })
+        body: JSON.stringify({ contents: conversation }) // Chỉ gửi contents, không gửi system_instruction riêng
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error?.message || "Lỗi API");
+      
+      if (!res.ok) {
+        console.error("Chi tiết lỗi từ Google:", data);
+        throw new Error(data.error?.message || "Lỗi API");
+      }
 
       if (data.candidates && data.candidates[0].content.parts[0].text) {
         const aiReply = data.candidates[0].content.parts[0].text;
@@ -3591,10 +3607,11 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
         handleSpeak(aiReply, language);
       }
     } catch (error) {
-      console.error("Lỗi:", error);
-      setMessages(prev => [...prev, { role: 'ai', text: "Kết nối AI thất bại. Hãy kiểm tra lại API Key hoặc mạng." }]);
+      console.error("AI Error:", error);
+      // Hiển thị thông báo lỗi thân thiện nếu kết nối thật sự chết
+      setMessages(prev => [...prev, { role: 'ai', text: "AIBTeM đang bảo trì kết nối AI. Bạn hãy thử lại sau ít phút." }]);
     } finally {
-      // Đợi xử lý xong mới cho phép gửi tin tiếp theo
+      setIsLoading(true); // Đổi thành false nếu bạn muốn cho phép nhắn tin tiếp ngay
       setIsLoading(false);
     }
   };

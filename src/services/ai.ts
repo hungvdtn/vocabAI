@@ -124,14 +124,17 @@ export const translateWord = async (word: string, language: string, signal?: Abo
     // Tách chuỗi đa nghĩa thành mảng các nghĩa riêng biệt
     const translations = localResult.split(',').map(item => item.trim()).filter(item => item !== '');
     
+    // Đã chuẩn hóa lại Object trả về của Local Dictionary để tương thích với JSON của AI
     const result = {
+      word: word,
       translations: translations,
-      displayMeaning: localResult,
-      type: "Local Dictionary",
-      pronunciation: "",
-      definition: "",
+      vietnamese_meaning: localResult,
+      part_of_speech: "",
+      phonetic: "",
+      english_definition: "",
+      german_definition: "",
       example: "",
-      exampleTranslation: ""
+      example_vietnamese: ""
     };
     translationCache[cacheKey] = result;
     return result;
@@ -142,15 +145,36 @@ export const translateWord = async (word: string, language: string, signal?: Abo
       if (signal?.aborted) throw new Error("Aborted");
 
       const ai = getAI();
+      const langName = language === 'en' ? 'English' : 'German';
+      const defLang = language === 'en' ? 'english_definition' : 'german_definition';
+      const exLang = language === 'en' ? 'example_english' : 'example_german';
 
+      // Định hình cấu trúc JSON tĩnh
+      const systemInstruction = `You are a professional lexicographer. The user will provide a word in ${langName}.
+      You must return a strictly formatted JSON object containing the dictionary details of this word.
+      DO NOT return Markdown (no \`\`\`json).
+      Required JSON structure:
+      {
+        "word": "the exact word",
+        "phonetic": "/IPA transcription/",
+        "part_of_speech": "noun, verb, adjective, etc.",
+        "vietnamese_meaning": "Vietnamese translation (comma separated if multiple meanings)",
+        "${defLang}": "Definition in ${langName}",
+        "${exLang}": "A practical example sentence in ${langName} using the word",
+        "example_vietnamese": "Vietnamese translation of the example sentence"
+      }`;
+
+      // Sử dụng config object để thiết lập systemInstruction và ép MimeType
       const model = ai.models.generateContent({
-        model: "gemini-3-flash-preview", // Optimized for ultra-low latency
-        contents: `Bạn là một từ điển Anh-Việt. Hãy dịch từ sau sang Tiếng Việt. CHỈ trả về duy nhất một mảng JSON chứa 3 đến 5 nghĩa, không thêm bất kỳ văn bản nào khác. Ví dụ: ["sách", "quyển sách"]
-        Từ cần dịch: "${word}"`,
+        model: "gemini-3-flash-preview", 
+        contents: `Word to translate: "${word}"`,
+        config: {
+          systemInstruction: systemInstruction,
+          responseMimeType: "application/json",
+          temperature: 0.2
+        }
       });
       
-      // Note: @google/genai doesn't natively support AbortSignal in generateContent yet, 
-      // but we can check it before and after the call, or wrap it in a promise that rejects on signal.
       const response = await model;
       
       if (signal?.aborted) throw new Error("Aborted");
@@ -158,35 +182,24 @@ export const translateWord = async (word: string, language: string, signal?: Abo
       
       if (!rawText) throw new Error("API trả về rỗng");
       
-      // Cơ chế trích xuất JSON an toàn bằng Regex
-      const match = rawText.match(/\[.*\]/s);
-      if (!match) throw new Error("Không tìm thấy mảng JSON trong phản hồi của AI");
-      
-      let translations;
+      let resultObj;
       try {
-        translations = JSON.parse(match[0]);
+        resultObj = JSON.parse(rawText);
+        // Tự động tạo mảng translations để tương thích ngược với các file khác (như Roleplay/Games)
+        resultObj.translations = resultObj.vietnamese_meaning 
+          ? resultObj.vietnamese_meaning.split(',').map((s: string) => s.trim()) 
+          : [];
       } catch (parseError) {
-        console.error("JSON Parse Error on match:", match[0]);
+        console.error("JSON Parse Error:", rawText);
         throw new Error("Dữ liệu JSON không hợp lệ");
       }
       
-      // Return object structure expected by UI
-      const result = {
-        translations: Array.isArray(translations) ? translations : [],
-        type: "",
-        pronunciation: "",
-        definition: "",
-        example: "",
-        exampleTranslation: ""
-      };
-      
       // Save to Cache
-      translationCache[cacheKey] = result;
+      translationCache[cacheKey] = resultObj;
       
-      return result;
+      return resultObj;
     } catch (e: any) {
       console.error("Gemini API Error (translateWord):", e);
-      // Re-throw to be caught by UI
       throw e;
     }
   });

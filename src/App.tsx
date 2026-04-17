@@ -3562,7 +3562,7 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
 
     try {
       const apiKey = (import.meta.env.VITE_GEMINI_API_KEY || "").trim();
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+      const endpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
       const systemPrompt = `SYSTEM INSTRUCTION: You are ${aiRole}. Speak ${language === 'en' ? 'English' : 'German'}. 
       1. Correct user's grammar in parentheses (...) at start of reply. 

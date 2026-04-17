@@ -1471,11 +1471,24 @@ function AdminDashboardView({ language }: { language: Language }) {
                      <div className="space-y-1"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Thuật ngữ gốc</label><input type="text" value={editForm.word || ''} onChange={e => setEditForm({...editForm, word: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-base font-bold focus:bg-white focus:border-indigo-500 outline-none transition-all" /></div>
                      <div className="space-y-1"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Phiên âm Quốc tế</label><input type="text" value={editForm.phonetic || ''} onChange={e => setEditForm({...editForm, phonetic: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-base font-mono text-slate-600 focus:bg-white focus:border-indigo-500 outline-none transition-all" /></div>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                     <div className="space-y-1"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Loại từ</label><input type="text" value={editForm.part_of_speech || ''} placeholder="n, v, adj, adv..." onChange={e => setEditForm({...editForm, part_of_speech: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-base focus:bg-white focus:border-indigo-500 outline-none transition-all" /></div>
-                     <div className="space-y-1"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Trình độ CEFR</label><select value={editForm.level || 'A1'} onChange={e => setEditForm({...editForm, level: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-base font-bold text-indigo-700 outline-none cursor-pointer">{['A1','A2','B1','B2','C1','C2'].map(l => <option key={l} value={l}>{l}</option>)}</select></div>
-                     <div className="space-y-1"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Nhóm Chủ đề</label><select value={editForm.topic || 'other'} onChange={e => setEditForm({...editForm, topic: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-base outline-none cursor-pointer truncate"><option value="education_and_learning">Giáo dục & Học tập</option><option value="work_and_business">Công sở & Kinh doanh</option><option value="daily_life">Đời sống</option><option value="other">Chủ đề khác</option></select></div>
-                  </div>
+                  <div className="space-y-1">
+  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Nhóm Chủ đề</label>
+  <select 
+    value={editForm.topic || 'other'} 
+    onChange={e => setEditForm({...editForm, topic: e.target.value})} 
+    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-base outline-none cursor-pointer truncate"
+  >
+    <option value="education_and_learning">Giáo dục & Học tập</option>
+    <option value="work_and_business">Công sở & Kinh doanh</option>
+    <option value="daily_life">Đời sống hàng ngày</option>
+    <option value="health_and_body">Sức khỏe & Cơ thể</option>
+    <option value="science_and_technology">Khoa học & Công nghệ</option>
+    <option value="society_and_culture">Xã hội & Văn hóa</option>
+    <option value="nature_and_environment">Thiên nhiên & Môi trường</option>
+    <option value="travel_and_transport">Du lịch & Giao thông</option>
+    <option value="other">Chủ đề khác</option>
+  </select>
+</div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                      <div className="space-y-1"><label className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest ml-1">Nghĩa tiếng Việt</label><textarea value={editForm.vietnamese_meaning || ''} onChange={e => setEditForm({...editForm, vietnamese_meaning: e.target.value})} className="w-full bg-emerald-50 border border-emerald-100 rounded-xl p-3 text-base font-medium focus:bg-white focus:border-emerald-500 outline-none transition-all min-h-[100px] resize-none" /></div>
                      <div className="space-y-1"><label className="text-[10px] font-bold text-blue-600 uppercase tracking-widest ml-1">Định nghĩa ({language.toUpperCase()})</label><textarea value={isEn ? (editForm.english_definition || '') : (editForm.german_definition || '')} onChange={e => { if (isEn) setEditForm({...editForm, english_definition: e.target.value}); else setEditForm({...editForm, german_definition: e.target.value}); }} className="w-full bg-blue-50 border border-blue-100 rounded-xl p-3 text-base focus:bg-white focus:border-blue-500 outline-none transition-all min-h-[100px] resize-none" /></div>
@@ -1875,35 +1888,41 @@ function DictionaryView({ language }: { language: Language }) {
     
     try {
       const data = await translateWord(searchTerm, language, new AbortController().signal);
-      let meaningArray: string[] = [];
-      if (data && Array.isArray(data.translations)) meaningArray = data.translations;
-      else if (typeof data === 'string' && data.trim() !== '') meaningArray = data.split(',').map((s:string) => s.trim()).filter((s:string) => s !== '');
       
-      setAiTranslation(meaningArray);
+      // 1. ÉP DỮ LIỆU VÀO SELECTED_WORD ĐỂ VẼ GIAO DIỆN TỪ ĐIỂN HOÀN CHỈNH
+      setSelectedWord({
+        ...data,
+        language: language,
+        userId: auth.currentUser?.uid || 'unknown',
+        createdAt: Date.now()
+      });
 
-      if (meaningArray.length > 0) {
-        addDoc(collection(db, 'error_reports'), {
-          word: data.word || searchTerm.toLowerCase().trim(),
-          language: language,
-          errorText: "🌟 TỪ MỚI (Từ điển tự động bắt)",
-          userId: auth.currentUser?.uid || 'unknown',
-          userName: auth.currentUser?.displayName || 'Hệ thống tự động',
-          status: 'pending',
-          createdAt: Date.now(),
-          suggestedMeaning: meaningArray.join(', '),
-          // BỔ SUNG LƯU TOÀN BỘ CÁC TRƯỜNG THÔNG TIN KHÁC TỪ AI
-          vietnamese_meaning: data.vietnamese_meaning || meaningArray.join(', '),
-          part_of_speech: data.part_of_speech || '',
-          phonetic: data.phonetic || '',
-          english_definition: data.english_definition || '',
-          german_definition: data.german_definition || '',
-          example: data.example || '',
-          example_english: data.example_english || '',
-          example_german: data.example_german || '',
-          example_vietnamese: data.example_vietnamese || '',
-          level: data.level || 'A1'
-        }).catch(e => console.error("Lỗi thu thập ngầm:", e));
-      }
+      // 2. Tắt giao diện rút gọn cũ
+      setAiTranslation(null);
+
+      // 3. Đẩy lên Firebase ngầm kèm theo Level và Topic do AI sinh ra
+      addDoc(collection(db, 'error_reports'), {
+        word: data.word || searchTerm.toLowerCase().trim(),
+        language: language,
+        errorText: "🌟 TỪ MỚI (Từ điển tự động bắt)",
+        userId: auth.currentUser?.uid || 'unknown',
+        userName: auth.currentUser?.displayName || 'Hệ thống tự động',
+        status: 'pending',
+        createdAt: Date.now(),
+        suggestedMeaning: data.vietnamese_meaning || '',
+        vietnamese_meaning: data.vietnamese_meaning || '',
+        part_of_speech: data.part_of_speech || '',
+        phonetic: data.phonetic || '',
+        english_definition: data.english_definition || '',
+        german_definition: data.german_definition || '',
+        example: data.example || '',
+        example_english: data.example_english || '',
+        example_german: data.example_german || '',
+        example_vietnamese: data.example_vietnamese || '',
+        level: data.level || 'A1',
+        topic: data.topic || 'other'
+      }).catch(e => console.error("Lỗi thu thập ngầm:", e));
+
     } catch (error) { 
       setAiTranslation(["Lỗi kết nối AIBTeM. Vui lòng thử lại sau."]); 
     } finally { 

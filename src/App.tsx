@@ -3553,23 +3553,19 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
 
   const handleSend = async (textToSend: string) => {
     const cleanText = textToSend.trim();
+    // Nếu đang gửi thì chặn đứng, không cho gửi cái thứ 2
     if (!cleanText || isLoading) return; 
 
-    // BƯỚC KIỂM TRA QUAN TRỌNG
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-    
-    if (!apiKey || apiKey.includes("YOUR_GEMINI_API_KEY")) {
-      alert("🚨 LỖI CẤU HÌNH: Ứng dụng chưa đọc được mã Key từ file .env. \n\nBạn hãy kiểm tra: \n1. File .env đã nằm ở thư mục gốc (ngoài cùng) chưa?\n2. Bạn đã chạy lại lệnh 'npm run dev' sau khi tạo file chưa?");
-      return;
-    }
+    if (!apiKey || apiKey.includes("YOUR_GEMINI_API_KEY")) return;
 
+    setIsLoading(true);
     setMessages(prev => [...prev, { role: 'user', text: cleanText }]);
     setInput('');
-    setIsLoading(true);
 
     try {
-      // Thử dùng đường dẫn linh hoạt nhất của Google
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+      // CHUYỂN SANG V1 ĐỂ HẾT LỖI 404
+      const endpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
       const conversation = messages
         .filter((m, idx) => !(idx === 0 && m.role === 'ai'))
@@ -3578,7 +3574,6 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
           parts: [{ text: m.text }]
         }));
       
-      // Thêm tin nhắn hiện tại của người dùng vào
       conversation.push({ role: 'user', parts: [{ text: cleanText }] });
 
       const res = await fetch(endpoint, {
@@ -3588,12 +3583,7 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
       });
 
       const data = await res.json();
-      
-      if (!res.ok) {
-        // Nếu lỗi 404 xảy ra ở đây, chúng ta sẽ biết tên model nào bị lỗi
-        console.error("Chi tiết lỗi từ Google:", data);
-        throw new Error(data.error?.message || "Lỗi phản hồi");
-      }
+      if (!res.ok) throw new Error(data.error?.message || "Lỗi API");
 
       if (data.candidates && data.candidates[0].content.parts[0].text) {
         const aiReply = data.candidates[0].content.parts[0].text;
@@ -3601,23 +3591,50 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
         handleSpeak(aiReply, language);
       }
     } catch (error) {
-      console.error("AI Error:", error);
-      setMessages(prev => [...prev, { role: 'ai', text: "Kết nối thất bại. Hãy kiểm tra Console (F12) để xem chi tiết." }]);
+      console.error("Lỗi:", error);
+      setMessages(prev => [...prev, { role: 'ai', text: "Kết nối AI thất bại. Hãy kiểm tra lại API Key hoặc mạng." }]);
     } finally {
+      // Đợi xử lý xong mới cho phép gửi tin tiếp theo
       setIsLoading(false);
     }
   };
 
   const startListening = () => {
-     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-     if (!SpeechRecognition) return alert("Trình duyệt không hỗ trợ Mic.");
-     const recognition = new SpeechRecognition();
-     recognition.lang = language === 'en' ? 'en-US' : 'de-DE';
-     recognition.onstart = () => setIsRecording(true);
-     recognition.onresult = (e: any) => handleSend(e.results[0][0].transcript);
-     recognition.onerror = () => setIsRecording(false);
-     recognition.onend = () => setIsRecording(false);
-     recognition.start();
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) return alert("Trình duyệt không hỗ trợ Mic.");
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = language === 'en' ? 'en-US' : 'de-DE';
+    recognition.continuous = false; // Tắt chế độ liên tục để nó tự ngắt khi bạn im lặng
+    recognition.interimResults = false; // Chỉ lấy kết quả cuối cùng, không lấy kết quả tạm thời
+
+    let finalTranscript = ''; // Biến tạm để giữ câu nói của bạn
+
+    recognition.onstart = () => {
+      setIsRecording(true);
+      finalTranscript = ''; 
+    };
+
+    recognition.onresult = (event: any) => {
+      // Gộp tất cả các đoạn mà micro nghe được thành 1 câu duy nhất
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        if (event.results[i].isFinal) {
+          finalTranscript += event.results[i][0].transcript;
+        }
+      }
+    };
+
+    recognition.onerror = () => setIsRecording(false);
+
+    recognition.onend = () => {
+      setIsRecording(false);
+      // CHỈ GỬI ĐI KHI MICRO ĐÃ TẮT HẲN VÀ CÂU CÓ NỘI DUNG
+      if (finalTranscript.trim().length > 0) {
+        handleSend(finalTranscript);
+      }
+    };
+
+    recognition.start();
   };
 
   return (

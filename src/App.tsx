@@ -1855,23 +1855,27 @@ function DictionaryView({ language }: { language: Language }) {
     setSuggestions([]); 
     
     try {
-      const data = await translateWord(searchTerm, language, new AbortController().signal);
-      let meaningArray: string[] = [];
-      if (data && Array.isArray(data.translations)) meaningArray = data.translations;
-      else if (typeof data === 'string' && data.trim() !== '') meaningArray = data.split(',').map((s:string) => s.trim()).filter((s:string) => s !== '');
+      const wordData = await translateWord(searchTerm, language, new AbortController().signal);
       
-      setAiTranslation(meaningArray);
+      // Chuyển dữ liệu AI vào selectedWord để vẽ giao diện chi tiết
+      setSelectedWord({
+        ...wordData,
+        language: language,
+        userId: user?.uid || 'unknown',
+        createdAt: Date.now()
+      });
 
-      if (meaningArray.length > 0) {
+      // Tự động báo cáo ngầm từ mới
+      if (wordData.vietnamese_meaning) {
         addDoc(collection(db, 'error_reports'), {
-          word: searchTerm.toLowerCase().trim(),
+          word: wordData.word || searchTerm.toLowerCase().trim(),
           language: language,
           errorText: "🌟 TỪ MỚI (Từ điển tự động bắt)",
-          userId: auth.currentUser?.uid || 'unknown',
-          userName: auth.currentUser?.displayName || 'Hệ thống tự động',
+          userId: user?.uid || 'unknown',
+          userName: user?.displayName || 'Hệ thống tự động',
           status: 'pending',
           createdAt: Date.now(),
-          suggestedMeaning: meaningArray.join(', ')
+          suggestedMeaning: wordData.vietnamese_meaning
         }).catch(e => console.error("Lỗi thu thập ngầm:", e));
       }
     } catch (error) { 

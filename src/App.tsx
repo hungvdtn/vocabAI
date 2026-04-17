@@ -1318,6 +1318,7 @@ function AdminDashboardView({ language }: { language: Language }) {
     const entry = dict.find((item: any) => item.word.toLowerCase() === report.word.toLowerCase());
     setEditingReportId(report.id);
     
+    // Đã sửa: Ép Form bốc dữ liệu trực tiếp từ 'report' do AI sinh ra thay vì để trống
     const initialForm = entry || { 
       word: report.word, 
       meaning: report.suggestedMeaning || '', 
@@ -1889,7 +1890,7 @@ function DictionaryView({ language }: { language: Language }) {
     try {
       const data = await translateWord(searchTerm, language, new AbortController().signal);
       
-      // 1. ÉP DỮ LIỆU VÀO SELECTED_WORD ĐỂ VẼ GIAO DIỆN TỪ ĐIỂN HOÀN CHỈNH
+      // Hiển thị trực tiếp ra thẻ từ vựng hoàn chỉnh ở giao diện Từ điển
       setSelectedWord({
         ...data,
         language: language,
@@ -1897,10 +1898,9 @@ function DictionaryView({ language }: { language: Language }) {
         createdAt: Date.now()
       });
 
-      // 2. Tắt giao diện rút gọn cũ
       setAiTranslation(null);
 
-      // 3. Đẩy lên Firebase ngầm kèm theo Level và Topic do AI sinh ra
+      // Đẩy toàn bộ 100% dữ liệu chi tiết của AI lên máy chủ để Admin duyệt
       addDoc(collection(db, 'error_reports'), {
         word: data.word || searchTerm.toLowerCase().trim(),
         language: language,

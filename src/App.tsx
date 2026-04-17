@@ -1268,26 +1268,19 @@ function LightbulbIcon(props: any) {
   );
 }
 // --- TRANG QUẢN TRỊ ẨN (ADMIN DASHBOARD) ---
-// --- TRANG QUẢN TRỊ ẨN (ADMIN DASHBOARD) ---
-// --- TRANG QUẢN TRỊ ẨN (ADMIN DASHBOARD) ---
 function AdminDashboardView({ language }: { language: Language }) {
   const [activeTab, setActiveTab] = useState<'dictionary' | 'users'>('dictionary');
   
-  // STATE CỦA QUẢN LÝ TỪ ĐIỂN
   const [reports, setReports] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingReportId, setEditingReportId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<any>(null);
   const [isSaving, setIsSaving] = useState(false);
-  
-  // STATE MỚI: Tải danh sách các từ đã sửa để phục vụ Xuất Excel
   const [overridesList, setOverridesList] = useState<any[]>([]);
 
-  // STATE CỦA QUẢN LÝ NGƯỜI DÙNG
   const [appUsers, setAppUsers] = useState<any[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
 
-  // 1. Tải danh sách báo lỗi
   useEffect(() => {
     const q = query(collection(db, 'error_reports'), where('status', '==', 'pending'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -1298,7 +1291,6 @@ function AdminDashboardView({ language }: { language: Language }) {
     return () => unsubscribe();
   }, []);
 
-  // 2. Tải danh sách từ vựng đã được sửa (Overrides)
   useEffect(() => {
     const q = query(collection(db, 'dictionary_overrides'), where('language', '==', language));
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -1307,7 +1299,6 @@ function AdminDashboardView({ language }: { language: Language }) {
     return () => unsubscribe();
   }, [language]);
 
-  // 3. Tải danh sách người dùng
   useEffect(() => {
     if (activeTab === 'users') {
       setLoadingUsers(true);
@@ -1321,15 +1312,26 @@ function AdminDashboardView({ language }: { language: Language }) {
     }
   }, [activeTab]);
 
+  // ĐÃ SỬA: ÉP NHẬN TOÀN BỘ DỮ LIỆU TỪ REPORT DO AI SINH RA
   const startEdit = (report: any) => {
     const dict = language === 'en' ? enDictDataRaw : deDictDataRaw;
     const entry = dict.find((item: any) => item.word.toLowerCase() === report.word.toLowerCase());
     setEditingReportId(report.id);
     
     const initialForm = entry || { 
-      word: report.word, meaning: report.suggestedMeaning || '', vietnamese_meaning: report.suggestedMeaning || '',
-      part_of_speech: '', phonetic: '', english_definition: '', german_definition: '',
-      example_english: '', example_german: '', example_vietnamese: '', topic: 'other', level: 'A1' 
+      word: report.word, 
+      meaning: report.suggestedMeaning || '', 
+      vietnamese_meaning: report.vietnamese_meaning || report.suggestedMeaning || '',
+      part_of_speech: report.part_of_speech || '', 
+      phonetic: report.phonetic || '', 
+      english_definition: report.english_definition || '', 
+      german_definition: report.german_definition || '',
+      example: report.example || '',
+      example_english: report.example_english || report.example || '', 
+      example_german: report.example_german || report.example || '', 
+      example_vietnamese: report.example_vietnamese || '', 
+      topic: report.topic || 'other', 
+      level: report.level || 'A1' 
     };
     
     if (!initialForm.vietnamese_meaning && initialForm.meaning) {
@@ -1350,18 +1352,15 @@ function AdminDashboardView({ language }: { language: Language }) {
     } catch (error) { alert("Lỗi khi lưu vào CSDL."); } finally { setIsSaving(false); }
   };
 
-  // TÍNH NĂNG MỚI: XÓA BÁO CÁO LỖI (NẾU BÁO SAI)
   const handleDeleteReport = async (id: string, e: React.MouseEvent) => {
-    e.stopPropagation(); // Ngăn chặn việc tự động bấm vào nút Sửa
+    e.stopPropagation(); 
     if (!window.confirm("Xóa bỏ báo cáo này?")) return;
     try {
-      // Đánh dấu là đã bị từ chối/xóa
       await updateDoc(doc(db, 'error_reports', id), { status: 'rejected', resolvedAt: Date.now() });
       if (editingReportId === id) { setEditingReportId(null); setEditForm(null); }
     } catch (error) { alert("Lỗi khi xóa báo cáo!"); }
   };
 
-  // TÍNH NĂNG MỚI: XUẤT EXCEL TỪ VỰNG ĐÃ SỬA ĐỂ CẬP NHẬT FILE JSON
   const handleExportDictData = () => {
     if (overridesList.length === 0) return alert("Chưa có từ vựng nào được sửa trên Đám mây để xuất!");
     
@@ -1391,7 +1390,6 @@ function AdminDashboardView({ language }: { language: Language }) {
     document.body.removeChild(link);
   };
 
-  // XUẤT EXCEL NGƯỜI DÙNG (Giữ nguyên)
   const handleExportUsersData = () => {
     if (appUsers.length === 0) return alert("Không có dữ liệu để xuất!");
     const headers = ["Tên hiển thị", "Email", "Trình độ CEFR", "Cấp bậc", "Ngày gia nhập", "Lần đăng nhập cuối"];
@@ -1482,6 +1480,27 @@ function AdminDashboardView({ language }: { language: Language }) {
                      <div className="space-y-1"><label className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest ml-1">Nghĩa tiếng Việt</label><textarea value={editForm.vietnamese_meaning || ''} onChange={e => setEditForm({...editForm, vietnamese_meaning: e.target.value})} className="w-full bg-emerald-50 border border-emerald-100 rounded-xl p-3 text-base font-medium focus:bg-white focus:border-emerald-500 outline-none transition-all min-h-[100px] resize-none" /></div>
                      <div className="space-y-1"><label className="text-[10px] font-bold text-blue-600 uppercase tracking-widest ml-1">Định nghĩa ({language.toUpperCase()})</label><textarea value={isEn ? (editForm.english_definition || '') : (editForm.german_definition || '')} onChange={e => { if (isEn) setEditForm({...editForm, english_definition: e.target.value}); else setEditForm({...editForm, german_definition: e.target.value}); }} className="w-full bg-blue-50 border border-blue-100 rounded-xl p-3 text-base focus:bg-white focus:border-blue-500 outline-none transition-all min-h-[100px] resize-none" /></div>
                   </div>
+                  
+                  {/* BỔ SUNG GIAO DIỆN NHẬP VÍ DỤ VÀ NGHĨA VÍ DỤ */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                      <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-orange-600 uppercase tracking-widest ml-1">Ví dụ ({language.toUpperCase()})</label>
+                          <textarea 
+                              value={isEn ? (editForm.example_english || editForm.example || '') : (editForm.example_german || editForm.example || '')} 
+                              onChange={e => { if (isEn) setEditForm({...editForm, example_english: e.target.value}); else setEditForm({...editForm, example_german: e.target.value}); }} 
+                              className="w-full bg-orange-50 border border-orange-100 rounded-xl p-3 text-base focus:bg-white focus:border-orange-500 outline-none transition-all min-h-[80px] resize-none" 
+                          />
+                      </div>
+                      <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Nghĩa của Ví dụ</label>
+                          <textarea 
+                              value={editForm.example_vietnamese || ''} 
+                              onChange={e => setEditForm({...editForm, example_vietnamese: e.target.value})} 
+                              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-base font-medium focus:bg-white focus:border-slate-500 outline-none transition-all min-h-[80px] resize-none" 
+                          />
+                      </div>
+                  </div>
+
                   <div className="pt-6 border-t border-slate-100 flex items-center justify-end gap-4">
                     <button onClick={() => {setEditForm(null); setEditingReportId(null);}} className="px-6 py-4 rounded-2xl font-bold text-slate-500 hover:bg-slate-100 transition-all">Hủy bỏ</button>
                     <button onClick={handleResolveAndSave} disabled={isSaving} className="bg-indigo-600 text-white px-8 py-4 rounded-2xl font-bold text-lg hover:bg-indigo-700 transition-all shadow-xl flex items-center gap-2">{isSaving ? <Loader2 className="animate-spin" size={24} /> : <CheckCircle2 size={24} />} Lưu đè lên Hệ thống</button>
@@ -1855,31 +1874,37 @@ function DictionaryView({ language }: { language: Language }) {
     setSuggestions([]); 
     
     try {
-      const wordData = await translateWord(searchTerm, language, new AbortController().signal);
+      const data = await translateWord(searchTerm, language, new AbortController().signal);
+      let meaningArray: string[] = [];
+      if (data && Array.isArray(data.translations)) meaningArray = data.translations;
+      else if (typeof data === 'string' && data.trim() !== '') meaningArray = data.split(',').map((s:string) => s.trim()).filter((s:string) => s !== '');
       
-      // Chuyển dữ liệu AI vào selectedWord để vẽ giao diện chi tiết
-      setSelectedWord({
-        ...wordData,
-        language: language,
-        userId: auth.currentUser?.uid || 'unknown', // Đã sửa thành auth.currentUser
-        createdAt: Date.now()
-      });
+      setAiTranslation(meaningArray);
 
-      // Tự động báo cáo ngầm từ mới
-      if (wordData.vietnamese_meaning) {
+      if (meaningArray.length > 0) {
         addDoc(collection(db, 'error_reports'), {
-          word: wordData.word || searchTerm.toLowerCase().trim(),
+          word: data.word || searchTerm.toLowerCase().trim(),
           language: language,
           errorText: "🌟 TỪ MỚI (Từ điển tự động bắt)",
-          userId: auth.currentUser?.uid || 'unknown', // Đã sửa thành auth.currentUser
-          userName: auth.currentUser?.displayName || 'Hệ thống tự động', // Đã sửa thành auth.currentUser
+          userId: auth.currentUser?.uid || 'unknown',
+          userName: auth.currentUser?.displayName || 'Hệ thống tự động',
           status: 'pending',
           createdAt: Date.now(),
-          suggestedMeaning: wordData.vietnamese_meaning
+          suggestedMeaning: meaningArray.join(', '),
+          // BỔ SUNG LƯU TOÀN BỘ CÁC TRƯỜNG THÔNG TIN KHÁC TỪ AI
+          vietnamese_meaning: data.vietnamese_meaning || meaningArray.join(', '),
+          part_of_speech: data.part_of_speech || '',
+          phonetic: data.phonetic || '',
+          english_definition: data.english_definition || '',
+          german_definition: data.german_definition || '',
+          example: data.example || '',
+          example_english: data.example_english || '',
+          example_german: data.example_german || '',
+          example_vietnamese: data.example_vietnamese || '',
+          level: data.level || 'A1'
         }).catch(e => console.error("Lỗi thu thập ngầm:", e));
       }
     } catch (error) { 
-      console.error("Lỗi thực thi handleAITranslate:", error);
       setAiTranslation(["Lỗi kết nối AIBTeM. Vui lòng thử lại sau."]); 
     } finally { 
       setIsTranslating(false); 

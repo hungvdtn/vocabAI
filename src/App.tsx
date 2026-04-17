@@ -1315,30 +1315,25 @@ function AdminDashboardView({ language }: { language: Language }) {
   // ĐÃ SỬA: ÉP NHẬN TOÀN BỘ DỮ LIỆU TỪ REPORT DO AI SINH RA
   const startEdit = (report: any) => {
     const dict = language === 'en' ? enDictDataRaw : deDictDataRaw;
-    const entry = dict.find((item: any) => item.word.toLowerCase() === report.word.toLowerCase());
+    const entry = dict.find((item: any) => item.word.toLowerCase() === report.word.toLowerCase()) || {};
     setEditingReportId(report.id);
     
-    // Đã sửa: Ép Form bốc dữ liệu trực tiếp từ 'report' do AI sinh ra thay vì để trống
-    const initialForm = entry || { 
-      word: report.word, 
-      meaning: report.suggestedMeaning || '', 
-      vietnamese_meaning: report.vietnamese_meaning || report.suggestedMeaning || '',
-      part_of_speech: report.part_of_speech || '', 
-      phonetic: report.phonetic || '', 
-      english_definition: report.english_definition || '', 
-      german_definition: report.german_definition || '',
-      example: report.example || '',
-      example_english: report.example_english || report.example || '', 
-      example_german: report.example_german || report.example || '', 
-      example_vietnamese: report.example_vietnamese || '', 
-      topic: report.topic || 'other', 
-      level: report.level || 'A1' 
-    };
-    
-    if (!initialForm.vietnamese_meaning && initialForm.meaning) {
-        initialForm.vietnamese_meaning = initialForm.meaning;
-    }
-    setEditForm(initialForm);
+    // Thuật toán gộp thông minh: Ưu tiên lấy dữ liệu xịn từ AI (report), nếu AI mất thì mới lấy từ file gốc (entry)
+    setEditForm({
+      word: report.word || entry.word || '',
+      meaning: report.suggestedMeaning || report.vietnamese_meaning || entry.vietnamese_meaning || entry.meaning || '',
+      vietnamese_meaning: report.vietnamese_meaning || report.suggestedMeaning || entry.vietnamese_meaning || entry.meaning || '',
+      part_of_speech: report.part_of_speech || entry.part_of_speech || entry.type || '',
+      phonetic: report.phonetic || entry.phonetic || '',
+      english_definition: report.english_definition || entry.english_definition || entry.en_definition || entry.definition || '',
+      german_definition: report.german_definition || entry.german_definition || entry.de_definition || entry.definition_de || entry.definition || '',
+      example: report.example || entry.example || '',
+      example_english: report.example_english || report.example || entry.example_english || entry.example || '',
+      example_german: report.example_german || report.example || entry.example_german || entry.example || '',
+      example_vietnamese: report.example_vietnamese || entry.example_vietnamese || '',
+      topic: report.topic || entry.topic || 'other',
+      level: report.level || entry.level || 'A1'
+    });
   };
 
   const handleResolveAndSave = async () => {

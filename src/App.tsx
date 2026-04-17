@@ -1312,13 +1312,11 @@ function AdminDashboardView({ language }: { language: Language }) {
     }
   }, [activeTab]);
 
-  // ĐÃ SỬA: ÉP NHẬN TOÀN BỘ DỮ LIỆU TỪ REPORT DO AI SINH RA
   const startEdit = (report: any) => {
     const dict = language === 'en' ? enDictDataRaw : deDictDataRaw;
     const entry = dict.find((item: any) => item.word.toLowerCase() === report.word.toLowerCase()) || {};
     setEditingReportId(report.id);
     
-    // Thuật toán gộp thông minh: Ưu tiên lấy dữ liệu xịn từ AI (report), nếu AI mất thì mới lấy từ file gốc (entry)
     setEditForm({
       word: report.word || entry.word || '',
       meaning: report.suggestedMeaning || report.vietnamese_meaning || entry.vietnamese_meaning || entry.meaning || '',
@@ -1358,21 +1356,23 @@ function AdminDashboardView({ language }: { language: Language }) {
   };
 
   const handleExportDictData = () => {
-    if (overridesList.length === 0) return alert("Chưa có từ vựng nào được sửa trên Đám mây để xuất!");
+    if (overridesList.length === 0) return alert("Chưa có từ vựng nào được sửa để xuất!");
     
-    const headers = ["Thuật ngữ", "Phiên âm", "Loại từ", "Trình độ", "Chủ đề", "Nghĩa Tiếng Việt", "Định nghĩa gốc", "Ví dụ", "Nghĩa ví dụ"];
+    // Đã căn chỉnh cột Excel KHỚP TUYỆT ĐỐI với mã JSON cũ của Tiến sĩ
+    const headers = ["word", "phonetic", "part_of_speech", "level", "topic", "vietnamese_meaning", "english_definition", "german_definition", "example", "example_vietnamese"];
     const csvRows = overridesList.map(w => {
-      const word = w.word ? w.word.replace(/"/g, '""') : '';
-      const phonetic = w.phonetic ? w.phonetic.replace(/"/g, '""') : '';
-      const partOfSpeech = w.part_of_speech ? w.part_of_speech.replace(/"/g, '""') : '';
-      const level = w.level ? w.level.replace(/"/g, '""') : '';
-      const topic = w.topic ? w.topic.replace(/"/g, '""') : '';
-      const meaning = w.vietnamese_meaning ? w.vietnamese_meaning.replace(/"/g, '""') : '';
-      const def = (w.english_definition || w.german_definition || '') ? (w.english_definition || w.german_definition).replace(/"/g, '""') : '';
-      const ex = (w.example_english || w.example_german || w.example || '') ? (w.example_english || w.example_german || w.example).replace(/"/g, '""') : '';
-      const exVn = w.example_vietnamese ? w.example_vietnamese.replace(/"/g, '""') : '';
+      const word = (w.word || '').replace(/"/g, '""');
+      const phonetic = (w.phonetic || '').replace(/"/g, '""');
+      const type = (w.part_of_speech || w.type || '').replace(/"/g, '""');
+      const level = (w.level || '').replace(/"/g, '""');
+      const topic = (w.topic || '').replace(/"/g, '""');
+      const meaning = (w.vietnamese_meaning || w.meaning || '').replace(/"/g, '""');
+      const enDef = (w.english_definition || w.definition || '').replace(/"/g, '""');
+      const deDef = (w.german_definition || w.definition || '').replace(/"/g, '""');
+      const ex = (w.example_english || w.example_german || w.example || '').replace(/"/g, '""');
+      const exVn = (w.example_vietnamese || '').replace(/"/g, '""');
       
-      return `"${word}","${phonetic}","${partOfSpeech}","${level}","${topic}","${meaning}","${def}","${ex}","${exVn}"`;
+      return `"${word}","${phonetic}","${type}","${level}","${topic}","${meaning}","${enDef}","${deDef}","${ex}","${exVn}"`;
     });
     
     const csvContent = "\uFEFF" + headers.join(",") + "\n" + csvRows.join("\n");
@@ -1380,7 +1380,7 @@ function AdminDashboardView({ language }: { language: Language }) {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute("download", `TuVung_DaSua_${language.toUpperCase()}_${new Date().toLocaleDateString('vi-VN').replace(/\//g, '-')}.csv`);
+    link.setAttribute("download", `Vocab_Export_${language.toUpperCase()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -1432,7 +1432,7 @@ function AdminDashboardView({ language }: { language: Language }) {
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-slate-700 flex items-center gap-2"><AlertCircle size={20} className="text-red-500" /> Cần duyệt ({reports.length})</h3>
               <button onClick={handleExportDictData} className="px-3 py-2 bg-emerald-50 text-emerald-600 rounded-lg text-xs font-bold hover:bg-emerald-100 flex items-center gap-1 transition-all shadow-sm">
-                <Download size={14} /> Xuất file sửa
+                <Download size={14} /> Xuất file Excel
               </button>
             </div>
 
@@ -1467,30 +1467,32 @@ function AdminDashboardView({ language }: { language: Language }) {
                      <div className="space-y-1"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Thuật ngữ gốc</label><input type="text" value={editForm.word || ''} onChange={e => setEditForm({...editForm, word: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-base font-bold focus:bg-white focus:border-indigo-500 outline-none transition-all" /></div>
                      <div className="space-y-1"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Phiên âm Quốc tế</label><input type="text" value={editForm.phonetic || ''} onChange={e => setEditForm({...editForm, phonetic: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-base font-mono text-slate-600 focus:bg-white focus:border-indigo-500 outline-none transition-all" /></div>
                   </div>
-                  <div className="space-y-1">
-  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Nhóm Chủ đề</label>
-  <select 
-    value={editForm.topic || 'other'} 
-    onChange={e => setEditForm({...editForm, topic: e.target.value})} 
-    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-base outline-none cursor-pointer truncate"
-  >
-    <option value="education_and_learning">Giáo dục & Học tập</option>
-    <option value="work_and_business">Công sở & Kinh doanh</option>
-    <option value="daily_life">Đời sống hàng ngày</option>
-    <option value="health_and_body">Sức khỏe & Cơ thể</option>
-    <option value="science_and_technology">Khoa học & Công nghệ</option>
-    <option value="society_and_culture">Xã hội & Văn hóa</option>
-    <option value="nature_and_environment">Thiên nhiên & Môi trường</option>
-    <option value="travel_and_transport">Du lịch & Giao thông</option>
-    <option value="other">Chủ đề khác</option>
-  </select>
-</div>
+                  
+                  {/* KHÔI PHỤC LẠI GRID 3 CỘT: LOẠI TỪ, TRÌNH ĐỘ, CHỦ ĐỀ */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                     <div className="space-y-1"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Loại từ</label><input type="text" value={editForm.part_of_speech || ''} placeholder="noun, verb, adj..." onChange={e => setEditForm({...editForm, part_of_speech: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-base focus:bg-white focus:border-indigo-500 outline-none transition-all" /></div>
+                     <div className="space-y-1"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Trình độ CEFR</label><select value={editForm.level || 'A1'} onChange={e => setEditForm({...editForm, level: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-base font-bold text-indigo-700 outline-none cursor-pointer">{['A1','A2','B1','B2','C1','C2'].map(l => <option key={l} value={l}>{l}</option>)}</select></div>
+                     <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Nhóm Chủ đề</label>
+                      <select value={editForm.topic || 'other'} onChange={e => setEditForm({...editForm, topic: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-base outline-none cursor-pointer truncate">
+                        <option value="education_and_learning">Education & Learning</option>
+                        <option value="work_and_business">Work & Business</option>
+                        <option value="daily_life">Daily Life</option>
+                        <option value="health_and_body">Health & Body</option>
+                        <option value="science_and_technology">Science & Technology</option>
+                        <option value="society_and_culture">Society & Culture</option>
+                        <option value="nature_and_environment">Nature & Environment</option>
+                        <option value="travel_and_transport">Travel & Transport</option>
+                        <option value="other">Other</option>
+                      </select>
+                     </div>
+                  </div>
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                      <div className="space-y-1"><label className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest ml-1">Nghĩa tiếng Việt</label><textarea value={editForm.vietnamese_meaning || ''} onChange={e => setEditForm({...editForm, vietnamese_meaning: e.target.value})} className="w-full bg-emerald-50 border border-emerald-100 rounded-xl p-3 text-base font-medium focus:bg-white focus:border-emerald-500 outline-none transition-all min-h-[100px] resize-none" /></div>
                      <div className="space-y-1"><label className="text-[10px] font-bold text-blue-600 uppercase tracking-widest ml-1">Định nghĩa ({language.toUpperCase()})</label><textarea value={isEn ? (editForm.english_definition || '') : (editForm.german_definition || '')} onChange={e => { if (isEn) setEditForm({...editForm, english_definition: e.target.value}); else setEditForm({...editForm, german_definition: e.target.value}); }} className="w-full bg-blue-50 border border-blue-100 rounded-xl p-3 text-base focus:bg-white focus:border-blue-500 outline-none transition-all min-h-[100px] resize-none" /></div>
                   </div>
                   
-                  {/* BỔ SUNG GIAO DIỆN NHẬP VÍ DỤ VÀ NGHĨA VÍ DỤ */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                       <div className="space-y-1">
                           <label className="text-[10px] font-bold text-orange-600 uppercase tracking-widest ml-1">Ví dụ ({language.toUpperCase()})</label>
@@ -1885,7 +1887,6 @@ function DictionaryView({ language }: { language: Language }) {
     try {
       const data = await translateWord(searchTerm, language, new AbortController().signal);
       
-      // Hiển thị trực tiếp ra thẻ từ vựng hoàn chỉnh ở giao diện Từ điển
       setSelectedWord({
         ...data,
         language: language,
@@ -1895,7 +1896,7 @@ function DictionaryView({ language }: { language: Language }) {
 
       setAiTranslation(null);
 
-      // Đẩy toàn bộ 100% dữ liệu chi tiết của AI lên máy chủ để Admin duyệt
+      // ĐÃ SỬA: Lưu trọn vẹn 100% các thành phần JSON vào error_reports
       addDoc(collection(db, 'error_reports'), {
         word: data.word || searchTerm.toLowerCase().trim(),
         language: language,
@@ -1911,8 +1912,8 @@ function DictionaryView({ language }: { language: Language }) {
         english_definition: data.english_definition || '',
         german_definition: data.german_definition || '',
         example: data.example || '',
-        example_english: data.example_english || '',
-        example_german: data.example_german || '',
+        example_english: data.example_english || data.example || '',
+        example_german: data.example_german || data.example || '',
         example_vietnamese: data.example_vietnamese || '',
         level: data.level || 'A1',
         topic: data.topic || 'other'

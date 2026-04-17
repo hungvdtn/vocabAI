@@ -3555,25 +3555,24 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
     const cleanText = textToSend.trim();
     if (!cleanText || isLoading) return; 
 
-    // DÒNG KIỂM TRA: Nếu console hiện "CHƯA CÓ KEY", bạn cần xem lại file .env
-    const apiKey = (import.meta.env.VITE_GEMINI_API_KEY || "").trim();
-    if (!apiKey || apiKey === "YOUR_GEMINI_API_KEY") {
-      console.error("🚨 LỖI: Ứng dụng chưa nhận được API Key từ file .env");
-      setMessages(prev => [...prev, { role: 'ai', text: "Lỗi: Chưa cấu hình API Key trong file .env" }]);
-      return;
-    }
-
     const newMessages = [...messages, { role: 'user' as const, text: cleanText }];
     setMessages(newMessages);
     setInput('');
     setIsLoading(true);
 
     try {
-      // SỬ DỤNG V1BETA CHO GEMINI-1.5-FLASH
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+      const apiKey = (import.meta.env.VITE_GEMINI_API_KEY || "").trim();
+      // Sử dụng v1 để ổn định
+      const endpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
-      const systemPrompt = `You are ${aiRole}. Rules: 1. Correct grammar in (...) at start. 2. Use: ${targetWords.join(', ')}. 3. End with a question.`;
+      // Nội dung kịch bản sư phạm
+      const systemPrompt = `INSTRUCTIONS: You are acting as ${aiRole}. Speak ${language === 'en' ? 'English' : 'German'}. 
+      1. Correct my grammar in parentheses (...) at the start of your reply. 
+      2. You MUST force me to use these words: ${targetWords.join(', ')}. 
+      3. Always end your response with a question.
+      4. Difficulty: A1-B2.`;
 
+      // Chuẩn hóa lịch sử: Bỏ qua câu chào ban đầu của AI để mảng bắt đầu bằng 'user'
       let conversation = newMessages
         .filter((m, idx) => !(idx === 0 && m.role === 'ai'))
         .map(m => ({
@@ -3581,18 +3580,28 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
           parts: [{ text: m.text }]
         }));
 
-      if (conversation.length > 0) {
-        conversation[0].parts[0].text = `[Instruction: ${systemPrompt}]\n\nUser: ${conversation[0].parts[0].text}`;
+      // KỸ THUẬT FIX LỖI 400: Nhúng System Prompt vào tin nhắn đầu tiên của User
+      if (conversation.length > 0 && conversation[0].role === 'user') {
+        conversation[0].parts[0].text = `[CONTEXT & RULES: ${systemPrompt}]\n\nMy first message: ${conversation[0].parts[0].text}`;
       }
+
+      // reqBody tối giản, không dùng trường "system_instruction" gây lỗi
+      const reqBody = {
+        contents: conversation,
+        generationConfig: { 
+          temperature: 0.7, 
+          maxOutputTokens: 400 
+        }
+      };
 
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: conversation })
+        body: JSON.stringify(reqBody)
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error?.message || "Lỗi kết nối");
+      if (!res.ok) throw new Error(data.error?.message || "API Error");
 
       if (data.candidates && data.candidates[0].content.parts[0].text) {
         const aiReply = data.candidates[0].content.parts[0].text;
@@ -3601,7 +3610,7 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
       }
     } catch (error) {
       console.error("AI Error:", error);
-      setMessages(prev => [...prev, { role: 'ai', text: "Hệ thống AI chưa phản hồi. Vui lòng thử lại." }]);
+      setMessages(prev => [...prev, { role: 'ai', text: "Kết nối AI đang được bảo trì. Vui lòng thử lại sau giây lát." }]);
     } finally {
       setIsLoading(false);
     }

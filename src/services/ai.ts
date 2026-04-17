@@ -109,20 +109,13 @@ export const generateExampleSentence = async (word: string, language: string) =>
 
 export const translateWord = async (word: string, language: string, signal?: AbortSignal) => {
   const activeDictionary = language === 'de' ? deDict : enDict;
-  console.log("🧠 HÀM LÕI ĐÃ NHẬN LỆNH | Từ khóa:", word, "| Từ điển có phải là Mảng?:", Array.isArray(activeDictionary), "| Số lượng từ trong kho:", activeDictionary?.length);
-  
   const cacheKey = `${language}:${word.toLowerCase().trim()}`;
   
-  // 1. Kiểm tra Cache
-  if (translationCache[cacheKey]) {
-    return translationCache[cacheKey];
-  }
-
-  // 2. Tra cứu từ điển cục bộ (O(1))
+  // 1. Kiểm tra Local Dictionary (O(1))
   const localResult = checkLocalDictionary(word, language);
   if (localResult) {
-    const translations = localResult.split(',').map(item => item.trim()).filter(item => item !== '');
-    const result = {
+    const translations = localResult.split(',').map((item: string) => item.trim()).filter((item: string) => item !== '');
+    return {
       word: word,
       translations: translations,
       vietnamese_meaning: localResult,
@@ -131,13 +124,13 @@ export const translateWord = async (word: string, language: string, signal?: Abo
       english_definition: "",
       german_definition: "",
       example: "",
-      example_vietnamese: ""
+      example_vietnamese: "",
+      level: "A1",
+      topic: "other"
     };
-    translationCache[cacheKey] = result;
-    return result;
   }
 
-  // 3. Gọi AI nếu không có trong từ điển cục bộ
+  // 2. Gọi AI nếu không có trong từ điển cục bộ
   return callWithRetry(async () => {
     try {
       if (signal?.aborted) throw new Error("Aborted");
@@ -147,6 +140,7 @@ export const translateWord = async (word: string, language: string, signal?: Abo
       const defKey = language === 'en' ? 'english_definition' : 'german_definition';
       const exKey = language === 'en' ? 'example_english' : 'example_german';
 
+      // KỊCH BẢN ĐÃ ÉP BUỘC TRẢ VỀ TỪ LOẠI, TRÌNH ĐỘ VÀ CHỦ ĐỀ
       const systemInstruction = `You are a professional lexicographer. Return a strictly formatted JSON object for the word in ${langName}. 
       DO NOT use markdown wrappers.
       Structure:
@@ -158,11 +152,10 @@ export const translateWord = async (word: string, language: string, signal?: Abo
         "${defKey}": "definition in ${langName}",
         "${exKey}": "example sentence in ${langName}",
         "example_vietnamese": "Vietnamese translation of example",
-        "level": "Assign CEFR level (A1, A2, B1, B2, C1, or C2)",
-        "topic": "Assign ONE of these exact IDs: education_and_learning, work_and_business, daily_life, health_and_body, science_and_technology, society_and_culture, nature_and_environment, travel_and_transport, or other"
+        "level": "A1, A2, B1, B2, C1, or C2",
+        "topic": "education_and_learning, work_and_business, daily_life, health_and_body, science_and_technology, society_and_culture, nature_and_environment, travel_and_transport, or other"
       }`;
 
-      // ĐÃ TRẢ LẠI ĐÚNG TÊN MODEL GỐC ("gemini-3-flash-preview")
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview", 
         contents: `Translate: "${word}"`,
@@ -178,7 +171,6 @@ export const translateWord = async (word: string, language: string, signal?: Abo
       const rawText = response.text;
       if (!rawText) throw new Error("API trả về rỗng");
       
-      // Làm sạch dữ liệu và phân tích JSON
       const cleanJsonText = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
       let resultObj;
       try {
@@ -187,11 +179,10 @@ export const translateWord = async (word: string, language: string, signal?: Abo
           ? resultObj.vietnamese_meaning.split(',').map((s: string) => s.trim()) 
           : [];
       } catch (parseError) {
-        console.error("JSON Parse Error:", cleanJsonText);
         throw new Error("Dữ liệu JSON không hợp lệ");
       }
       
-      translationCache[cacheKey] = resultObj;
+      // Xóa bỏ cache cục bộ để luôn ép AI dịch mới trong quá trình sửa lỗi
       return resultObj;
 
     } catch (e: any) {

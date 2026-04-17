@@ -109,22 +109,17 @@ export const generateExampleSentence = async (word: string, language: string) =>
 
 export const translateWord = async (word: string, language: string, signal?: AbortSignal) => {
   const activeDictionary = language === 'de' ? deDict : enDict;
-  console.log("🧠 HÀM LÕI ĐÃ NHẬN LỆNH | Từ khóa:", word, "| Từ điển có phải là Mảng?:", Array.isArray(activeDictionary), "| Số lượng từ trong kho:", activeDictionary?.length);
-  
   const cacheKey = `${language}:${word.toLowerCase().trim()}`;
   
-  // 1. Check Cache first
+  // 1. Kiểm tra Cache trước
   if (translationCache[cacheKey]) {
     return translationCache[cacheKey];
   }
 
-  // 2. Check Local Dictionary (O(1))
+  // 2. Tra cứu từ điển cục bộ (O(1))
   const localResult = checkLocalDictionary(word, language);
   if (localResult) {
-    // Tách chuỗi đa nghĩa thành mảng các nghĩa riêng biệt
     const translations = localResult.split(',').map(item => item.trim()).filter(item => item !== '');
-    
-    // Đã chuẩn hóa lại Object trả về của Local Dictionary để tương thích với JSON của AI
     const result = {
       word: word,
       translations: translations,
@@ -140,64 +135,61 @@ export const translateWord = async (word: string, language: string, signal?: Abo
     return result;
   }
 
+  // 3. Gọi AI nếu không có trong từ điển cục bộ
   return callWithRetry(async () => {
     try {
       if (signal?.aborted) throw new Error("Aborted");
 
       const ai = getAI();
       const langName = language === 'en' ? 'English' : 'German';
-      const defLang = language === 'en' ? 'english_definition' : 'german_definition';
-      const exLang = language === 'en' ? 'example_english' : 'example_german';
+      const defKey = language === 'en' ? 'english_definition' : 'german_definition';
+      const exKey = language === 'en' ? 'example_english' : 'example_german';
 
-      // Định hình cấu trúc JSON tĩnh
-      const systemInstruction = `You are a professional lexicographer. The user will provide a word in ${langName}.
-      You must return a strictly formatted JSON object containing the dictionary details of this word.
-      DO NOT return Markdown (no \`\`\`json).
-      Required JSON structure:
+      // Kịch bản sư phạm yêu cầu cấu trúc JSON chuyên sâu
+      const systemInstruction = `You are a professional lexicographer. Return a strictly formatted JSON object for the word in ${langName}. 
+      DO NOT use markdown wrappers.
+      Structure:
       {
-        "word": "the exact word",
-        "phonetic": "/IPA transcription/",
-        "part_of_speech": "noun, verb, adjective, etc.",
-        "vietnamese_meaning": "Vietnamese translation (comma separated if multiple meanings)",
-        "${defLang}": "Definition in ${langName}",
-        "${exLang}": "A practical example sentence in ${langName} using the word",
-        "example_vietnamese": "Vietnamese translation of the example sentence"
+        "word": "exact word",
+        "phonetic": "/IPA/",
+        "part_of_speech": "noun/verb/adj",
+        "vietnamese_meaning": "meanings separated by commas",
+        "${defKey}": "definition in ${langName}",
+        "${exKey}": "example sentence in ${langName}",
+        "example_vietnamese": "Vietnamese translation of example"
       }`;
 
-      // Sử dụng config object để thiết lập systemInstruction và ép MimeType
-      const model = ai.models.generateContent({
-        model: "gemini-3-flash-preview", 
-        contents: `Word to translate: "${word}"`,
-        config: {
-          systemInstruction: systemInstruction,
+      const model = ai.getGenerativeModel({
+        model: "gemini-1.5-flash", // Sử dụng model ổn định theo báo cáo dự án
+        systemInstruction: systemInstruction,
+      });
+
+      const result = await model.generateContent({
+        contents: [{ role: "user", parts: [{ text: `Translate: "${word}"` }] }],
+        generationConfig: {
+          temperature: 0.2,
           responseMimeType: "application/json",
-          temperature: 0.2
         }
       });
       
-      const response = await model;
-      
+      const response = await result.response;
       if (signal?.aborted) throw new Error("Aborted");
-      const rawText = response.text;
       
+      const rawText = response.text();
       if (!rawText) throw new Error("API trả về rỗng");
       
-      let resultObj;
-      try {
-        resultObj = JSON.parse(rawText);
-        // Tự động tạo mảng translations để tương thích ngược với các file khác (như Roleplay/Games)
-        resultObj.translations = resultObj.vietnamese_meaning 
-          ? resultObj.vietnamese_meaning.split(',').map((s: string) => s.trim()) 
-          : [];
-      } catch (parseError) {
-        console.error("JSON Parse Error:", rawText);
-        throw new Error("Dữ liệu JSON không hợp lệ");
-      }
+      // Làm sạch dữ liệu và phân tích JSON
+      const cleanJsonText = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
+      let resultObj = JSON.parse(cleanJsonText);
+
+      // Tạo mảng translations để tương thích với các logic cũ trong App.tsx
+      resultObj.translations = resultObj.vietnamese_meaning 
+        ? resultObj.vietnamese_meaning.split(',').map((s: string) => s.trim()) 
+        : [];
       
-      // Save to Cache
       translationCache[cacheKey] = resultObj;
-      
       return resultObj;
+
     } catch (e: any) {
       console.error("Gemini API Error (translateWord):", e);
       throw e;

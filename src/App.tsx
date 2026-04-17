@@ -3551,7 +3551,7 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
      handleSpeak(initialMsg, language);
   }, [language]);
 
-  const handleSend = async (textToSend: string) => {
+ const handleSend = async (textToSend: string) => {
     const cleanText = textToSend.trim();
     if (!cleanText || isLoading) return; 
 
@@ -3559,45 +3559,33 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
     if (!apiKey) return;
 
     setIsLoading(true);
-    // Hiển thị tin nhắn của người dùng lên màn hình ngay
     setMessages(prev => [...prev, { role: 'user', text: cleanText }]);
     setInput('');
 
     try {
-      // 1. SỬA LỖI 404: Quay lại v1beta vì gemini-1.5-flash thuộc về bản này
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+      // SỬ DỤNG MODEL CŨ NHƯNG ỔN ĐỊNH NHẤT ĐỂ KIỂM TRA KẾT NỐI
+      // Nếu gemini-pro vẫn báo 404, thì CHẮC CHẮN lỗi nằm ở API Key/Permissions
+      const endpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${apiKey}`;
 
-      const systemPrompt = `SYSTEM: You are acting as ${aiRole}. Speak ${language === 'en' ? 'English' : 'German'}. 
-      RULES: 1. Correct user's grammar in (...) at the start. 
-      2. Force use of: ${targetWords.join(', ')}. 
-      3. End with a question.`;
-
-      // 2. CHUẨN HÓA LỊCH SỬ: Đảm bảo mảng hội thoại luôn bắt đầu bằng 'user'
-      let conversation = messages
+      const conversation = messages
         .filter((m, idx) => !(idx === 0 && m.role === 'ai'))
         .map(m => ({
           role: m.role === 'ai' ? 'model' : 'user',
           parts: [{ text: m.text }]
         }));
       
-      // Thêm câu nói hiện tại của người dùng
       conversation.push({ role: 'user', parts: [{ text: cleanText }] });
-
-      // 3. SỬA LỖI 400: Nhúng kịch bản vào tin nhắn đầu tiên (Cách ổn định nhất)
-      if (conversation.length > 0 && conversation[0].role === 'user') {
-        conversation[0].parts[0].text = `[CONTEXT: ${systemPrompt}]\n\nUser input: ${conversation[0].parts[0].text}`;
-      }
 
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: conversation }) // Chỉ gửi contents, không gửi system_instruction riêng
+        body: JSON.stringify({ contents: conversation })
       });
 
       const data = await res.json();
       
       if (!res.ok) {
-        console.error("Chi tiết lỗi từ Google:", data);
+        console.error("Lỗi chi tiết:", data);
         throw new Error(data.error?.message || "Lỗi API");
       }
 
@@ -3608,10 +3596,8 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
       }
     } catch (error) {
       console.error("AI Error:", error);
-      // Hiển thị thông báo lỗi thân thiện nếu kết nối thật sự chết
-      setMessages(prev => [...prev, { role: 'ai', text: "AIBTeM đang bảo trì kết nối AI. Bạn hãy thử lại sau ít phút." }]);
+      setMessages(prev => [...prev, { role: 'ai', text: "Kết nối AI chưa thông. Đang kiểm tra quyền truy cập của API Key..." }]);
     } finally {
-      setIsLoading(true); // Đổi thành false nếu bạn muốn cho phép nhắn tin tiếp ngay
       setIsLoading(false);
     }
   };

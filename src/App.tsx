@@ -1861,7 +1861,7 @@ function DictionaryView({ language }: { language: Language }) {
       setSelectedWord({
         ...wordData,
         language: language,
-        userId: user?.uid || 'unknown',
+        userId: auth.currentUser?.uid || 'unknown', // Đã sửa thành auth.currentUser
         createdAt: Date.now()
       });
 
@@ -1871,14 +1871,15 @@ function DictionaryView({ language }: { language: Language }) {
           word: wordData.word || searchTerm.toLowerCase().trim(),
           language: language,
           errorText: "🌟 TỪ MỚI (Từ điển tự động bắt)",
-          userId: user?.uid || 'unknown',
-          userName: user?.displayName || 'Hệ thống tự động',
+          userId: auth.currentUser?.uid || 'unknown', // Đã sửa thành auth.currentUser
+          userName: auth.currentUser?.displayName || 'Hệ thống tự động', // Đã sửa thành auth.currentUser
           status: 'pending',
           createdAt: Date.now(),
           suggestedMeaning: wordData.vietnamese_meaning
         }).catch(e => console.error("Lỗi thu thập ngầm:", e));
       }
     } catch (error) { 
+      console.error("Lỗi thực thi handleAITranslate:", error);
       setAiTranslation(["Lỗi kết nối AIBTeM. Vui lòng thử lại sau."]); 
     } finally { 
       setIsTranslating(false); 

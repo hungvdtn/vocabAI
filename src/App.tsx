@@ -3562,25 +3562,36 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
 
     try {
       const apiKey = (import.meta.env.VITE_GEMINI_API_KEY || "").trim();
+      // Sử dụng v1 để ổn định
       const endpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
-      const systemPrompt = `SYSTEM INSTRUCTION: You are ${aiRole}. Speak ${language === 'en' ? 'English' : 'German'}. 
-      1. Correct user's grammar in parentheses (...) at start of reply. 
-      2. Force use of: ${targetWords.join(', ')}. 
-      3. Always end with a question. Level A1-B2.`;
+      // Nội dung kịch bản sư phạm
+      const systemPrompt = `INSTRUCTIONS: You are acting as ${aiRole}. Speak ${language === 'en' ? 'English' : 'German'}. 
+      1. Correct my grammar in parentheses (...) at the start of your reply. 
+      2. You MUST force me to use these words: ${targetWords.join(', ')}. 
+      3. Always end your response with a question.
+      4. Difficulty: A1-B2.`;
 
-      // Cấu chuẩn hóa lịch sử: Bắt đầu bằng User và luân phiên (Sửa lỗi 400)
-      const conversation = newMessages
-        .filter((m, idx) => !(idx === 0 && m.role === 'ai')) // Loại bỏ câu chào AI ở đầu
+      // Chuẩn hóa lịch sử: Bỏ qua câu chào ban đầu của AI để mảng bắt đầu bằng 'user'
+      let conversation = newMessages
+        .filter((m, idx) => !(idx === 0 && m.role === 'ai'))
         .map(m => ({
           role: m.role === 'ai' ? 'model' : 'user',
           parts: [{ text: m.text }]
         }));
 
+      // KỸ THUẬT FIX LỖI 400: Nhúng System Prompt vào tin nhắn đầu tiên của User
+      if (conversation.length > 0 && conversation[0].role === 'user') {
+        conversation[0].parts[0].text = `[CONTEXT & RULES: ${systemPrompt}]\n\nMy first message: ${conversation[0].parts[0].text}`;
+      }
+
+      // reqBody tối giản, không dùng trường "system_instruction" gây lỗi
       const reqBody = {
-        system_instruction: { parts: [{ text: systemPrompt }] },
         contents: conversation,
-        generationConfig: { temperature: 0.7, maxOutputTokens: 300 }
+        generationConfig: { 
+          temperature: 0.7, 
+          maxOutputTokens: 400 
+        }
       };
 
       const res = await fetch(endpoint, {
@@ -3599,7 +3610,7 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
       }
     } catch (error) {
       console.error("AI Error:", error);
-      setMessages(prev => [...prev, { role: 'ai', text: "Kết nối AI bị gián đoạn. Vui lòng thử lại câu trả lời." }]);
+      setMessages(prev => [...prev, { role: 'ai', text: "Kết nối AI đang được bảo trì. Vui lòng thử lại sau giây lát." }]);
     } finally {
       setIsLoading(false);
     }

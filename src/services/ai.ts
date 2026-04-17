@@ -109,9 +109,11 @@ export const generateExampleSentence = async (word: string, language: string) =>
 
 export const translateWord = async (word: string, language: string, signal?: AbortSignal) => {
   const activeDictionary = language === 'de' ? deDict : enDict;
+  console.log("🧠 HÀM LÕI ĐÃ NHẬN LỆNH | Từ khóa:", word, "| Từ điển có phải là Mảng?:", Array.isArray(activeDictionary), "| Số lượng từ trong kho:", activeDictionary?.length);
+  
   const cacheKey = `${language}:${word.toLowerCase().trim()}`;
   
-  // 1. Kiểm tra Cache trước
+  // 1. Kiểm tra Cache
   if (translationCache[cacheKey]) {
     return translationCache[cacheKey];
   }
@@ -140,12 +142,11 @@ export const translateWord = async (word: string, language: string, signal?: Abo
     try {
       if (signal?.aborted) throw new Error("Aborted");
 
-      const ai = getAI();
+      const ai = getAI(); // Lấy đối tượng AI từ thư viện @google/genai
       const langName = language === 'en' ? 'English' : 'German';
       const defKey = language === 'en' ? 'english_definition' : 'german_definition';
       const exKey = language === 'en' ? 'example_english' : 'example_german';
 
-      // Kịch bản sư phạm yêu cầu cấu trúc JSON chuyên sâu
       const systemInstruction = `You are a professional lexicographer. Return a strictly formatted JSON object for the word in ${langName}. 
       DO NOT use markdown wrappers.
       Structure:
@@ -159,33 +160,35 @@ export const translateWord = async (word: string, language: string, signal?: Abo
         "example_vietnamese": "Vietnamese translation of example"
       }`;
 
-      const model = ai.getGenerativeModel({
-        model: "gemini-1.5-flash", // Sử dụng model ổn định theo báo cáo dự án
-        systemInstruction: systemInstruction,
-      });
-
-      const result = await model.generateContent({
-        contents: [{ role: "user", parts: [{ text: `Translate: "${word}"` }] }],
-        generationConfig: {
-          temperature: 0.2,
+      // SỬ DỤNG CÚ PHÁP MỚI CHUẨN XÁC CỦA @google/genai
+      const response = await ai.models.generateContent({
+        model: "gemini-1.5-flash", 
+        contents: `Translate: "${word}"`,
+        config: {
+          systemInstruction: systemInstruction,
           responseMimeType: "application/json",
+          temperature: 0.2
         }
       });
       
-      const response = await result.response;
       if (signal?.aborted) throw new Error("Aborted");
       
-      const rawText = response.text();
+      // Với thư viện mới, response.text là một thuộc tính
+      const rawText = response.text;
       if (!rawText) throw new Error("API trả về rỗng");
       
       // Làm sạch dữ liệu và phân tích JSON
       const cleanJsonText = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
-      let resultObj = JSON.parse(cleanJsonText);
-
-      // Tạo mảng translations để tương thích với các logic cũ trong App.tsx
-      resultObj.translations = resultObj.vietnamese_meaning 
-        ? resultObj.vietnamese_meaning.split(',').map((s: string) => s.trim()) 
-        : [];
+      let resultObj;
+      try {
+        resultObj = JSON.parse(cleanJsonText);
+        resultObj.translations = resultObj.vietnamese_meaning 
+          ? resultObj.vietnamese_meaning.split(',').map((s: string) => s.trim()) 
+          : [];
+      } catch (parseError) {
+        console.error("JSON Parse Error:", cleanJsonText);
+        throw new Error("Dữ liệu JSON không hợp lệ");
+      }
       
       translationCache[cacheKey] = resultObj;
       return resultObj;

@@ -3559,7 +3559,7 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
      setIsLoading(true);
 
      try {
-        const apiKey = import.meta.env.VITE_GEMINI_API_KEY || ""; 
+        const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
         
         const systemPrompt = `Bạn đang đóng vai: ${aiRole}. Ngôn ngữ: ${language === 'en' ? 'Tiếng Anh' : 'Tiếng Đức'}. 
         Mục tiêu: Ép học viên dùng các từ: ${targetWordsWithLevel.join(', ')}.
@@ -3569,17 +3569,15 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
         3. SỬA LỖI: Luôn sửa lỗi ngữ pháp trong ngoặc đơn (...) ở đầu phản hồi nếu học viên nói sai.
         4. ĐỘ KHÓ: Điều chỉnh câu hỏi theo trình độ (A1-B2) của từ vựng đang học.`;
 
-        const reqBody = {
-            contents: [
-                { role: 'user', parts: [{ text: `[Lệnh hệ thống: ${systemPrompt}]\n\nBắt đầu hội thoại!` }] },
-                { role: 'model', parts: [{ text: "Đã hiểu kịch bản và vai trò! Tôi sẽ chủ động đặt câu hỏi." }] },
-                ...newMessages.map(m => ({
-                    role: m.role === 'ai' ? 'model' : 'user',
-                    parts: [{ text: m.text }]
-                }))
-            ],
-            generationConfig: { temperature: 0.7, maxOutputTokens: 200 }
-        };
+        const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+console.log("Kiểm tra API Key:", apiKey); // Dòng này giúp hiển thị khóa trên F12
+console.log("Kiểm tra Dữ liệu gửi đi:", reqBody);
+
+const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(reqBody)
+});
 
         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
             method: 'POST',

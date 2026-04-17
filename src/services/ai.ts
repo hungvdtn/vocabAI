@@ -142,7 +142,7 @@ export const translateWord = async (word: string, language: string, signal?: Abo
     try {
       if (signal?.aborted) throw new Error("Aborted");
 
-      const ai = getAI(); // Lấy đối tượng AI từ thư viện @google/genai
+      const ai = getAI(); 
       const langName = language === 'en' ? 'English' : 'German';
       const defKey = language === 'en' ? 'english_definition' : 'german_definition';
       const exKey = language === 'en' ? 'example_english' : 'example_german';
@@ -160,9 +160,9 @@ export const translateWord = async (word: string, language: string, signal?: Abo
         "example_vietnamese": "Vietnamese translation of example"
       }`;
 
-      // SỬ DỤNG CÚ PHÁP MỚI CHUẨN XÁC CỦA @google/genai
+      // ĐÃ TRẢ LẠI ĐÚNG TÊN MODEL GỐC CỦA THẦY ("gemini-3-flash-preview")
       const response = await ai.models.generateContent({
-        model: "gemini-1.5-flash", 
+        model: "gemini-3-flash-preview", 
         contents: `Translate: "${word}"`,
         config: {
           systemInstruction: systemInstruction,
@@ -173,7 +173,6 @@ export const translateWord = async (word: string, language: string, signal?: Abo
       
       if (signal?.aborted) throw new Error("Aborted");
       
-      // Với thư viện mới, response.text là một thuộc tính
       const rawText = response.text;
       if (!rawText) throw new Error("API trả về rỗng");
       

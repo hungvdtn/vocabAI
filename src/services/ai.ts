@@ -157,10 +157,12 @@ export const translateWord = async (word: string, language: string, signal?: Abo
         "vietnamese_meaning": "meanings separated by commas",
         "${defKey}": "definition in ${langName}",
         "${exKey}": "example sentence in ${langName}",
-        "example_vietnamese": "Vietnamese translation of example"
+        "example_vietnamese": "Vietnamese translation of example",
+        "level": "Assign CEFR level (A1, A2, B1, B2, C1, or C2)",
+        "topic": "Assign ONE of these exact IDs: education_and_learning, work_and_business, daily_life, health_and_body, science_and_technology, society_and_culture, nature_and_environment, travel_and_transport, or other"
       }`;
 
-      // ĐÃ TRẢ LẠI ĐÚNG TÊN MODEL GỐC CỦA THẦY ("gemini-3-flash-preview")
+      // ĐÃ TRẢ LẠI ĐÚNG TÊN MODEL GỐC ("gemini-3-flash-preview")
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview", 
         contents: `Translate: "${word}"`,

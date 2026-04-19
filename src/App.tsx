@@ -282,10 +282,23 @@ function useMergedDict(language: Language) {
 
   return useMemo(() => {
     const rawData = language === 'en' ? enDictDataRaw : deDictDataRaw;
-    return rawData.map((item: any) => {
+    
+    // 1. Cập nhật dữ liệu cho các từ đã có sẵn trong file JSON gốc
+    const merged = rawData.map((item: any) => {
       const key = `${language}_${item.word.toLowerCase()}`;
       return overrides[key] ? { ...item, ...overrides[key] } : item;
     });
+
+    // 2. Tạo bộ nhớ tạm chứa các từ gốc để đối chiếu
+    const existingWords = new Set(rawData.map((item: any) => item.word.toLowerCase()));
+
+    // 3. Lọc ra các từ HOÀN TOÀN MỚI do Admin vừa duyệt mà chưa từng có trong file JSON
+    const newWords = Object.values(overrides).filter((item: any) => {
+      return item.language === language && item.word && !existingWords.has(item.word.toLowerCase());
+    });
+
+    // 4. Trả về danh sách tổng: Từ gốc (đã sửa) + Từ mới tinh
+    return [...merged, ...newWords];
   }, [language, overrides]);
 }
 

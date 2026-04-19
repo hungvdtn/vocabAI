@@ -3581,9 +3581,9 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
   const dominantTopic = topics.sort((a,b) => topics.filter(v => v===a).length - topics.filter(v => v===b).length).pop() || 'other';
 
   const getRoleContext = (topic: string, lang: Language) => {
-      if (topic === 'education_and_learning') return lang === 'en' ? 'a Teacher' : 'ein Lehrer';
+      if (topic === 'education_and_learning') return lang === 'en' ? 'an English Teacher' : 'ein Deutschlehrer';
       if (topic === 'work_and_business') return lang === 'en' ? 'a Business Partner' : 'ein Geschäftspartner';
-      return lang === 'en' ? 'a Native Speaker' : 'ein Muttersprachler';
+      return lang === 'en' ? 'a Native English Speaker' : 'ein deutscher Muttersprachler';
   };
   const aiRole = getRoleContext(dominantTopic, language);
   const targetWords = vocabs.map(v => v.word);
@@ -3598,58 +3598,95 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
 
   useEffect(() => {
      const initialMsg = language === 'en' 
-        ? `Hello! I will be acting as ${aiRole}. Let's practice our lesson. How are you today?`
-        : `Hallo! Ich werde là ${aiRole} đóng vai. Lass uns unsere Lektion üben. Wie geht es dir heute?`;
+        ? `Hello! I will be acting as ${aiRole}. Let's practice. How are you today?`
+        : `Hallo! Ich werde als ${aiRole} agieren. Lass uns üben. Wie geht es dir heute?`;
      setMessages([{ role: 'ai', text: initialMsg }]);
      handleSpeak(initialMsg, language);
   }, [language]);
 
- const handleSend = async (textToSend: string) => {
+  const handleSend = async (textToSend: string) => {
     const cleanText = textToSend.trim();
+    // 1. MÀNG LỌC TẠP ÂM: Chặn chuỗi rỗng và khóa khi đang tải dữ liệu
     if (!cleanText || isLoading) return; 
 
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-    if (!apiKey) return;
+    if (!apiKey) {
+       alert("Chưa cấu hình API Key");
+       return;
+    }
 
     setIsLoading(true);
-    setMessages(prev => [...prev, { role: 'user', text: cleanText }]);
+    // Cập nhật giao diện lập tức
+    const currentMessages = [...messages, { role: 'user', text: cleanText } as {role: 'user' | 'ai', text: string}];
+    setMessages(currentMessages);
     setInput('');
 
     try {
-      // SỬ DỤNG MODEL CŨ NHƯNG ỔN ĐỊNH NHẤT ĐỂ KIỂM TRA KẾT NỐI
-      // Nếu gemini-pro vẫn báo 404, thì CHẮC CHẮN lỗi nằm ở API Key/Permissions
-      const endpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${apiKey}`;
+      // 2. KẾT NỐI API CHUẨN: Sử dụng gemini-1.5-flash (v1beta để hỗ trợ system_instruction)
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
-      const conversation = messages
-        .filter((m, idx) => !(idx === 0 && m.role === 'ai'))
-        .map(m => ({
-          role: m.role === 'ai' ? 'model' : 'user',
-          parts: [{ text: m.text }]
-        }));
+      // 3. KỊCH BẢN SƯ PHẠM (System Prompt)
+      const systemPrompt = `You are ${aiRole}. The user is practicing ${language === 'en' ? 'English' : 'German'}. 
+      Target vocabulary to use: ${targetWords.join(', ')}.
+      Your rules:
+      1. Correct any grammar mistakes the user makes.
+      2. Keep the conversation at A1-B2 level.
+      3. Try to naturally use the target vocabulary.
+      4. ALWAYS end your response with a question to keep the conversation going.
+      5. Keep responses concise, friendly, and natural.`;
+
+      // 4. LỌC DỮ LIỆU: Bỏ tin nhắn mồi đầu tiên của AI để tránh lỗi Context
+      const historyToSend = currentMessages.filter((m, idx) => !(idx === 0 && m.role === 'ai'));
       
-      conversation.push({ role: 'user', parts: [{ text: cleanText }] });
+      // 5. THUẬT TOÁN GỘP (SQUASH) CHỐNG LỖI 400 RACE CONDITION
+      const squashedContents: any[] = [];
+      for (const msg of historyToSend) {
+        const apiRole = msg.role === 'ai' ? 'model' : 'user';
+        
+        if (squashedContents.length > 0 && squashedContents[squashedContents.length - 1].role === apiRole) {
+          // Gộp tin nhắn nếu 2 role giống nhau đứng cạnh nhau
+          squashedContents[squashedContents.length - 1].parts[0].text += "\n" + msg.text;
+        } else {
+          squashedContents.push({ role: apiRole, parts: [{ text: msg.text }] });
+        }
+      }
+
+      // 6. KHAI BÁO BIẾN reqBody TOÀN VẸN
+      const reqBody = {
+        system_instruction: {
+          parts: [{ text: systemPrompt }]
+        },
+        contents: squashedContents,
+        generationConfig: {
+          temperature: 0.7
+        }
+      };
 
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: conversation })
+        body: JSON.stringify(reqBody)
       });
 
       const data = await res.json();
       
       if (!res.ok) {
-        console.error("Lỗi chi tiết:", data);
-        throw new Error(data.error?.message || "Lỗi API");
+        // Bắt lỗi thời gian thực ghi ra Console F12
+        console.error("Lỗi Google API chi tiết:", data);
+        throw new Error(data.error?.message || "Lỗi 400/500 từ Google Server");
       }
 
-      if (data.candidates && data.candidates[0].content.parts[0].text) {
+      if (data.candidates && data.candidates[0].content?.parts?.[0]?.text) {
         const aiReply = data.candidates[0].content.parts[0].text;
         setMessages(prev => [...prev, { role: 'ai', text: aiReply }]);
         handleSpeak(aiReply, language);
+      } else {
+        throw new Error("Dữ liệu trả về bị rỗng");
       }
-    } catch (error) {
-      console.error("AI Error:", error);
-      setMessages(prev => [...prev, { role: 'ai', text: "Kết nối AI chưa thông. Đang kiểm tra quyền truy cập của API Key..." }]);
+    } catch (error: any) {
+      console.error("AI Roleplay Error:", error);
+      // Hiển thị lỗi trực tiếp trên giao diện để theo dõi
+      setMessages(prev => [...prev, { role: 'ai', text: "⚠️ [LỖI KẾT NỐI]: " + error.message }]);
     } finally {
       setIsLoading(false);
     }
@@ -3661,10 +3698,10 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
 
     const recognition = new SpeechRecognition();
     recognition.lang = language === 'en' ? 'en-US' : 'de-DE';
-    recognition.continuous = false; // Tắt chế độ liên tục để nó tự ngắt khi bạn im lặng
-    recognition.interimResults = false; // Chỉ lấy kết quả cuối cùng, không lấy kết quả tạm thời
+    recognition.continuous = false; 
+    recognition.interimResults = false; 
 
-    let finalTranscript = ''; // Biến tạm để giữ câu nói của bạn
+    let finalTranscript = ''; 
 
     recognition.onstart = () => {
       setIsRecording(true);
@@ -3672,7 +3709,6 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
     };
 
     recognition.onresult = (event: any) => {
-      // Gộp tất cả các đoạn mà micro nghe được thành 1 câu duy nhất
       for (let i = event.resultIndex; i < event.results.length; ++i) {
         if (event.results[i].isFinal) {
           finalTranscript += event.results[i][0].transcript;
@@ -3684,9 +3720,10 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
 
     recognition.onend = () => {
       setIsRecording(false);
-      // CHỈ GỬI ĐI KHI MICRO ĐÃ TẮT HẲN VÀ CÂU CÓ NỘI DUNG
-      if (finalTranscript.trim().length > 0) {
-        handleSend(finalTranscript);
+      // BỘ LỌC MICRO CHỐNG GỬI TIN NHẮN RỖNG
+      const cleanedText = finalTranscript.trim();
+      if (cleanedText.length > 0) {
+        handleSend(cleanedText);
       }
     };
 

@@ -3606,7 +3606,6 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
 
   const handleSend = async (textToSend: string) => {
     const cleanText = textToSend.trim();
-    // 1. MÀNG LỌC TẠP ÂM: Chặn chuỗi rỗng và khóa khi đang tải dữ liệu
     if (!cleanText || isLoading) return; 
 
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
@@ -3616,46 +3615,36 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
     }
 
     setIsLoading(true);
-    // Cập nhật giao diện lập tức
     const currentMessages = [...messages, { role: 'user', text: cleanText } as {role: 'user' | 'ai', text: string}];
     setMessages(currentMessages);
     setInput('');
 
     try {
-      // 2. KẾT NỐI API CHUẨN: Sử dụng gemini-1.5-flash (v1beta để hỗ trợ system_instruction)
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+      // 1. SỬ DỤNG MODEL GEMINI-PRO (ỔN ĐỊNH 100% TRÊN MỌI API KEY)
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`;
 
-      // 3. KỊCH BẢN SƯ PHẠM (System Prompt)
-      const systemPrompt = `You are ${aiRole}. The user is practicing ${language === 'en' ? 'English' : 'German'}. 
-      Target vocabulary to use: ${targetWords.join(', ')}.
-      Your rules:
-      1. Correct any grammar mistakes the user makes.
-      2. Keep the conversation at A1-B2 level.
-      3. Try to naturally use the target vocabulary.
-      4. ALWAYS end your response with a question to keep the conversation going.
-      5. Keep responses concise, friendly, and natural.`;
+      // 2. KỸ THUẬT TIÊM KỊCH BẢN (PROMPT INJECTION)
+      const systemPrompt = `[SYSTEM INSTRUCTION: You are ${aiRole}. The user is practicing ${language === 'en' ? 'English' : 'German'}. Target vocabulary to use: ${targetWords.join(', ')}. Rules: 1. Correct any grammar mistakes. 2. Keep the conversation at A1-B2 level. 3. Try to use the target vocabulary. 4. End with a question. 5. Keep responses concise.]\n\n`;
 
-      // 4. LỌC DỮ LIỆU: Bỏ tin nhắn mồi đầu tiên của AI để tránh lỗi Context
       const historyToSend = currentMessages.filter((m, idx) => !(idx === 0 && m.role === 'ai'));
       
-      // 5. THUẬT TOÁN GỘP (SQUASH) CHỐNG LỖI 400 RACE CONDITION
       const squashedContents: any[] = [];
       for (const msg of historyToSend) {
         const apiRole = msg.role === 'ai' ? 'model' : 'user';
         
         if (squashedContents.length > 0 && squashedContents[squashedContents.length - 1].role === apiRole) {
-          // Gộp tin nhắn nếu 2 role giống nhau đứng cạnh nhau
           squashedContents[squashedContents.length - 1].parts[0].text += "\n" + msg.text;
         } else {
           squashedContents.push({ role: apiRole, parts: [{ text: msg.text }] });
         }
       }
 
-      // 6. KHAI BÁO BIẾN reqBody TOÀN VẸN
+      // Nhúng kịch bản ngầm vào tin nhắn đầu tiên của người dùng để AI hiểu luật chơi
+      if (squashedContents.length > 0 && squashedContents[0].role === 'user') {
+          squashedContents[0].parts[0].text = systemPrompt + squashedContents[0].parts[0].text;
+      }
+
       const reqBody = {
-        system_instruction: {
-          parts: [{ text: systemPrompt }]
-        },
         contents: squashedContents,
         generationConfig: {
           temperature: 0.7
@@ -3671,7 +3660,6 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
       const data = await res.json();
       
       if (!res.ok) {
-        // Bắt lỗi thời gian thực ghi ra Console F12
         console.error("Lỗi Google API chi tiết:", data);
         throw new Error(data.error?.message || "Lỗi 400/500 từ Google Server");
       }
@@ -3685,7 +3673,6 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
       }
     } catch (error: any) {
       console.error("AI Roleplay Error:", error);
-      // Hiển thị lỗi trực tiếp trên giao diện để theo dõi
       setMessages(prev => [...prev, { role: 'ai', text: "⚠️ [LỖI KẾT NỐI]: " + error.message }]);
     } finally {
       setIsLoading(false);
@@ -3720,7 +3707,6 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
 
     recognition.onend = () => {
       setIsRecording(false);
-      // BỘ LỌC MICRO CHỐNG GỬI TIN NHẮN RỖNG
       const cleanedText = finalTranscript.trim();
       if (cleanedText.length > 0) {
         handleSend(cleanedText);

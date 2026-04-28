@@ -228,7 +228,11 @@ const playGameSound = (type: 'correct' | 'wrong' | 'success') => {
 const handleSpeak = (text: string, lang: Language) => {
   if (!('speechSynthesis' in window)) return;
   window.speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(text);
+  
+  // LỌC SẠCH KÝ TỰ MARKDOWN TRƯỚC KHI ĐỌC: Xóa *, _, # để AI đọc tự nhiên 100%
+  const cleanText = text.replace(/[*_#]/g, '');
+  
+  const utterance = new SpeechSynthesisUtterance(cleanText);
   utterance.lang = lang === 'en' ? 'en-US' : 'de-DE';
   const voices = window.speechSynthesis.getVoices();
   if (voices.length > 0) {
@@ -3614,12 +3618,27 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
     setInput('');
 
     try {
-      const systemPrompt = `You are ${aiRole}. The user is practicing ${language === 'en' ? 'English' : 'German'}. Target vocabulary to use: ${targetWords.join(', ')}. Rules: 1. Correct any grammar mistakes. 2. Keep the conversation at A1-B2 level. 3. Try to use the target vocabulary. 4. End with a question. 5. Keep responses concise.`;
+      // THUẬT TOÁN ĐÁNH GIÁ TIẾN ĐỘ THỜI GIAN THỰC
+      const remainingWords = targetWords.filter(w => !usedWords.includes(w));
+      const isAllUsed = remainingWords.length === 0 && usedWords.length === targetWords.length;
+      const statusText = isAllUsed ? "ALL_WORDS_USED" : `Remaining words: ${remainingWords.join(', ')}`;
 
-      // Lọc bỏ tin nhắn mồi đầu tiên nếu cần thiết để tránh lỗi context
+      // KỊCH BẢN THÔNG MINH: Bơm trạng thái tiến độ vào não AI
+      const systemPrompt = `You are ${aiRole}. The user is practicing ${language === 'en' ? 'English' : 'German'}. 
+      Target vocabulary: ${targetWords.join(', ')}.
+      Words successfully used by user so far: ${usedWords.length > 0 ? usedWords.join(', ') : 'None'}.
+      Current Status: ${statusText}.
+
+      Rules:
+      1. Correct grammar mistakes politely.
+      2. Keep conversation at A1-B2 level.
+      3. Use **bold** formatting to highlight target words when you use them.
+      4. CRITICAL RULE: If "Current Status" is "ALL_WORDS_USED", you MUST immediately congratulate the user for completing the vocabulary list and explicitly ask: "We have used all the target words! Do you want to continue practicing or finish our conversation?".
+      5. CRITICAL RULE: If the user says they want to "finish", "stop", "kết thúc", or says goodbye, you MUST say a warm goodbye, encourage them, and formally end the conversation.
+      6. Otherwise, end your responses with a question to keep the conversation going.`;
+
       const historyToSend = currentMessages.filter((m, idx) => !(idx === 0 && m.role === 'ai'));
       
-      // GỘP TIN NHẮN TRÙNG ROLE (SQUASH) CHỐNG LỖI HỘI THOẠI ĐỨT GÃY
       const squashedHistory: {role: 'user'|'ai', text: string}[] = [];
       for (const msg of historyToSend) {
         if (squashedHistory.length > 0 && squashedHistory[squashedHistory.length - 1].role === msg.role) {
@@ -3629,7 +3648,6 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
         }
       }
 
-      // GỌI HÀM SDK CHUẨN TỪ ai.ts THAY VÌ DÙNG LỆNH FETCH LỖI
       const aiReply = await sendRoleplayMessage(squashedHistory, systemPrompt);
       
       setMessages(prev => [...prev, { role: 'ai', text: aiReply }]);
@@ -3696,7 +3714,8 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
       <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 bg-slate-50/50">
         {messages.map((m, i) => (
           <div key={i} className={cn("flex max-w-[90%] md:max-w-[85%]", m.role === 'user' ? "ml-auto justify-end" : "mr-auto")}>
-            <div className={cn("p-4 md:p-5 rounded-3xl text-base md:text-lg shadow-sm leading-relaxed", m.role === 'user' ? "bg-indigo-600 text-white rounded-tr-sm" : "bg-white border border-slate-200 text-slate-800 rounded-tl-sm")}>{m.text}</div>
+            {/* Lọc sạch dấu sao ở phần hiển thị giao diện nếu thầy muốn văn bản sạch hoàn toàn. Ở đây tôi dùng hàm thay thế nhanh */}
+            <div className={cn("p-4 md:p-5 rounded-3xl text-base md:text-lg shadow-sm leading-relaxed", m.role === 'user' ? "bg-indigo-600 text-white rounded-tr-sm" : "bg-white border border-slate-200 text-slate-800 rounded-tl-sm")} dangerouslySetInnerHTML={{ __html: m.text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
             {m.role === 'ai' && <button onClick={() => handleSpeak(m.text, language)} className="ml-2 self-end text-slate-400 hover:text-indigo-600 p-3 bg-white rounded-full shadow-sm border border-slate-100"><Volume2 size={18} /></button>}
           </div>
         ))}

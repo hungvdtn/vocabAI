@@ -208,3 +208,29 @@ export const analyzePerformance = async (results: any[], language: string) => {
     }
   });
 };
+
+// --- HÀM MỚI: SỬ DỤNG SDK CHUẨN CHO ROLEPLAY ---
+export const sendRoleplayMessage = async (history: {role: string, text: string}[], systemPrompt: string) => {
+  return callWithRetry(async () => {
+    const ai = getAI();
+    
+    // Chuyển đổi lịch sử chat sang định dạng của SDK mới
+    const contents = history.map(msg => ({
+      role: msg.role === 'ai' ? 'model' : 'user',
+      parts: [{ text: msg.text }]
+    }));
+
+    // Sử dụng đúng Model gemini-3-flash-preview đang chạy thành công ở Từ điển
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview", 
+      contents: contents,
+      config: {
+        systemInstruction: systemPrompt,
+        temperature: 0.7
+      }
+    });
+
+    if (!response.text) throw new Error("Dữ liệu trả về bị rỗng");
+    return response.text;
+  });
+};

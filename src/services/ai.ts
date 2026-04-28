@@ -220,9 +220,9 @@ export const sendRoleplayMessage = async (history: {role: string, text: string}[
       parts: [{ text: msg.text }]
     }));
 
-    // Sử dụng đúng Model gemini-3-flash-preview đang chạy thành công ở Từ điển
+    // ĐÃ ĐỔI SANG MÔ HÌNH CHÍNH THỨC ĐỂ NHẬN DIỆN TÀI KHOẢN TRẢ PHÍ (1000 RPM)
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview", 
+      model: "gemini-1.5-flash", 
       contents: contents,
       config: {
         systemInstruction: systemPrompt,

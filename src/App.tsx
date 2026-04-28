@@ -66,7 +66,7 @@ import {
 } from 'firebase/firestore';
 import { signInWithPopup, onAuthStateChanged, User, signOut } from 'firebase/auth';
 import { db, auth, googleProvider } from './firebase';
-import { generateExampleSentence, translateWord } from './services/ai';
+import { generateExampleSentence, translateWord, sendRoleplayMessage } from './services/ai';
 import { cn } from './lib/utils';
 
 import { 
@@ -3608,69 +3608,32 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
     const cleanText = textToSend.trim();
     if (!cleanText || isLoading) return; 
 
-    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-    if (!apiKey) {
-       alert("Chưa cấu hình API Key");
-       return;
-    }
-
     setIsLoading(true);
     const currentMessages = [...messages, { role: 'user', text: cleanText } as {role: 'user' | 'ai', text: string}];
     setMessages(currentMessages);
     setInput('');
 
     try {
-      // 1. SỬ DỤNG MODEL GEMINI-PRO (ỔN ĐỊNH 100% TRÊN MỌI API KEY)
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`;
+      const systemPrompt = `You are ${aiRole}. The user is practicing ${language === 'en' ? 'English' : 'German'}. Target vocabulary to use: ${targetWords.join(', ')}. Rules: 1. Correct any grammar mistakes. 2. Keep the conversation at A1-B2 level. 3. Try to use the target vocabulary. 4. End with a question. 5. Keep responses concise.`;
 
-      // 2. KỸ THUẬT TIÊM KỊCH BẢN (PROMPT INJECTION)
-      const systemPrompt = `[SYSTEM INSTRUCTION: You are ${aiRole}. The user is practicing ${language === 'en' ? 'English' : 'German'}. Target vocabulary to use: ${targetWords.join(', ')}. Rules: 1. Correct any grammar mistakes. 2. Keep the conversation at A1-B2 level. 3. Try to use the target vocabulary. 4. End with a question. 5. Keep responses concise.]\n\n`;
-
+      // Lọc bỏ tin nhắn mồi đầu tiên nếu cần thiết để tránh lỗi context
       const historyToSend = currentMessages.filter((m, idx) => !(idx === 0 && m.role === 'ai'));
       
-      const squashedContents: any[] = [];
+      // GỘP TIN NHẮN TRÙNG ROLE (SQUASH) CHỐNG LỖI HỘI THOẠI ĐỨT GÃY
+      const squashedHistory: {role: 'user'|'ai', text: string}[] = [];
       for (const msg of historyToSend) {
-        const apiRole = msg.role === 'ai' ? 'model' : 'user';
-        
-        if (squashedContents.length > 0 && squashedContents[squashedContents.length - 1].role === apiRole) {
-          squashedContents[squashedContents.length - 1].parts[0].text += "\n" + msg.text;
+        if (squashedHistory.length > 0 && squashedHistory[squashedHistory.length - 1].role === msg.role) {
+          squashedHistory[squashedHistory.length - 1].text += "\n" + msg.text;
         } else {
-          squashedContents.push({ role: apiRole, parts: [{ text: msg.text }] });
+          squashedHistory.push({ ...msg });
         }
       }
 
-      // Nhúng kịch bản ngầm vào tin nhắn đầu tiên của người dùng để AI hiểu luật chơi
-      if (squashedContents.length > 0 && squashedContents[0].role === 'user') {
-          squashedContents[0].parts[0].text = systemPrompt + squashedContents[0].parts[0].text;
-      }
-
-      const reqBody = {
-        contents: squashedContents,
-        generationConfig: {
-          temperature: 0.7
-        }
-      };
-
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(reqBody)
-      });
-
-      const data = await res.json();
+      // GỌI HÀM SDK CHUẨN TỪ ai.ts THAY VÌ DÙNG LỆNH FETCH LỖI
+      const aiReply = await sendRoleplayMessage(squashedHistory, systemPrompt);
       
-      if (!res.ok) {
-        console.error("Lỗi Google API chi tiết:", data);
-        throw new Error(data.error?.message || "Lỗi 400/500 từ Google Server");
-      }
-
-      if (data.candidates && data.candidates[0].content?.parts?.[0]?.text) {
-        const aiReply = data.candidates[0].content.parts[0].text;
-        setMessages(prev => [...prev, { role: 'ai', text: aiReply }]);
-        handleSpeak(aiReply, language);
-      } else {
-        throw new Error("Dữ liệu trả về bị rỗng");
-      }
+      setMessages(prev => [...prev, { role: 'ai', text: aiReply }]);
+      handleSpeak(aiReply, language);
     } catch (error: any) {
       console.error("AI Roleplay Error:", error);
       setMessages(prev => [...prev, { role: 'ai', text: "⚠️ [LỖI KẾT NỐI]: " + error.message }]);

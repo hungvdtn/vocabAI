@@ -222,7 +222,7 @@ export const sendRoleplayMessage = async (history: {role: string, text: string}[
 
     // SỬ DỤNG BẢN CHÍNH THỨC (STABLE) ĐỂ NHẬN HẠN MỨC TRẢ PHÍ, TRÁNH LỖI 404 & 429
     const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash", // Mô hình ổn định. Nếu vẫn bị 404, hãy đổi nhẹ thành "gemini-2.0-flash"
+      model: "gemini-1.5-flash", // Chỉnh lại thành phiên bản chuẩn quốc dân này
       contents: contents,
       config: {
         systemInstruction: systemPrompt,

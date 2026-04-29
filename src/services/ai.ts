@@ -221,7 +221,7 @@ export const sendRoleplayMessage = async (history: {role: string, text: string}[
 
     // BẮT BUỘC DÙNG gemini-2.5-flash (Các bản 1.5 đã bị Google khóa trên API Key của dự án này)
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash", 
+      model: "gemini-1.5-flash", 
       contents: contents,
       config: {
         systemInstruction: systemPrompt,

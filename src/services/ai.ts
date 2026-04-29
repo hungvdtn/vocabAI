@@ -214,15 +214,14 @@ export const sendRoleplayMessage = async (history: {role: string, text: string}[
   return callWithRetry(async () => {
     const ai = getAI();
     
-    // Chuyển đổi lịch sử chat sang định dạng của SDK mới
     const contents = history.map(msg => ({
       role: msg.role === 'ai' ? 'model' : 'user',
       parts: [{ text: msg.text }]
     }));
 
-    // SỬ DỤNG BẢN CHÍNH THỨC (STABLE) ĐỂ NHẬN HẠN MỨC TRẢ PHÍ, TRÁNH LỖI 404 & 429
+    // SỬ DỤNG GEMINI-1.5-PRO (Bản ổn định cao nhất, thông minh nhất)
     const response = await ai.models.generateContent({
-      model: "gemini-1.5-flash", // Chỉnh lại thành phiên bản chuẩn quốc dân này
+      model: "gemini-1.5-pro", 
       contents: contents,
       config: {
         systemInstruction: systemPrompt,

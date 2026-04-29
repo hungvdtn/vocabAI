@@ -219,9 +219,9 @@ export const sendRoleplayMessage = async (history: {role: string, text: string}[
       parts: [{ text: msg.text }]
     }));
 
-    // SỬ DỤNG GEMINI-1.5-PRO (Bản ổn định cao nhất, thông minh nhất)
+    // BẮT BUỘC DÙNG gemini-2.5-flash (Các bản 1.5 đã bị Google khóa trên API Key của dự án này)
     const response = await ai.models.generateContent({
-      model: "gemini-1.5-pro", 
+      model: "gemini-2.5-flash", 
       contents: contents,
       config: {
         systemInstruction: systemPrompt,

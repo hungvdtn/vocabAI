@@ -1375,7 +1375,7 @@ function AdminDashboardView({ language }: { language: Language }) {
   const handleExportDictData = () => {
     if (overridesList.length === 0) return alert("Chưa có từ vựng nào được sửa để xuất!");
     
-    // Đã căn chỉnh cột Excel KHỚP TUYỆT ĐỐI với mã JSON cũ của Tiến sĩ
+    // Đã căn chỉnh cột Excel KHỚP TUYỆT ĐỐI với mã JSON cũ
     const headers = ["word", "phonetic", "part_of_speech", "level", "topic", "vietnamese_meaning", "english_definition", "german_definition", "example", "example_vietnamese"];
     const csvRows = overridesList.map(w => {
       const word = (w.word || '').replace(/"/g, '""');
@@ -2502,7 +2502,7 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
       else await addDoc(collection(db, 'lessons'), lessonData);
       setShowSaveModal(false); onSaved();
     } catch (e) {
-      alert("Có lỗi xảy ra khi lưu bài học.");
+      alert("Bạn phải đăng nhập để lưu bài học.");
     } finally {
       setLoading(false);
     }

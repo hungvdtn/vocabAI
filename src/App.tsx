@@ -451,6 +451,7 @@ export default function App() {
     }, { merge: true }).catch(e => console.error("Lỗi đồng bộ hồ sơ:", e));
   }, [user]);
   const [view, setView] = useState<View>('home');
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const [language, setLanguage] = useState<Language>('en');
   const [activeGame, setActiveGame] = useState<GameType | null>(null);
   const [isTestMode, setIsTestMode] = useState(false);
@@ -460,6 +461,11 @@ export default function App() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleNavigation = (targetView: View) => {
+    if (!user && (targetView === 'input' || targetView === 'assessment' || targetView === 'library' || targetView === 'report' || targetView === 'games' || targetView === 'admin')) {
+        setShowLoginModal(true);
+        return;
+    }
+
     if (isTestInProgress) {
       if (!window.confirm("Bạn đang làm bài kiểm tra. Bạn có chắc chắn muốn thoát? Kết quả sẽ bị hủy bỏ.")) return;
       setIsTestInProgress(false);
@@ -544,6 +550,7 @@ export default function App() {
   const login = async () => {
     try {
       await signInWithPopup(auth, googleProvider);
+      setShowLoginModal(false);
     } catch (error: any) {
       alert("Lỗi đăng nhập: " + error.message);
     }
@@ -615,27 +622,6 @@ export default function App() {
     }
   };
 
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-8 rounded-3xl shadow-xl max-w-md w-full text-center">
-          <div className="w-20 h-20 bg-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg rotate-3">
-            <Languages className="text-white w-10 h-10" />
-          </div>
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">Vocab AIBTeM</h1>
-          <p className="text-slate-500 mb-8">Nâng tầm vốn từ vựng Tiếng Anh & Đức với sức mạnh AIBTeM.</p>
-          <button onClick={login} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-4 rounded-2xl transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-3 mb-4">
-            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/pjax/google.png" className="w-6 h-6 bg-white rounded-full p-1" alt="Google" />
-            Đăng nhập với Google
-          </button>
-          <button onClick={enterTestMode} className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-4 rounded-2xl transition-all flex items-center justify-center gap-3">
-            <Gamepad2 size={20} className="text-indigo-600" />
-            Không đăng nhập
-          </button>
-        </motion.div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-[100dvh] bg-slate-50 text-slate-900 font-sans flex flex-col relative">
@@ -843,6 +829,34 @@ export default function App() {
 
         </AnimatePresence>
       </main>
+      <AnimatePresence>
+        {showLoginModal && (
+          <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} 
+              onClick={() => setShowLoginModal(false)} 
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" 
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} 
+              className="relative bg-white w-full max-w-md rounded-[2.5rem] p-10 shadow-2xl text-center"
+            >
+              <button onClick={() => setShowLoginModal(false)} className="absolute top-6 right-6 text-slate-400 hover:text-slate-700"><X size={24} /></button>
+              
+              <div className="w-20 h-20 bg-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg rotate-3">
+                <Languages className="text-white w-10 h-10" />
+              </div>
+              <h3 className="text-2xl font-bold text-slate-900 mb-2">Yêu cầu Đăng nhập</h3>
+              <p className="text-slate-500 mb-8">Bạn cần đăng nhập bằng tài khoản Google để sử dụng tính năng này. Việc đăng nhập là hoàn toàn miễn phí!</p>
+              
+              <button onClick={login} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-4 rounded-2xl transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-3">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/pjax/google.png" className="w-6 h-6 bg-white rounded-full p-1" alt="Google" />
+                Đăng nhập với Google
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
     
     </div>

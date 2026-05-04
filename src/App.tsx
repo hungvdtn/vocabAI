@@ -2502,7 +2502,7 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
       else await addDoc(collection(db, 'lessons'), lessonData);
       setShowSaveModal(false); onSaved();
     } catch (e) {
-      alert("Bạn phải đăng nhập bằng tài khoản Google để lưu bài học. Bạn yên tâm, hoàn toàn miễn phí!");
+      alert("Bạn phải đăng nhập để lưu bài học. Đăng nhập, sử dụng hoàn toàn miễn phí!");
     } finally {
       setLoading(false);
     }

@@ -636,7 +636,7 @@ export default function App() {
             <Languages className="text-white w-10 h-10" />
           </div>
           <h1 className="text-3xl md:text-4xl font-black text-slate-900 mb-4 tracking-tight">Chào mừng đến với Vocab AIBTeM</h1>
-          <p className="text-slate-500 text-lg mb-10 font-medium">Vui lòng chọn ngôn ngữ bạn muốn bắt đầu học hôm nay.</p>
+          <p className="text-slate-500 text-lg mb-10 font-medium">Vui lòng chọn ngôn ngữ bạn muốn bắt đầu học từ vựng hôm nay.</p>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             <button onClick={() => { setLanguage('en'); setHasSelectedLanguage(true); }} className="group bg-slate-50 hover:bg-blue-50 border-2 border-slate-100 hover:border-blue-400 p-8 rounded-[2rem] transition-all flex flex-col items-center gap-4 shadow-sm hover:shadow-md">
@@ -2078,7 +2078,21 @@ function DictionaryView({ language }: { language: Language }) {
   return (
     <div className="w-full pb-32">
       <div className="text-center space-y-4 mb-8 mt-4">
-        <h2 className="text-3xl font-black text-indigo-700">Từ điển {language === 'en' ? 'Anh - Việt' : 'Đức - Việt'}</h2>
+        <h2 className="text-3xl font-black text-indigo-700 flex items-center justify-center gap-3">
+          Từ điển {language === 'en' ? 'Anh - Việt' : 'Đức - Việt'}
+          <div className="flex items-center -space-x-2 ml-1">
+            <img 
+              src={language === 'en' ? "https://flagcdn.com/w40/us.png" : "https://flagcdn.com/w40/de.png"} 
+              alt="Source Language" 
+              className="w-8 h-auto rounded shadow-sm border border-slate-200 z-10 relative" 
+            />
+            <img 
+              src="https://flagcdn.com/w40/vn.png" 
+              alt="Vietnamese" 
+              className="w-8 h-auto rounded shadow-sm border border-slate-200 z-20 relative transform translate-y-2" 
+            />
+          </div>
+        </h2>
       </div>
       
       <div className="relative w-full" ref={searchRef}>

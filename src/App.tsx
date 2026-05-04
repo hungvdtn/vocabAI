@@ -679,33 +679,33 @@ export default function App() {
               </button>
             </div>
             
-            {/* MENU TÀI KHOẢN (AVATAR) */}
-            <div className="relative" ref={menuRef}>
-              <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="flex items-center gap-2 p-1 pr-2 lg:pr-3 rounded-full hover:bg-slate-100 transition-all border border-slate-200">
-                <img src={user.photoURL || ''} className="w-8 h-8 rounded-full border border-slate-200" alt="User" />
-                <ChevronDown size={14} className={cn("text-slate-400 transition-transform hidden sm:block", isMenuOpen && "rotate-180")} />
-              </button>
+            {/* MENU TÀI KHOẢN HOẶC NÚT ĐĂNG NHẬP */}
+            {user ? (
+              <div className="relative" ref={menuRef}>
+                <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="flex items-center gap-2 p-1 pr-2 lg:pr-3 rounded-full hover:bg-slate-100 transition-all border border-slate-200">
+                  <img src={user.photoURL || ''} className="w-8 h-8 rounded-full border border-slate-200" alt="User" />
+                  <ChevronDown size={14} className={cn("text-slate-400 transition-transform hidden sm:block", isMenuOpen && "rotate-180")} />
+                </button>
 
-              <AnimatePresence>
-                {isMenuOpen && (
-                  <motion.div initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }} className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 z-50">
-                    <div className="px-4 py-2 border-b border-slate-50 mb-2">
-                      <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Tài khoản</p>
-                      <p className="text-sm font-bold text-slate-900 truncate">{user.displayName}</p>
-                    </div>
-                    {isTestMode ? (
-                      <button onClick={() => { login(); setIsMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-indigo-600 hover:bg-indigo-50 transition-colors font-medium">
-                        <UserIcon size={16} /> Đăng nhập Google
-                      </button>
-                    ) : (
+                <AnimatePresence>
+                  {isMenuOpen && (
+                    <motion.div initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }} className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 z-50">
+                      <div className="px-4 py-2 border-b border-slate-50 mb-2">
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Tài khoản</p>
+                        <p className="text-sm font-bold text-slate-900 truncate">{user.displayName}</p>
+                      </div>
                       <button onClick={logout} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors font-medium">
                         <LogOut size={16} /> Đăng xuất
                       </button>
-                    )}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            ) : (
+              <button onClick={() => setShowLoginModal(true)} className="px-4 py-2 bg-indigo-600 text-white rounded-xl font-bold text-sm shadow-sm hover:bg-indigo-700 transition-all">
+                Đăng nhập
+              </button>
+            )}
 
             {/* NÚT HAMBURGER (CHỈ HIỂN THỊ TRÊN ĐIỆN THOẠI/TABLET) */}
             <button 
@@ -761,7 +761,7 @@ export default function App() {
         <AnimatePresence mode="wait">
           {view === 'home' && (
             <motion.div key="home" className="w-full" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
-              <HomeView setView={setView} language={language} user={user} lessons={lessons} />
+              <HomeView setView={handleNavigation} language={language} user={user} lessons={lessons} />
             </motion.div>
           )}
           {view === 'assessment' && (
@@ -772,8 +772,8 @@ export default function App() {
           {view === 'topics' && (
             <motion.div key={`topics-${language}`} className="w-full" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
               <TopicLibraryView language={language} lessons={lessons} userLevel={userLevel} onGoToAssessment={() => handleNavigation('assessment')} onOpenInInput={(vocabData, generatedTitle) => {
-                  setEditingLesson({ title: generatedTitle, vocabularies: vocabData, language, wordCount: vocabData.length, userId: user.uid, userName: user.displayName || '', createdAt: Date.now() } as Lesson);
-                  setView('input');
+                  setEditingLesson({ title: generatedTitle, vocabularies: vocabData, language, wordCount: vocabData.length, userId: user?.uid || 'guest', userName: user?.displayName || 'Khách', createdAt: Date.now() } as Lesson);
+                  handleNavigation('input');
                 }} 
               />
             </motion.div>
@@ -884,7 +884,7 @@ function MobileMenuButton({ active, onClick, icon, label }: { active: boolean, o
 
 // --- VIEWS ---
 
-function HomeView({ setView, language, user, lessons }: { setView: (v: View) => void, language: Language, user: User, lessons: Lesson[] }) {
+function HomeView({ setView, language, user, lessons }: { setView: (v: View) => void, language: Language, user: User | null, lessons: Lesson[] }) {
   const needsReview = lessons.filter(l => {
     if (l.language !== language) return false;
     const status = getLessonStatus(l);
@@ -912,7 +912,7 @@ function HomeView({ setView, language, user, lessons }: { setView: (v: View) => 
   {/* NỬA BÊN TRÁI: THÔNG ĐIỆP CHÀO MỪNG VÀ HỆ THỐNG NÚT */}
   <div className="relative z-10 max-w-2xl space-y-6 w-full md:w-2/3">
     <h2 className="text-3xl md:text-5xl font-bold leading-tight">
-      Chào bạn, {user.displayName}!
+      Chào bạn, {user?.displayName || 'Khách'}!
     </h2>
     <div className="space-y-2">
       <p className="text-indigo-100 text-lg md:text-xl opacity-95">

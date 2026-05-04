@@ -452,6 +452,7 @@ export default function App() {
   }, [user]);
   const [view, setView] = useState<View>('home');
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [hasSelectedLanguage, setHasSelectedLanguage] = useState(false);
   const [language, setLanguage] = useState<Language>('en');
   const [activeGame, setActiveGame] = useState<GameType | null>(null);
   const [isTestMode, setIsTestMode] = useState(false);
@@ -461,7 +462,8 @@ export default function App() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleNavigation = (targetView: View) => {
-    if (!user && (targetView === 'input' || targetView === 'assessment' || targetView === 'library' || targetView === 'report' || targetView === 'games' || targetView === 'admin')) {
+    // Đã bỏ 'assessment' ra khỏi danh sách chặn, Khách có thể dùng thử
+    if (!user && (targetView === 'input' || targetView === 'library' || targetView === 'report' || targetView === 'games' || targetView === 'admin')) {
         setShowLoginModal(true);
         return;
     }
@@ -622,7 +624,37 @@ export default function App() {
     }
   };
 
+// MÀN HÌNH CHỌN NGÔN NGỮ (CHỈ HIỆN 1 LẦN CHO KHÁCH)
+  if (!user && !hasSelectedLanguage) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-100 opacity-50 rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2"></div>
+        <div className="absolute bottom-0 left-0 w-80 h-80 bg-emerald-100 opacity-50 rounded-full blur-3xl transform -translate-x-1/2 translate-y-1/2"></div>
+        
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-8 md:p-12 rounded-[3rem] shadow-xl max-w-2xl w-full text-center relative z-10 border border-slate-100">
+          <div className="w-20 h-20 bg-indigo-600 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg rotate-3">
+            <Languages className="text-white w-10 h-10" />
+          </div>
+          <h1 className="text-3xl md:text-4xl font-black text-slate-900 mb-4 tracking-tight">Chào mừng đến với Vocab AIBTeM</h1>
+          <p className="text-slate-500 text-lg mb-10 font-medium">Vui lòng chọn ngôn ngữ bạn muốn bắt đầu học hôm nay.</p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <button onClick={() => { setLanguage('en'); setHasSelectedLanguage(true); }} className="group bg-slate-50 hover:bg-blue-50 border-2 border-slate-100 hover:border-blue-400 p-8 rounded-[2rem] transition-all flex flex-col items-center gap-4 shadow-sm hover:shadow-md">
+              <img src="https://flagcdn.com/w160/gb.png" alt="English" className="w-24 rounded-lg shadow-sm group-hover:scale-110 transition-transform" />
+              <span className="text-2xl font-bold text-slate-800 group-hover:text-blue-700">Tiếng Anh</span>
+            </button>
+            
+            <button onClick={() => { setLanguage('de'); setHasSelectedLanguage(true); }} className="group bg-slate-50 hover:bg-amber-50 border-2 border-slate-100 hover:border-amber-400 p-8 rounded-[2rem] transition-all flex flex-col items-center gap-4 shadow-sm hover:shadow-md">
+              <img src="https://flagcdn.com/w160/de.png" alt="Deutsch" className="w-24 rounded-lg shadow-sm group-hover:scale-110 transition-transform" />
+              <span className="text-2xl font-bold text-slate-800 group-hover:text-amber-700">Tiếng Đức</span>
+            </button>
+          </div>
 
+          <p className="text-sm text-slate-400 font-medium">Đăng nhập tài khoản để lưu lại quá trình học. Bạn có thể thay đổi ngôn ngữ bất kỳ lúc nào.</p>
+        </motion.div>
+      </div>
+    );
+  }
   return (
     <div className="min-h-[100dvh] bg-slate-50 text-slate-900 font-sans flex flex-col relative">
       {/* DÁN NÚT BẤM VÀO ĐÂY ĐỂ LUÔN HIỂN THỊ */}
@@ -984,8 +1016,7 @@ function StatCard({ title, value, color }: { title: string, value: string, color
 }
 
 // --- ASSESSMENT VIEW (TRẮC NGHIỆM ĐÁNH GIÁ NĂNG LỰC) ---
-// --- ASSESSMENT VIEW (TRẮC NGHIỆM ĐÁNH GIÁ NĂNG LỰC) ---
-function AssessmentView({ language, user, onGoToTopics, setIsTestInProgress }: { language: Language, user: User, onGoToTopics: () => void, setIsTestInProgress: (status: boolean) => void }) {
+function AssessmentView({ language, user, onGoToTopics, setIsTestInProgress }: { language: Language, user: User | null, onGoToTopics: () => void, setIsTestInProgress: (status: boolean) => void }) {
   const mergedDict = useMergedDict(language);
   const [phase, setPhase] = useState<'intro' | 'quiz' | 'result'>('intro');
   const [questions, setQuestions] = useState<any[]>([]);

@@ -3781,11 +3781,13 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
         {isLoading && <div className="flex max-w-[85%] mr-auto"><div className="p-4 rounded-3xl bg-white border border-slate-200 text-slate-500 rounded-tl-sm shadow-sm flex items-center gap-2 font-medium"><Loader2 className="animate-spin text-indigo-500" size={18} /> Đang trả lời...</div></div>}
         <div ref={messagesEndRef} />
       </div>
-      <div className="p-4 bg-white border-t border-slate-100">
-        <div className="flex items-center gap-3 relative">
-          <button onClick={startListening} disabled={isLoading || isRecording} className={cn("p-4 rounded-2xl transition-all shadow-sm shrink-0", isRecording ? "bg-red-500 text-white animate-pulse" : "bg-indigo-50 text-indigo-600 hover:bg-indigo-100")}><Mic size={24} /></button>
-          <input type="text" value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSend(input)} disabled={isLoading || isRecording} placeholder={isRecording ? "Đang nghe..." : "Nhập câu trả lời..."} className="flex-1 bg-slate-50 border-transparent focus:bg-white focus:border-indigo-500 rounded-2xl px-4 md:px-6 py-4 text-base md:text-lg outline-none border-2 font-medium" />
-          <button onClick={() => handleSend(input)} disabled={!input.trim() || isLoading} className="p-4 bg-indigo-600 text-white rounded-2xl hover:bg-indigo-700 transition-all shadow-md shrink-0"><ChevronRight size={24} /></button>
+      <div className="p-3 md:p-4 bg-white border-t border-slate-100">
+        <div className="flex items-center gap-2 md:gap-3 w-full">
+          <button onClick={startListening} disabled={isLoading || isRecording} className={cn("p-3 md:p-4 rounded-xl md:rounded-2xl transition-all shadow-sm shrink-0", isRecording ? "bg-red-500 text-white animate-pulse" : "bg-indigo-50 text-indigo-600 hover:bg-indigo-100")}><Mic className="w-5 h-5 md:w-6 md:h-6" /></button>
+          
+          <input type="text" value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSend(input)} disabled={isLoading || isRecording} placeholder={isRecording ? "Đang nghe..." : "Nhập câu trả lời..."} className="flex-1 min-w-0 bg-slate-50 border-transparent focus:bg-white focus:border-indigo-500 rounded-xl md:rounded-2xl px-3 md:px-6 py-3 md:py-4 text-sm md:text-lg outline-none border-2 font-medium" />
+          
+          <button onClick={() => handleSend(input)} disabled={!input.trim() || isLoading} className="p-3 md:p-4 bg-indigo-600 text-white rounded-xl md:rounded-2xl hover:bg-indigo-700 transition-all shadow-md shrink-0"><ChevronRight className="w-5 h-5 md:w-6 md:h-6" /></button>
         </div>
       </div>
     </div>

@@ -88,7 +88,7 @@ import deDictDataRaw from './data/de_3000.json';
 type Language = 'en' | 'de';
 type View = 'home' | 'topics' | 'input' | 'library' | 'games' | 'report' | 'dictionary' | 'assessment' | 'admin';
 
-// THAY MÃ UID CỦA MÌNH VÀO ĐÂY (Lấy trong mục Authentication trên Firebase)
+// THAY MÃ UID VÀO ĐÂY (Lấy trong mục Authentication trên Firebase)
 const ADMIN_UID = "W3paMyFVFjPwxOHuy1w5FFScYzD3";
 type GameType = 'flashcards' | 'quiz' | 'matching' | 'writing' | 'fill' | 'roleplay';
 
@@ -3714,7 +3714,7 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
       <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 bg-slate-50/50">
         {messages.map((m, i) => (
           <div key={i} className={cn("flex max-w-[90%] md:max-w-[85%]", m.role === 'user' ? "ml-auto justify-end" : "mr-auto")}>
-            {/* Lọc sạch dấu sao ở phần hiển thị giao diện nếu thầy muốn văn bản sạch hoàn toàn. Ở đây tôi dùng hàm thay thế nhanh */}
+            {/* Lọc sạch dấu sao ở phần hiển thị giao diện nếu muốn văn bản sạch hoàn toàn. Ở đây dùng hàm thay thế nhanh */}
             <div className={cn("p-4 md:p-5 rounded-3xl text-base md:text-lg shadow-sm leading-relaxed", m.role === 'user' ? "bg-indigo-600 text-white rounded-tr-sm" : "bg-white border border-slate-200 text-slate-800 rounded-tl-sm")} dangerouslySetInnerHTML={{ __html: m.text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
             {m.role === 'ai' && <button onClick={() => handleSpeak(m.text, language)} className="ml-2 self-end text-slate-400 hover:text-indigo-600 p-3 bg-white rounded-full shadow-sm border border-slate-100"><Volume2 size={18} /></button>}
           </div>

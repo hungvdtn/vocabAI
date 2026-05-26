@@ -66,7 +66,7 @@ import {
 } from 'firebase/firestore';
 import { signInWithPopup, onAuthStateChanged, User, signOut } from 'firebase/auth';
 import { db, auth, googleProvider } from './firebase';
-import { generateExampleSentence, translateWord, sendRoleplayMessage } from './services/ai';
+import { generateExampleSentence, translateWord } from './services/ai';
 import { cn } from './lib/utils';
 
 import { 
@@ -88,7 +88,7 @@ import deDictDataRaw from './data/de_3000.json';
 type Language = 'en' | 'de';
 type View = 'home' | 'topics' | 'input' | 'library' | 'games' | 'report' | 'dictionary' | 'assessment' | 'admin';
 
-// THAY MÃ UID VÀO ĐÂY (Lấy trong mục Authentication trên Firebase)
+// THAY MÃ UID CỦA MÌNH VÀO ĐÂY (Lấy trong mục Authentication trên Firebase)
 const ADMIN_UID = "W3paMyFVFjPwxOHuy1w5FFScYzD3";
 type GameType = 'flashcards' | 'quiz' | 'matching' | 'writing' | 'fill' | 'roleplay';
 
@@ -228,11 +228,7 @@ const playGameSound = (type: 'correct' | 'wrong' | 'success') => {
 const handleSpeak = (text: string, lang: Language) => {
   if (!('speechSynthesis' in window)) return;
   window.speechSynthesis.cancel();
-  
-  // LỌC SẠCH KÝ TỰ MARKDOWN TRƯỚC KHI ĐỌC: Xóa *, _, # để AI đọc tự nhiên 100%
-  const cleanText = text.replace(/[*_#]/g, '');
-  
-  const utterance = new SpeechSynthesisUtterance(cleanText);
+  const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = lang === 'en' ? 'en-US' : 'de-DE';
   const voices = window.speechSynthesis.getVoices();
   if (voices.length > 0) {
@@ -451,8 +447,6 @@ export default function App() {
     }, { merge: true }).catch(e => console.error("Lỗi đồng bộ hồ sơ:", e));
   }, [user]);
   const [view, setView] = useState<View>('home');
-  const [showLoginModal, setShowLoginModal] = useState(false);
-  const [hasSelectedLanguage, setHasSelectedLanguage] = useState(false);
   const [language, setLanguage] = useState<Language>('en');
   const [activeGame, setActiveGame] = useState<GameType | null>(null);
   const [isTestMode, setIsTestMode] = useState(false);
@@ -460,14 +454,16 @@ export default function App() {
   // STATE BẢO VỆ BÀI TEST & ĐIỀU HƯỚNG
   const [isTestInProgress, setIsTestInProgress] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  // STATE QUẢN LÝ TỪ ĐIỂN NỔI CHO NGƯỜI ĐÃ ĐĂNG NHẬP
+  const [showFloatingDict, setShowFloatingDict] = useState(false);
+  const [isDictExpanded, setIsDictExpanded] = useState(false);
 
   const handleNavigation = (targetView: View) => {
-    // Đã bỏ 'assessment' ra khỏi danh sách chặn, Khách có thể dùng thử
-    if (!user && (targetView === 'input' || targetView === 'library' || targetView === 'report' || targetView === 'games' || targetView === 'admin')) {
-        setShowLoginModal(true);
+    if (user && targetView === 'dictionary') {
+        setShowFloatingDict(true);
+        setIsMobileMenuOpen(false);
         return;
     }
-
     if (isTestInProgress) {
       if (!window.confirm("Bạn đang làm bài kiểm tra. Bạn có chắc chắn muốn thoát? Kết quả sẽ bị hủy bỏ.")) return;
       setIsTestInProgress(false);
@@ -552,7 +548,6 @@ export default function App() {
   const login = async () => {
     try {
       await signInWithPopup(auth, googleProvider);
-      setShowLoginModal(false);
     } catch (error: any) {
       alert("Lỗi đăng nhập: " + error.message);
     }
@@ -624,37 +619,28 @@ export default function App() {
     }
   };
 
-// MÀN HÌNH CHỌN NGÔN NGỮ (CHỈ HIỆN 1 LẦN CHO KHÁCH)
-  if (!user && !hasSelectedLanguage) {
+  if (!user) {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-100 opacity-50 rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2"></div>
-        <div className="absolute bottom-0 left-0 w-80 h-80 bg-emerald-100 opacity-50 rounded-full blur-3xl transform -translate-x-1/2 translate-y-1/2"></div>
-        
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-8 md:p-12 rounded-[3rem] shadow-xl max-w-2xl w-full text-center relative z-10 border border-slate-100">
-          <div className="w-20 h-20 bg-indigo-600 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg rotate-3">
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-8 rounded-3xl shadow-xl max-w-md w-full text-center">
+          <div className="w-20 h-20 bg-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg rotate-3">
             <Languages className="text-white w-10 h-10" />
           </div>
-          <h1 className="text-3xl md:text-4xl font-black text-slate-900 mb-4 tracking-tight">Chào mừng đến với Vocab AIBTeM</h1>
-          <p className="text-slate-500 text-lg mb-10 font-medium">Vui lòng chọn ngôn ngữ bạn muốn bắt đầu học từ vựng hôm nay.</p>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <button onClick={() => { setLanguage('en'); setHasSelectedLanguage(true); }} className="group bg-slate-50 hover:bg-blue-50 border-2 border-slate-100 hover:border-blue-400 p-8 rounded-[2rem] transition-all flex flex-col items-center gap-4 shadow-sm hover:shadow-md">
-              <img src="https://flagcdn.com/w160/gb.png" alt="English" className="w-24 rounded-lg shadow-sm group-hover:scale-110 transition-transform" />
-              <span className="text-2xl font-bold text-slate-800 group-hover:text-blue-700">Tiếng Anh</span>
-            </button>
-            
-            <button onClick={() => { setLanguage('de'); setHasSelectedLanguage(true); }} className="group bg-slate-50 hover:bg-amber-50 border-2 border-slate-100 hover:border-amber-400 p-8 rounded-[2rem] transition-all flex flex-col items-center gap-4 shadow-sm hover:shadow-md">
-              <img src="https://flagcdn.com/w160/de.png" alt="Deutsch" className="w-24 rounded-lg shadow-sm group-hover:scale-110 transition-transform" />
-              <span className="text-2xl font-bold text-slate-800 group-hover:text-amber-700">Tiếng Đức</span>
-            </button>
-          </div>
-
-          <p className="text-sm text-slate-400 font-medium">Đăng nhập tài khoản để lưu lại quá trình học. Bạn có thể thay đổi ngôn ngữ bất kỳ lúc nào.</p>
+          <h1 className="text-3xl font-bold text-slate-900 mb-2">Vocab AIBTeM</h1>
+          <p className="text-slate-500 mb-8">Nâng tầm vốn từ vựng Tiếng Anh & Đức với sức mạnh AIBTeM.</p>
+          <button onClick={login} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-4 rounded-2xl transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-3 mb-4">
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/pjax/google.png" className="w-6 h-6 bg-white rounded-full p-1" alt="Google" />
+            Đăng nhập với Google
+          </button>
+          <button onClick={enterTestMode} className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-4 rounded-2xl transition-all flex items-center justify-center gap-3">
+            <Gamepad2 size={20} className="text-indigo-600" />
+            Không đăng nhập
+          </button>
         </motion.div>
       </div>
     );
   }
+
   return (
     <div className="min-h-[100dvh] bg-slate-50 text-slate-900 font-sans flex flex-col relative">
       {/* DÁN NÚT BẤM VÀO ĐÂY ĐỂ LUÔN HIỂN THỊ */}
@@ -711,33 +697,33 @@ export default function App() {
               </button>
             </div>
             
-            {/* MENU TÀI KHOẢN HOẶC NÚT ĐĂNG NHẬP */}
-            {user ? (
-              <div className="relative" ref={menuRef}>
-                <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="flex items-center gap-2 p-1 pr-2 lg:pr-3 rounded-full hover:bg-slate-100 transition-all border border-slate-200">
-                  <img src={user.photoURL || ''} className="w-8 h-8 rounded-full border border-slate-200" alt="User" />
-                  <ChevronDown size={14} className={cn("text-slate-400 transition-transform hidden sm:block", isMenuOpen && "rotate-180")} />
-                </button>
+            {/* MENU TÀI KHOẢN (AVATAR) */}
+            <div className="relative" ref={menuRef}>
+              <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="flex items-center gap-2 p-1 pr-2 lg:pr-3 rounded-full hover:bg-slate-100 transition-all border border-slate-200">
+                <img src={user.photoURL || ''} className="w-8 h-8 rounded-full border border-slate-200" alt="User" />
+                <ChevronDown size={14} className={cn("text-slate-400 transition-transform hidden sm:block", isMenuOpen && "rotate-180")} />
+              </button>
 
-                <AnimatePresence>
-                  {isMenuOpen && (
-                    <motion.div initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }} className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 z-50">
-                      <div className="px-4 py-2 border-b border-slate-50 mb-2">
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Tài khoản</p>
-                        <p className="text-sm font-bold text-slate-900 truncate">{user.displayName}</p>
-                      </div>
+              <AnimatePresence>
+                {isMenuOpen && (
+                  <motion.div initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }} className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 z-50">
+                    <div className="px-4 py-2 border-b border-slate-50 mb-2">
+                      <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Tài khoản</p>
+                      <p className="text-sm font-bold text-slate-900 truncate">{user.displayName}</p>
+                    </div>
+                    {isTestMode ? (
+                      <button onClick={() => { login(); setIsMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-indigo-600 hover:bg-indigo-50 transition-colors font-medium">
+                        <UserIcon size={16} /> Đăng nhập Google
+                      </button>
+                    ) : (
                       <button onClick={logout} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors font-medium">
                         <LogOut size={16} /> Đăng xuất
                       </button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            ) : (
-              <button onClick={() => setShowLoginModal(true)} className="px-4 py-2 bg-indigo-600 text-white rounded-xl font-bold text-sm shadow-sm hover:bg-indigo-700 transition-all">
-                Đăng nhập
-              </button>
-            )}
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
 
             {/* NÚT HAMBURGER (CHỈ HIỂN THỊ TRÊN ĐIỆN THOẠI/TABLET) */}
             <button 
@@ -793,7 +779,7 @@ export default function App() {
         <AnimatePresence mode="wait">
           {view === 'home' && (
             <motion.div key="home" className="w-full" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
-              <HomeView setView={handleNavigation} language={language} user={user} lessons={lessons} />
+              <HomeView setView={setView} language={language} user={user} lessons={lessons} />
             </motion.div>
           )}
           {view === 'assessment' && (
@@ -804,8 +790,8 @@ export default function App() {
           {view === 'topics' && (
             <motion.div key={`topics-${language}`} className="w-full" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
               <TopicLibraryView language={language} lessons={lessons} userLevel={userLevel} onGoToAssessment={() => handleNavigation('assessment')} onOpenInInput={(vocabData, generatedTitle) => {
-                  setEditingLesson({ title: generatedTitle, vocabularies: vocabData, language, wordCount: vocabData.length, userId: user?.uid || 'guest', userName: user?.displayName || 'Khách', createdAt: Date.now() } as Lesson);
-                  handleNavigation('input');
+                  setEditingLesson({ title: generatedTitle, vocabularies: vocabData, language, wordCount: vocabData.length, userId: user.uid, userName: user.displayName || '', createdAt: Date.now() } as Lesson);
+                  setView('input');
                 }} 
               />
             </motion.div>
@@ -861,32 +847,52 @@ export default function App() {
 
         </AnimatePresence>
       </main>
+      {/* GIAO DIỆN TỪ ĐIỂN NỔI (Dành riêng cho người đã đăng nhập) */}
       <AnimatePresence>
-        {showLoginModal && (
-          <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} 
-              onClick={() => setShowLoginModal(false)} 
-              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" 
-            />
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} 
-              className="relative bg-white w-full max-w-md rounded-[2.5rem] p-10 shadow-2xl text-center"
-            >
-              <button onClick={() => setShowLoginModal(false)} className="absolute top-6 right-6 text-slate-400 hover:text-slate-700"><X size={24} /></button>
-              
-              <div className="w-20 h-20 bg-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg rotate-3">
-                <Languages className="text-white w-10 h-10" />
+        {showFloatingDict && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 50, scale: 0.9 }}
+            drag
+            dragMomentum={false}
+            className={cn(
+              "fixed z-[99999] bg-white rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.3)] border border-indigo-200 overflow-hidden flex flex-col cursor-move",
+              isDictExpanded ? "inset-4 md:inset-10" : "bottom-4 right-4 md:bottom-10 md:right-10 w-[92vw] md:w-[450px] h-[75vh] md:h-[600px]"
+            )}
+            style={{ touchAction: "none" }}
+          >
+            {/* Thanh Tiêu đề (Dùng để Kéo Thả) */}
+            <div className="bg-indigo-600 px-4 py-3 flex justify-between items-center shrink-0 shadow-sm">
+              <h3 className="text-white font-bold flex items-center gap-2">
+                <BookOpen size={18} /> Từ điển {language === 'en' ? 'Anh-Việt' : 'Đức-Việt'}
+              </h3>
+              <div className="flex items-center gap-3">
+                <button 
+                  onPointerDownCapture={(e) => e.stopPropagation()} 
+                  onClick={() => setIsDictExpanded(!isDictExpanded)} 
+                  className="text-indigo-100 hover:text-white text-xs font-bold px-3 py-1.5 rounded-lg bg-indigo-700 hover:bg-indigo-500 transition-colors"
+                >
+                  {isDictExpanded ? "Thu nhỏ" : "Phóng to"}
+                </button>
+                <button 
+                  onPointerDownCapture={(e) => e.stopPropagation()} 
+                  onClick={() => setShowFloatingDict(false)} 
+                  className="text-indigo-100 hover:text-red-300 transition-colors bg-indigo-700 p-1 rounded-lg"
+                >
+                  <X size={20} />
+                </button>
               </div>
-              <h3 className="text-2xl font-bold text-slate-900 mb-2">Yêu cầu Đăng nhập</h3>
-              <p className="text-slate-500 mb-8">Bạn cần đăng nhập bằng tài khoản Google để sử dụng tính năng này. Việc đăng nhập là hoàn toàn miễn phí!</p>
-              
-              <button onClick={login} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-4 rounded-2xl transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-3">
-                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/pjax/google.png" className="w-6 h-6 bg-white rounded-full p-1" alt="Google" />
-                Đăng nhập với Google
-              </button>
-            </motion.div>
-          </div>
+            </div>
+            
+            {/* Nội dung Từ điển (Chặn sự kiện kéo thả để có thể cuộn chuột xem nghĩa từ vựng) */}
+            <div 
+               className="flex-1 overflow-y-auto bg-slate-50 cursor-auto relative px-4"
+               onPointerDownCapture={(e) => e.stopPropagation()} 
+            >
+               <DictionaryView language={language} />
+            </div>
+          </motion.div>
         )}
       </AnimatePresence>
 
@@ -916,7 +922,7 @@ function MobileMenuButton({ active, onClick, icon, label }: { active: boolean, o
 
 // --- VIEWS ---
 
-function HomeView({ setView, language, user, lessons }: { setView: (v: View) => void, language: Language, user: User | null, lessons: Lesson[] }) {
+function HomeView({ setView, language, user, lessons }: { setView: (v: View) => void, language: Language, user: User, lessons: Lesson[] }) {
   const needsReview = lessons.filter(l => {
     if (l.language !== language) return false;
     const status = getLessonStatus(l);
@@ -944,7 +950,7 @@ function HomeView({ setView, language, user, lessons }: { setView: (v: View) => 
   {/* NỬA BÊN TRÁI: THÔNG ĐIỆP CHÀO MỪNG VÀ HỆ THỐNG NÚT */}
   <div className="relative z-10 max-w-2xl space-y-6 w-full md:w-2/3">
     <h2 className="text-3xl md:text-5xl font-bold leading-tight">
-      Chào bạn, {user?.displayName || 'Khách'}!
+      Chào bạn, {user.displayName}!
     </h2>
     <div className="space-y-2">
       <p className="text-indigo-100 text-lg md:text-xl opacity-95">
@@ -1016,7 +1022,8 @@ function StatCard({ title, value, color }: { title: string, value: string, color
 }
 
 // --- ASSESSMENT VIEW (TRẮC NGHIỆM ĐÁNH GIÁ NĂNG LỰC) ---
-function AssessmentView({ language, user, onGoToTopics, setIsTestInProgress }: { language: Language, user: User | null, onGoToTopics: () => void, setIsTestInProgress: (status: boolean) => void }) {
+// --- ASSESSMENT VIEW (TRẮC NGHIỆM ĐÁNH GIÁ NĂNG LỰC) ---
+function AssessmentView({ language, user, onGoToTopics, setIsTestInProgress }: { language: Language, user: User, onGoToTopics: () => void, setIsTestInProgress: (status: boolean) => void }) {
   const mergedDict = useMergedDict(language);
   const [phase, setPhase] = useState<'intro' | 'quiz' | 'result'>('intro');
   const [questions, setQuestions] = useState<any[]>([]);
@@ -1420,7 +1427,7 @@ function AdminDashboardView({ language }: { language: Language }) {
   const handleExportDictData = () => {
     if (overridesList.length === 0) return alert("Chưa có từ vựng nào được sửa để xuất!");
     
-    // Đã căn chỉnh cột Excel KHỚP TUYỆT ĐỐI với mã JSON cũ
+    // Đã căn chỉnh cột Excel KHỚP TUYỆT ĐỐI với mã JSON cũ của Tiến sĩ
     const headers = ["word", "phonetic", "part_of_speech", "level", "topic", "vietnamese_meaning", "english_definition", "german_definition", "example", "example_vietnamese"];
     const csvRows = overridesList.map(w => {
       const word = (w.word || '').replace(/"/g, '""');
@@ -2078,21 +2085,7 @@ function DictionaryView({ language }: { language: Language }) {
   return (
     <div className="w-full pb-32">
       <div className="text-center space-y-4 mb-8 mt-4">
-        <h2 className="text-3xl font-black text-indigo-700 flex items-center justify-center gap-3">
-          Từ điển {language === 'en' ? 'Anh - Việt' : 'Đức - Việt'}
-          <div className="flex items-center -space-x-2 ml-1">
-            <img 
-              src={language === 'en' ? "https://flagcdn.com/w40/us.png" : "https://flagcdn.com/w40/de.png"} 
-              alt="Source Language" 
-              className="w-8 h-auto rounded shadow-sm border border-slate-200 z-10 relative" 
-            />
-            <img 
-              src="https://flagcdn.com/w40/vn.png" 
-              alt="Vietnamese" 
-              className="w-8 h-auto rounded shadow-sm border border-slate-200 z-20 relative transform translate-y-2" 
-            />
-          </div>
-        </h2>
+        <h2 className="text-3xl font-black text-indigo-700">Từ điển {language === 'en' ? 'Anh - Việt' : 'Đức - Việt'}</h2>
       </div>
       
       <div className="relative w-full" ref={searchRef}>
@@ -2561,7 +2554,7 @@ function InputView({ language, user, onSaved, initialLesson }: { language: Langu
       else await addDoc(collection(db, 'lessons'), lessonData);
       setShowSaveModal(false); onSaved();
     } catch (e) {
-      alert("Bạn phải đăng nhập để lưu bài học. Đăng nhập, sử dụng hoàn toàn miễn phí!");
+      alert("Có lỗi xảy ra khi lưu bài học.");
     } finally {
       setLoading(false);
     }
@@ -3671,46 +3664,69 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
     const cleanText = textToSend.trim();
     if (!cleanText || isLoading) return; 
 
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    if (!apiKey) {
+       alert("Chưa cấu hình API Key");
+       return;
+    }
+
     setIsLoading(true);
     const currentMessages = [...messages, { role: 'user', text: cleanText } as {role: 'user' | 'ai', text: string}];
     setMessages(currentMessages);
     setInput('');
 
     try {
-      // THUẬT TOÁN ĐÁNH GIÁ TIẾN ĐỘ THỜI GIAN THỰC
-      const remainingWords = targetWords.filter(w => !usedWords.includes(w));
-      const isAllUsed = remainingWords.length === 0 && usedWords.length === targetWords.length;
-      const statusText = isAllUsed ? "ALL_WORDS_USED" : `Remaining words: ${remainingWords.join(', ')}`;
+      // 1. SỬ DỤNG MODEL GEMINI-PRO (ỔN ĐỊNH 100% TRÊN MỌI API KEY)
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`;
 
-      // KỊCH BẢN THÔNG MINH: Bơm trạng thái tiến độ vào não AI
-      const systemPrompt = `You are ${aiRole}. The user is practicing ${language === 'en' ? 'English' : 'German'}. 
-      Target vocabulary: ${targetWords.join(', ')}.
-      Words successfully used by user so far: ${usedWords.length > 0 ? usedWords.join(', ') : 'None'}.
-      Current Status: ${statusText}.
-
-      Rules:
-      1. Correct grammar mistakes politely.
-      2. Keep conversation at A1-B2 level.
-      3. Use **bold** formatting to highlight target words when you use them.
-      4. CRITICAL RULE: If "Current Status" is "ALL_WORDS_USED", you MUST immediately congratulate the user for completing the vocabulary list and explicitly ask: "We have used all the target words! Do you want to continue practicing or finish our conversation?".
-      5. CRITICAL RULE: If the user says they want to "finish", "stop", "kết thúc", or says goodbye, you MUST say a warm goodbye, encourage them, and formally end the conversation.
-      6. Otherwise, end your responses with a question to keep the conversation going.`;
+      // 2. KỸ THUẬT TIÊM KỊCH BẢN (PROMPT INJECTION)
+      const systemPrompt = `[SYSTEM INSTRUCTION: You are ${aiRole}. The user is practicing ${language === 'en' ? 'English' : 'German'}. Target vocabulary to use: ${targetWords.join(', ')}. Rules: 1. Correct any grammar mistakes. 2. Keep the conversation at A1-B2 level. 3. Try to use the target vocabulary. 4. End with a question. 5. Keep responses concise.]\n\n`;
 
       const historyToSend = currentMessages.filter((m, idx) => !(idx === 0 && m.role === 'ai'));
       
-      const squashedHistory: {role: 'user'|'ai', text: string}[] = [];
+      const squashedContents: any[] = [];
       for (const msg of historyToSend) {
-        if (squashedHistory.length > 0 && squashedHistory[squashedHistory.length - 1].role === msg.role) {
-          squashedHistory[squashedHistory.length - 1].text += "\n" + msg.text;
+        const apiRole = msg.role === 'ai' ? 'model' : 'user';
+        
+        if (squashedContents.length > 0 && squashedContents[squashedContents.length - 1].role === apiRole) {
+          squashedContents[squashedContents.length - 1].parts[0].text += "\n" + msg.text;
         } else {
-          squashedHistory.push({ ...msg });
+          squashedContents.push({ role: apiRole, parts: [{ text: msg.text }] });
         }
       }
 
-      const aiReply = await sendRoleplayMessage(squashedHistory, systemPrompt);
+      // Nhúng kịch bản ngầm vào tin nhắn đầu tiên của người dùng để AI hiểu luật chơi
+      if (squashedContents.length > 0 && squashedContents[0].role === 'user') {
+          squashedContents[0].parts[0].text = systemPrompt + squashedContents[0].parts[0].text;
+      }
+
+      const reqBody = {
+        contents: squashedContents,
+        generationConfig: {
+          temperature: 0.7
+        }
+      };
+
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(reqBody)
+      });
+
+      const data = await res.json();
       
-      setMessages(prev => [...prev, { role: 'ai', text: aiReply }]);
-      handleSpeak(aiReply, language);
+      if (!res.ok) {
+        console.error("Lỗi Google API chi tiết:", data);
+        throw new Error(data.error?.message || "Lỗi 400/500 từ Google Server");
+      }
+
+      if (data.candidates && data.candidates[0].content?.parts?.[0]?.text) {
+        const aiReply = data.candidates[0].content.parts[0].text;
+        setMessages(prev => [...prev, { role: 'ai', text: aiReply }]);
+        handleSpeak(aiReply, language);
+      } else {
+        throw new Error("Dữ liệu trả về bị rỗng");
+      }
     } catch (error: any) {
       console.error("AI Roleplay Error:", error);
       setMessages(prev => [...prev, { role: 'ai', text: "⚠️ [LỖI KẾT NỐI]: " + error.message }]);
@@ -3773,21 +3789,18 @@ function RoleplayGame({ vocabs, language, onComplete }: { vocabs: Vocabulary[], 
       <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 bg-slate-50/50">
         {messages.map((m, i) => (
           <div key={i} className={cn("flex max-w-[90%] md:max-w-[85%]", m.role === 'user' ? "ml-auto justify-end" : "mr-auto")}>
-            {/* Lọc sạch dấu sao ở phần hiển thị giao diện nếu muốn văn bản sạch hoàn toàn. Ở đây dùng hàm thay thế nhanh */}
-            <div className={cn("p-4 md:p-5 rounded-3xl text-base md:text-lg shadow-sm leading-relaxed", m.role === 'user' ? "bg-indigo-600 text-white rounded-tr-sm" : "bg-white border border-slate-200 text-slate-800 rounded-tl-sm")} dangerouslySetInnerHTML={{ __html: m.text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
+            <div className={cn("p-4 md:p-5 rounded-3xl text-base md:text-lg shadow-sm leading-relaxed", m.role === 'user' ? "bg-indigo-600 text-white rounded-tr-sm" : "bg-white border border-slate-200 text-slate-800 rounded-tl-sm")}>{m.text}</div>
             {m.role === 'ai' && <button onClick={() => handleSpeak(m.text, language)} className="ml-2 self-end text-slate-400 hover:text-indigo-600 p-3 bg-white rounded-full shadow-sm border border-slate-100"><Volume2 size={18} /></button>}
           </div>
         ))}
         {isLoading && <div className="flex max-w-[85%] mr-auto"><div className="p-4 rounded-3xl bg-white border border-slate-200 text-slate-500 rounded-tl-sm shadow-sm flex items-center gap-2 font-medium"><Loader2 className="animate-spin text-indigo-500" size={18} /> Đang trả lời...</div></div>}
         <div ref={messagesEndRef} />
       </div>
-      <div className="p-3 md:p-4 bg-white border-t border-slate-100">
-        <div className="flex items-center gap-2 md:gap-3 w-full">
-          <button onClick={startListening} disabled={isLoading || isRecording} className={cn("p-3 md:p-4 rounded-xl md:rounded-2xl transition-all shadow-sm shrink-0", isRecording ? "bg-red-500 text-white animate-pulse" : "bg-indigo-50 text-indigo-600 hover:bg-indigo-100")}><Mic className="w-5 h-5 md:w-6 md:h-6" /></button>
-          
-          <input type="text" value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSend(input)} disabled={isLoading || isRecording} placeholder={isRecording ? "Đang nghe..." : "Nhập câu trả lời..."} className="flex-1 min-w-0 bg-slate-50 border-transparent focus:bg-white focus:border-indigo-500 rounded-xl md:rounded-2xl px-3 md:px-6 py-3 md:py-4 text-sm md:text-lg outline-none border-2 font-medium" />
-          
-          <button onClick={() => handleSend(input)} disabled={!input.trim() || isLoading} className="p-3 md:p-4 bg-indigo-600 text-white rounded-xl md:rounded-2xl hover:bg-indigo-700 transition-all shadow-md shrink-0"><ChevronRight className="w-5 h-5 md:w-6 md:h-6" /></button>
+      <div className="p-4 bg-white border-t border-slate-100">
+        <div className="flex items-center gap-3 relative">
+          <button onClick={startListening} disabled={isLoading || isRecording} className={cn("p-4 rounded-2xl transition-all shadow-sm shrink-0", isRecording ? "bg-red-500 text-white animate-pulse" : "bg-indigo-50 text-indigo-600 hover:bg-indigo-100")}><Mic size={24} /></button>
+          <input type="text" value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSend(input)} disabled={isLoading || isRecording} placeholder={isRecording ? "Đang nghe..." : "Nhập câu trả lời..."} className="flex-1 bg-slate-50 border-transparent focus:bg-white focus:border-indigo-500 rounded-2xl px-4 md:px-6 py-4 text-base md:text-lg outline-none border-2 font-medium" />
+          <button onClick={() => handleSend(input)} disabled={!input.trim() || isLoading} className="p-4 bg-indigo-600 text-white rounded-2xl hover:bg-indigo-700 transition-all shadow-md shrink-0"><ChevronRight size={24} /></button>
         </div>
       </div>
     </div>

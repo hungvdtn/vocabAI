@@ -460,8 +460,17 @@ export default function App() {
   // STATE BẢO VỆ BÀI TEST & ĐIỀU HƯỚNG
   const [isTestInProgress, setIsTestInProgress] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  // STATE QUẢN LÝ TỪ ĐIỂN NỔI CHO NGƯỜI ĐÃ ĐĂNG NHẬP
+  const [showFloatingDict, setShowFloatingDict] = useState(false);
+  const [isDictExpanded, setIsDictExpanded] = useState(false);
 
   const handleNavigation = (targetView: View) => {
+    // --- THÊM ĐOẠN NÀY VÀO ĐẦU HÀM ---
+    if (user && targetView === 'dictionary') {
+        setShowFloatingDict(true);
+        setIsMobileMenuOpen(false);
+        return;
+    }
     // Đã bỏ 'assessment' ra khỏi danh sách chặn, Khách có thể dùng thử
     if (!user && (targetView === 'input' || targetView === 'library' || targetView === 'report' || targetView === 'games' || targetView === 'admin')) {
         setShowLoginModal(true);
@@ -890,7 +899,55 @@ export default function App() {
         )}
       </AnimatePresence>
 
-    
+      {/* GIAO DIỆN TỪ ĐIỂN NỔI (Dành riêng cho người đã đăng nhập) */}
+      <AnimatePresence>
+        {showFloatingDict && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 50, scale: 0.9 }}
+            drag
+            dragMomentum={false}
+            className={cn(
+              "fixed z-[99999] bg-white rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.3)] border border-indigo-200 overflow-hidden flex flex-col cursor-move",
+              isDictExpanded ? "inset-4 md:inset-10" : "bottom-4 right-4 md:bottom-10 md:right-10 w-[92vw] md:w-[450px] h-[75vh] md:h-[600px]"
+            )}
+            style={{ touchAction: "none" }}
+          >
+            {/* Thanh Tiêu đề (Dùng để Kéo Thả) */}
+            <div className="bg-indigo-600 px-4 py-3 flex justify-between items-center shrink-0 shadow-sm cursor-move">
+              <h3 className="text-white font-bold flex items-center gap-2 pointer-events-none">
+                <BookOpen size={18} /> Từ điển {language === 'en' ? 'Anh-Việt' : 'Đức-Việt'}
+              </h3>
+              <div className="flex items-center gap-3">
+                <button 
+                  onPointerDownCapture={(e) => e.stopPropagation()} 
+                  onClick={() => setIsDictExpanded(!isDictExpanded)} 
+                  className="text-indigo-100 hover:text-white text-xs font-bold px-3 py-1.5 rounded-lg bg-indigo-700 hover:bg-indigo-500 transition-colors cursor-pointer"
+                >
+                  {isDictExpanded ? "Thu nhỏ" : "Phóng to"}
+                </button>
+                <button 
+                  onPointerDownCapture={(e) => e.stopPropagation()} 
+                  onClick={() => setShowFloatingDict(false)} 
+                  className="text-indigo-100 hover:text-red-300 transition-colors bg-indigo-700 p-1 rounded-lg cursor-pointer"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+            </div>
+            
+            {/* Nội dung Từ điển (Chặn sự kiện kéo thả để người dùng cuộn xem được nghĩa) */}
+            <div 
+              className="flex-1 overflow-y-auto bg-slate-50 cursor-auto relative px-4"
+              onPointerDownCapture={(e) => e.stopPropagation()} 
+            >
+              <DictionaryView language={language} />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 }
